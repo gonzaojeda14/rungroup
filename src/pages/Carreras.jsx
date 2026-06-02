@@ -209,7 +209,7 @@ export default function Carreras() {
               className={`filtro-btn ${filtros.fecha === val ? 'active' : ''}`}
               onClick={() => setFiltros(f => ({ ...f, fecha: val }))}
             >
-              {val === 'proximas' ? 'Próximas' : val === 'pasadas' ? 'Pasadas' : 'Todas'}
+              {val === 'proximas' ? 'Próximas' : val === 'pasadas' ? 'Anteriores' : 'Todas'}
             </button>
           ))}
         </div>
@@ -230,7 +230,7 @@ export default function Carreras() {
               className={`filtro-btn ${filtros.distancia === '' ? 'active' : ''}`}
               onClick={() => setFiltros(f => ({ ...f, distancia: '' }))}
             >
-              Toda distancia
+              Todas las distancias
             </button>
             {todasDistancias.map(d => (
               <button
