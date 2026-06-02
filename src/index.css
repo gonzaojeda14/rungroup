@@ -75,6 +75,7 @@ body {
 }
 @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
 .page-loading {
+  width: 100%; min-height: 200px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 64px 16px; gap: 16px;
   animation: fadeIn .25s ease;

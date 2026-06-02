@@ -36,8 +36,11 @@ export default function Participaciones() {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtro, setFiltro] = useState('proximas')
-  const [mesActivo, setMesActivo] = useState(null)
+  const [filtro, setFiltro] = useState(() => localStorage.getItem('agenda_filtro') || 'proximas')
+  const [mesActivo, setMesActivo] = useState(() => localStorage.getItem('agenda_mes') || null)
+
+  function setFiltroGuardado(val) { setFiltro(val); localStorage.setItem('agenda_filtro', val) }
+  function setMesActivoGuardado(val) { setMesActivo(val); val ? localStorage.setItem('agenda_mes', val) : localStorage.removeItem('agenda_mes') }
   const [toast, setToast] = useState('')
   const [notas, setNotas] = useState({}) // { carreraId: texto }
 
@@ -129,7 +132,7 @@ export default function Participaciones() {
         <h2>Agenda</h2>
         <div className="filtro-group">
           {[['proximas', 'Próximas'], ['todas', 'Todas']].map(([val, label]) => (
-            <button key={val} className={`filtro-btn ${filtro === val ? 'active' : ''}`} onClick={() => setFiltro(val)}>{label}</button>
+            <button key={val} className={`filtro-btn ${filtro === val ? 'active' : ''}`} onClick={() => setFiltroGuardado(val)}>{label}</button>
           ))}
         </div>
       </div>
@@ -137,9 +140,9 @@ export default function Participaciones() {
       {mesesDisponibles.length > 1 && (
         <div className="filtros-bar" style={{ marginBottom: '12px' }}>
           <div className="filtro-group">
-            <button className={`filtro-btn ${!mesActivo ? 'active' : ''}`} onClick={() => setMesActivo(null)}>Todos</button>
+            <button className={`filtro-btn ${!mesActivo ? 'active' : ''}`} onClick={() => setMesActivoGuardado(null)}>Todos</button>
             {mesesDisponibles.map(m => (
-              <button key={m.key} className={`filtro-btn ${mesActivo === m.key ? 'active' : ''}`} onClick={() => setMesActivo(m.key)}>{m.label}</button>
+              <button key={m.key} className={`filtro-btn ${mesActivo === m.key ? 'active' : ''}`} onClick={() => setMesActivoGuardado(m.key)}>{m.label}</button>
             ))}
           </div>
         </div>
@@ -173,7 +176,7 @@ export default function Participaciones() {
                       fontSize: '12px', color: '#fbbf24',
                       marginBottom: '8px', fontWeight: 500
                     }}>
-                      ¿Estás preparado? Ya falta poco 🏃
+                      ¿Estás preparadx? Ya falta poco 🏃
                     </div>
                   )}
 
@@ -247,33 +250,4 @@ export default function Participaciones() {
                           <button
                             className="btn-primary"
                             style={{ height: 32, fontSize: 12, padding: '0 14px', alignSelf: 'flex-end' }}
-                            onClick={() => handleNota(p.carrera.id, notas[p.carrera.id] || '')}
-                          >
-                            Guardar
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
-
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-          fontSize: '13px', fontWeight: 500, zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease', whiteSpace: 'nowrap',
-        }}>
-          {toast}
-        </div>
-      )}
-    </div>
-  )
-}
+                            onC
