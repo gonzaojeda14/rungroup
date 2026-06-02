@@ -110,6 +110,36 @@ export default function Carreras() {
     setCarreras(prev => prev.map(r => r.id === c.id ? { ...r, destacada: !r.destacada } : r))
   }
 
+  async function compartirUbicacion(carreraId) {
+    if (!navigator.geolocation) { alert('Tu dispositivo no soporta geolocalización'); return }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords
+        const now = new Date().toISOString()
+        await supabase.from('carreras').update({
+          encuentro_lat: lat,
+          encuentro_lng: lng,
+          encuentro_updated_at: now,
+        }).eq('id', carreraId)
+        setCarreras(prev => prev.map(r => r.id === carreraId
+          ? { ...r, encuentro_lat: lat, encuentro_lng: lng, encuentro_updated_at: now }
+          : r
+        ))
+        setToast('📍 Ubicación compartida')
+        setTimeout(() => setToast(''), 2500)
+      },
+      () => alert('No se pudo obtener la ubicación. Verificá los permisos.')
+    )
+  }
+
+  function tiempoDesdeUpdate(updatedAt) {
+    if (!updatedAt) return ''
+    const diff = Math.floor((new Date() - new Date(updatedAt)) / 60000)
+    if (diff < 1) return 'ahora mismo'
+    if (diff < 60) return `hace ${diff} min`
+    return `hace ${Math.floor(diff / 60)}h`
+  }
+
   async function updateDistancia(carreraId, distancia) {
     setDistanciasSeleccionadas(prev => ({ ...prev, [carreraId]: distancia }))
     await supabase.from('participaciones')
@@ -387,6 +417,36 @@ export default function Carreras() {
                 <a href={c.link} target="_blank" rel="noopener noreferrer" className="race-link">
                   Ver inscripción →
                 </a>
+              )}
+
+              {/* PUNTO DE ENCUENTRO */}
+              {c.encuentro_lat && (
+                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <a
+                    href={`https://www.google.com/maps?q=${c.encuentro_lat},${c.encuentro_lng}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="race-link"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                  >
+                    📍 Ver punto de encuentro →
+                  </a>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    {tiempoDesdeUpdate(c.encuentro_updated_at)}
+                  </span>
+                </div>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => compartirUbicacion(c.id)}
+                  className="race-link"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    font: 'inherit', marginTop: '6px', display: 'block',
+                    color: c.encuentro_lat ? '#64748b' : 'var(--accent)',
+                  }}
+                >
+                  {c.encuentro_lat ? '🔄 Actualizar ubicación' : '📍 Compartir punto de encuentro'}
+                </button>
               )}
 
               {multiDist && (
