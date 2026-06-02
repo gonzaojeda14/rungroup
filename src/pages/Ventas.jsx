@@ -41,7 +41,7 @@ export default function Ventas() {
   const [ventas, setVentas] = useState([])
   const [carreras, setCarreras] = useState([])
   const [miOferta, setMiOferta] = useState(null)   // oferta activa donde soy el comprador
-  const [form, setForm] = useState({ carrera_id: '', precio: '', nota: '' })
+  const [form, setForm] = useState({ carrera_id: '', distancia: '', precio: '', nota: '' })
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -50,15 +50,22 @@ export default function Ventas() {
   const avanzarCola = useCallback(async (venta, rechazadoId) => {
     const yaRechazados = [...(venta.rechazados || []), rechazadoId].filter(Boolean)
 
-    const { data: espera } = await supabase
+    let query = supabase
       .from('participaciones')
-      .select('user_id, updated_at')
+      .select('user_id, updated_at, distancia_elegida')
       .eq('carrera_id', venta.carrera_id)
       .eq('estado', 'Lista de espera')
       .neq('user_id', venta.vendedor_id)
       .order('updated_at')
 
-    const siguiente = espera?.find(p => !yaRechazados.includes(p.user_id))
+    const { data: espera } = await query
+
+    // Si la venta tiene distancia, filtrar por esa distancia
+    const esperaFiltrada = venta.distancia
+      ? (espera || []).filter(p => p.distancia_elegida === venta.distancia)
+      : (espera || [])
+
+    const siguiente = esperaFiltrada.find(p => !yaRechazados.includes(p.user_id))
 
     if (siguiente) {
       const expira = calcularExpiracion(venta.carrera?.fecha || venta.carreraFecha)
@@ -80,7 +87,7 @@ export default function Ventas() {
 
   const fetchAll = useCallback(async () => {
     const [{ data: cars }, { data: vsRaw }] = await Promise.all([
-      supabase.from('carreras').select('id, nombre, fecha').order('fecha'),
+      supabase.from('carreras').select('id, nombre, fecha, distancias, distancia').order('fecha'),
       supabase.from('ventas_inscripciones')
         .select('*, carrera:carreras(nombre, fecha)')
         .in('estado', ['disponible', 'ofertada', 'contactada'])
@@ -138,11 +145,16 @@ export default function Ventas() {
       .neq('user_id', user.id)
       .order('updated_at')
 
-    const primero = espera?.[0] || null
+    // Filtrar cola por distancia si aplica
+    const esperaFiltrada = form.distancia
+      ? (espera || []).filter(p => p.distancia_elegida === form.distancia)
+      : (espera || [])
+    const primero = esperaFiltrada[0] || null
     const expira = primero ? calcularExpiracion(carrera?.fecha) : null
 
     const { error: insertError } = await supabase.from('ventas_inscripciones').insert([{
       carrera_id: form.carrera_id,
+      distancia: form.distancia || null,
       vendedor_id: user.id,
       precio: parseFloat(form.precio) || null,
       nota: form.nota || null,
@@ -158,7 +170,7 @@ export default function Ventas() {
       return
     }
 
-    setForm({ carrera_id: '', precio: '', nota: '' })
+    setForm({ carrera_id: '', distancia: '', precio: '', nota: '' })
     setShowForm(false)
     setSaving(false)
     fetchAll()
@@ -227,6 +239,7 @@ export default function Ventas() {
           </div>
           <div style={{ fontWeight: 600, marginBottom: '4px' }}>{miOferta.carrera?.nombre}</div>
           {miOferta.carrera?.fecha && <span className="tag" style={{ display: 'inline-block', marginBottom: '8px' }}>📅 {formatFecha(miOferta.carrera.fecha)}</span>}
+          {miOferta.distancia && <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '4px' }}>📏 {miOferta.distancia}</div>}
           {miOferta.precio && <div style={{ fontSize: '14px', margin: '6px 0' }}>💰 ${Number(miOferta.precio).toLocaleString()}</div>}
           {miOferta.nota && <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>📝 {miOferta.nota}</div>}
           <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
@@ -271,13 +284,27 @@ export default function Ventas() {
           <div className="form-grid">
             <div className="field full">
               <label>Carrera *</label>
-              <select value={form.carrera_id} onChange={e => setForm({ ...form, carrera_id: e.target.value })} required>
+              <select value={form.carrera_id} onChange={e => setForm({ ...form, carrera_id: e.target.value, distancia: '' })} required>
                 <option value="">— Elegí una carrera —</option>
                 {carreras.map(c => (
                   <option key={c.id} value={c.id}>{c.nombre}{c.fecha ? ` — ${formatFecha(c.fecha)}` : ''}</option>
                 ))}
               </select>
             </div>
+            {(() => {
+              const carreraSeleccionada = carreras.find(c => c.id === form.carrera_id)
+              const dists = carreraSeleccionada?.distancias?.length > 1 ? carreraSeleccionada.distancias : null
+              if (!dists) return null
+              return (
+                <div className="field full">
+                  <label>Distancia *</label>
+                  <select value={form.distancia} onChange={e => setForm({ ...form, distancia: e.target.value })} required>
+                    <option value="">— Elegí la distancia —</option>
+                    {dists.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              )
+            })()}
             <div className="field">
               <label>Precio ($)</label>
               <input type="number" min="0" value={form.precio} onChange={e => setForm({ ...form, precio: e.target.value })} placeholder="Lo que pagaste" />

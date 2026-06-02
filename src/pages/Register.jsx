@@ -100,10 +100,7 @@ export default function Register() {
     <div className="login-wrapper" style={{ alignItems: 'flex-start', paddingTop: '32px' }}>
       <div className="login-card" style={{ maxWidth: '420px' }}>
         <div className="login-logo">
-          <svg height={36} viewBox="0 0 120 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <text x="0" y="24" fontFamily="Arial Black, Arial, sans-serif" fontWeight="900" fontSize="26" fill="white" letterSpacing="-0.5">FLAMA</text>
-            <text x="2" y="34" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="9" fill="#94a3b8" letterSpacing="3">RUN</text>
-          </svg>
+          <img src="/logo-flama.png" alt="Flama Run" style={{ height: 36, width: 'auto' }} />
         </div>
         <h1 style={{ textAlign: 'center', fontSize: '20px', marginBottom: '4px' }}>Crear cuenta</h1>
         <p className="login-sub">Completá tus datos para registrarte</p>

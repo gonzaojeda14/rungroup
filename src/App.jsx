@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './lib/auth'
+import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Carreras from './pages/Carreras'
@@ -8,6 +10,42 @@ import Resumen from './pages/Resumen'
 import Corredores from './pages/Corredores'
 import MiPerfil from './pages/MiPerfil'
 import Ventas from './pages/Ventas'
+
+function OfertaAlert() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [oferta, setOferta] = useState(null)
+
+  useEffect(() => {
+    async function check() {
+      const { data } = await supabase
+        .from('ventas_inscripciones')
+        .select('id, carrera:carreras(nombre)')
+        .eq('ofertado_a', user.id)
+        .in('estado', ['ofertada', 'contactada'])
+        .maybeSingle()
+      setOferta(data || null)
+    }
+    check()
+  }, [user.id])
+
+  if (!oferta) return null
+
+  return (
+    <div
+      onClick={() => navigate('/ventas')}
+      style={{
+        background: 'rgba(251,191,36,0.15)', borderBottom: '1px solid rgba(251,191,36,0.3)',
+        padding: '10px 16px', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        fontSize: '13px', color: '#fbbf24',
+      }}
+    >
+      <span>🔔 Hay una inscripción disponible para vos — <strong>{oferta.carrera?.nombre}</strong></span>
+      <span style={{ fontSize: '11px', opacity: 0.8 }}>Ver →</span>
+    </div>
+  )
+}
 
 function Shell() {
   const { user, loading, isAdmin, signOut } = useAuth()
@@ -43,6 +81,7 @@ function Shell() {
       </header>
 
       <main className="main-content">
+        <OfertaAlert />
         <Routes>
           <Route path="/" element={<Navigate to="/carreras" replace />} />
           <Route path="/carreras" element={<Carreras />} />
@@ -88,10 +127,7 @@ function Shell() {
 
 function FlamaLogo({ height = 32 }) {
   return (
-    <svg height={height} viewBox="0 0 120 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <text x="0" y="24" fontFamily="Arial Black, Arial, sans-serif" fontWeight="900" fontSize="26" fill="white" letterSpacing="-0.5">FLAMA</text>
-      <text x="2" y="34" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="9" fill="#94a3b8" letterSpacing="3">RUN</text>
-    </svg>
+    <img src="/logo-flama.png" alt="Flama Run" style={{ height, width: 'auto' }} />
   )
 }
 

@@ -21,10 +21,7 @@ export default function Login() {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="login-logo">
-          <svg height="40" viewBox="0 0 140 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <text x="0" y="28" fontFamily="Arial Black, Arial, sans-serif" fontWeight="900" fontSize="30" fill="white" letterSpacing="-0.5">FLAMA</text>
-            <text x="2" y="39" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="10" fill="#94a3b8" letterSpacing="4">RUN</text>
-          </svg>
+          <img src="/logo-flama.png" alt="Flama Run" style={{ height: 40, width: 'auto' }} />
         </div>
         <h1 style={{ display: 'none' }}>Flama Run</h1>
         <p className="login-sub">Tu grupo. Tus carreras.</p>
