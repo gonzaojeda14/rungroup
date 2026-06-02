@@ -43,7 +43,7 @@ export default function Resumen() {
 
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')
-    const { data: parts } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida')
+    const { data: parts } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, user_id, profiles(nombre)')
 
     const enriched = (cars || []).map(c => {
       const ps = (parts || []).filter(p => p.carrera_id === c.id)
@@ -66,7 +66,15 @@ export default function Resumen() {
         // Ignorar los que no eligieron distancia en el desglose
       }
 
-      return { ...c, counts, total: ps.length, dists, multiDist, porDistancia }
+      // Feedback
+      const feedbacks = ps.filter(p => p.feedback)
+      const porFeedback = {
+        excelente: feedbacks.filter(p => p.feedback === 'excelente'),
+        regular: feedbacks.filter(p => p.feedback === 'regular'),
+        mal: feedbacks.filter(p => p.feedback === 'mal'),
+      }
+
+      return { ...c, counts, total: ps.length, dists, multiDist, porDistancia, feedbacks, porFeedback }
     })
     setCarreras(enriched)
     setLoading(false)
@@ -122,6 +130,30 @@ export default function Resumen() {
             </>
           ) : (
             <StatsRow counts={c.counts} total={c.total} />
+          )}
+          {c.feedbacks?.length > 0 && (
+            <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' }}>
+                Feedback post-carrera
+              </div>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: c.porFeedback.mal.length > 0 ? '10px' : 0 }}>
+                {[['excelente','😍'],['regular','😐'],['mal','😞']].map(([val, emoji]) => (
+                  c.porFeedback[val].length > 0 && (
+                    <span key={val} style={{ fontSize: '13px', color: '#94a3b8' }}>
+                      {emoji} <strong style={{ color: '#f1f5f9' }}>{c.porFeedback[val].length}</strong>
+                    </span>
+                  )
+                ))}
+              </div>
+              {c.porFeedback.mal.length > 0 && (
+                <div style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', padding: '8px 12px' }}>
+                  <div style={{ fontSize: '11px', color: '#f87171', fontWeight: 600, marginBottom: '6px' }}>😞 Hablar con:</div>
+                  {c.porFeedback.mal.map((p, i) => (
+                    <div key={i} style={{ fontSize: '12px', color: '#94a3b8' }}>• {p.profiles?.nombre || '—'}</div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       ))}

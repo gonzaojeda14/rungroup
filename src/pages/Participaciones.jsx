@@ -44,7 +44,7 @@ export default function Participaciones() {
   async function fetchMisCarreras() {
     const { data: parts } = await supabase
       .from('participaciones')
-      .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
+      .select('estado, distancia_elegida, feedback, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
       .eq('user_id', user.id)
       .neq('estado', 'Pendiente')
 
@@ -55,6 +55,16 @@ export default function Participaciones() {
     })
     setItems(sorted)
     setLoading(false)
+  }
+
+  async function handleFeedback(carreraId, valor) {
+    await supabase.from('participaciones')
+      .update({ feedback: valor })
+      .eq('carrera_id', carreraId)
+      .eq('user_id', user.id)
+    setItems(prev => prev.map(p =>
+      p.carrera?.id === carreraId ? { ...p, feedback: valor } : p
+    ))
   }
 
   const hoy = new Date().toISOString().split('T')[0]
@@ -159,4 +169,61 @@ export default function Participaciones() {
                         {p.carrera?.fecha && (
                           <span className="tag">📅 {formatFechaHora(p.carrera.fecha, p.carrera.hora)}</span>
                         )}
-                        {(p.distanci
+                        {(p.distancia_elegida || p.carrera?.distancia) && (
+                          <span className="tag">📏 {p.distancia_elegida || p.carrera?.distancia}</span>
+                        )}
+                        {p.carrera?.lugar && <span className="tag">📍 {p.carrera.lugar}</span>}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+                      <span className="badge" style={{ background: ESTADO_COLOR[p.estado] + '22', color: ESTADO_COLOR[p.estado] }}>
+                        {p.estado}
+                      </span>
+                      {dias !== null && (
+                        <span style={{ fontSize: '11px', color: urgente ? '#fbbf24' : '#64748b', fontWeight: urgente ? 600 : 400 }}>
+                          {labelDias(dias)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {p.carrera?.link && !pasada && (
+                    <a href={p.carrera.link} target="_blank" rel="noopener noreferrer" className="race-link" style={{ marginTop: '8px', display: 'inline-block' }}>
+                      Ver inscripción →
+                    </a>
+                  )}
+
+                  {pasada && p.estado === 'Inscripto' && (
+                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                        {p.feedback ? '¿Cómo estuvo?' : '¿Cómo estuvo la carrera?'}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {[['excelente','😍'],['regular','😐'],['mal','😞']].map(([val, emoji]) => (
+                          <button
+                            key={val}
+                            onClick={() => handleFeedback(p.carrera.id, val)}
+                            style={{
+                              fontSize: '22px', background: 'none', border: 'none', cursor: 'pointer',
+                              padding: '4px 8px', borderRadius: '8px', lineHeight: 1,
+                              background: p.feedback === val ? 'rgba(255,255,255,0.1)' : 'transparent',
+                              transform: p.feedback === val ? 'scale(1.2)' : 'scale(1)',
+                              transition: 'all .15s',
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
