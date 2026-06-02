@@ -5,26 +5,10 @@ export default function Register() {
   const [form, setForm] = useState({
     nombre: '', fechaNacimiento: '', telefono: '', email: '', password: '', confirmPassword: ''
   })
-  const [certFile, setCertFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
-  function handleFile(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    const validTypes = ['image/jpeg', 'image/jpg', 'application/pdf']
-    if (!validTypes.includes(file.type)) {
-      setError('El certificado debe ser JPG o PDF')
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('El archivo no puede superar 10MB')
-      return
-    }
-    setError('')
-    setCertFile(file)
-  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -81,26 +65,11 @@ export default function Register() {
       return
     }
 
-    // 2. Subir certificado si fue cargado
-    let certificadoUrl = null
-    if (certFile) {
-      const ext = certFile.name.split('.').pop().toLowerCase()
-      const path = `${userId}/certificado.${ext}`
-      const { error: uploadError } = await supabase.storage
-        .from('certificados')
-        .upload(path, certFile, { upsert: true })
-      if (!uploadError) {
-        certificadoUrl = path
-      }
-    }
-
-    // 3. Actualizar perfil con datos adicionales
+    // 2. Actualizar perfil con datos adicionales
     await supabase.from('profiles').update({
       nombre: form.nombre,
       fecha_nacimiento: form.fechaNacimiento || null,
       telefono: form.telefono || null,
-      certificado_url: certificadoUrl,
-      certificado_fecha: certificadoUrl ? new Date().toISOString().split('T')[0] : null,
     }).eq('id', userId)
 
     // 4. Cerrar sesión para que ingresen manualmente
@@ -197,19 +166,6 @@ export default function Register() {
               placeholder="Repetí la contraseña"
               required
             />
-          </div>
-
-          <div className="field" style={{ marginBottom: '20px' }}>
-            <label>Certificado médico (JPG o PDF)</label>
-            <label className="file-upload-label">
-              <input type="file" accept=".jpg,.jpeg,.pdf" onChange={handleFile} style={{ display: 'none' }} />
-              <span className="file-upload-btn">
-                {certFile ? `✅ ${certFile.name}` : '📎 Seleccionar archivo'}
-              </span>
-            </label>
-            <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-              Válido para el año en curso · Máx. 10MB
-            </span>
           </div>
 
           {error && <div className="error-msg" style={{ marginBottom: '12px' }}>{error}</div>}

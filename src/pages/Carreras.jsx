@@ -4,11 +4,12 @@ import { useAuth } from '../lib/auth'
 import { formatFecha } from '../lib/utils'
 
 const EMPTY = { nombre: '', fecha: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
-const ESTADOS = ['Inscripto', 'No voy', 'Tal vez']
+const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera']
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
   'No voy': '#f87171',
   'Tal vez': '#fbbf24',
+  'Lista de espera': '#60a5fa',
   'Pendiente': '#64748b',
 }
 const TIPO_COLOR = {
@@ -111,7 +112,7 @@ export default function Carreras() {
   async function updateEstado(carreraId, estado) {
     const distanciaElegida = distanciasSeleccionadas[carreraId] || null
     await supabase.from('participaciones')
-      .update({ estado, distancia_elegida: distanciaElegida })
+      .update({ estado, distancia_elegida: distanciaElegida, updated_at: new Date().toISOString() })
       .eq('carrera_id', carreraId)
       .eq('user_id', user.id)
     setParticipaciones(prev => {
