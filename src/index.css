@@ -38,6 +38,14 @@ body {
   position: sticky; top: 0; z-index: 50;
 }
 .topbar-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; }
+.topbar-social { display: flex; align-items: center; gap: 4px; }
+.social-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2); text-decoration: none;
+  transition: color .15s, background .15s;
+}
+.social-btn:hover { color: var(--text); background: var(--bg3); }
 .main-content { flex: 1; overflow-y: auto; padding-bottom: calc(var(--nav-h) + 8px); }
 .bottom-nav {
   height: var(--nav-h);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
-const thisYear = new Date().getFullYear() + 1 // TEMP: para probar alerta de vencimiento
+const thisYear = new Date().getFullYear()
 
 export default function MiPerfil() {
   const { user, profile } = useAuth()
