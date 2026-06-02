@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFecha } from '../lib/utils'
+import { formatFechaHora } from '../lib/utils'
 
-const EMPTY = { nombre: '', fecha: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
+const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
 const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera']
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
@@ -56,6 +56,7 @@ export default function Carreras() {
     const payload = {
       nombre: form.nombre,
       fecha: form.fecha || null,
+      hora: form.hora || null,
       lugar: form.lugar || null,
       link: form.link || null,
       codigo: form.codigo || null,
@@ -79,6 +80,7 @@ export default function Carreras() {
     setForm({
       nombre: c.nombre,
       fecha: c.fecha || '',
+      hora: c.hora || '',
       distancias: c.distancias?.length ? c.distancias.join(', ') : (c.distancia || ''),
       lugar: c.lugar || '',
       link: c.link || '',
@@ -167,6 +169,10 @@ export default function Carreras() {
             <div className="field">
               <label>Fecha</label>
               <input type="date" value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>Hora</label>
+              <input type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} />
             </div>
             <div className="field">
               <label>Distancia(s)</label>
@@ -278,6 +284,10 @@ export default function Carreras() {
                     <input type="date" value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} />
                   </div>
                   <div className="field">
+                    <label>Hora</label>
+                    <input type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} />
+                  </div>
+                  <div className="field">
                     <label>Distancia(s)</label>
                     <input value={form.distancias} onChange={e => setForm({ ...form, distancias: e.target.value })} placeholder="5K, 10K" />
                     <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Separar con comas si hay varias</span>
@@ -332,7 +342,7 @@ export default function Carreras() {
                     )}
                   </div>
                   <div className="race-meta">
-                    {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
+                    {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
                     {dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
                     {c.lugar && <span className="tag">📍 {c.lugar}</span>}
                     {c.codigo && (() => {
