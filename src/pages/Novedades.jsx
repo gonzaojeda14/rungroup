@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import PageLoader from '../components/PageLoader'
 
+
 function tiempoAtras(fecha) {
   const diff = Math.floor((new Date() - new Date(fecha)) / (1000 * 60))
   if (diff < 60) return `hace ${diff} min`
@@ -12,7 +13,7 @@ function tiempoAtras(fecha) {
 }
 
 export default function Novedades() {
-  const { isAdmin, user } = useAuth()
+  const { isAdmin, user, marcarAvisosLeidos } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -24,7 +25,10 @@ export default function Novedades() {
   const [saving, setSaving] = useState(false)
   const [verAnteriores, setVerAnteriores] = useState(false)
 
-  useEffect(() => { fetchNovedades() }, [])
+  useEffect(() => {
+    fetchNovedades()
+    marcarAvisosLeidos()
+  }, [])
 
   async function fetchNovedades() {
     const { data } = await supabase

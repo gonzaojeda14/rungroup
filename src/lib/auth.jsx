@@ -70,8 +70,14 @@ export function AuthProvider({ children }) {
 
   const isAdmin = profile?.role === 'admin'
 
+  async function marcarAvisosLeidos() {
+    const ahora = new Date().toISOString()
+    await supabase.from('profiles').update({ avisos_leido_hasta: ahora }).eq('id', profile?.id)
+    setProfile(prev => ({ ...prev, avisos_leido_hasta: ahora }))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, signIn, signOut, marcarAvisosLeidos }}>
       {children}
     </AuthContext.Provider>
   )
