@@ -1,3 +1,4 @@
+import PageLoader from '../components/PageLoader'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -70,7 +71,7 @@ export default function Corredores() {
     )
   }
 
-  if (loading) return <div className="page-loading">Cargando...</div>
+  if (loading) return <PageLoader />
 
   return (
     <div className="page">

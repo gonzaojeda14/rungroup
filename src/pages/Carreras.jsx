@@ -1,3 +1,4 @@
+import PageLoader from '../components/PageLoader'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -143,7 +144,7 @@ export default function Carreras() {
     return true
   })
 
-  if (loading) return <div className="page-loading">Cargando...</div>
+  if (loading) return <PageLoader />
 
   return (
     <div className="page" style={{ position: 'relative' }}>
@@ -398,48 +399,4 @@ export default function Carreras() {
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
-
-              <div className="race-estado-section">
-                <div className="race-estado-label">
-                  Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
-                  {distSeleccionada && <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
-                </div>
-                {multiDist && !distSeleccionada ? (
-                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Elegí una distancia para marcar tu estado</p>
-                ) : (
-                  <div className="estado-buttons">
-                    {ESTADOS.map(e => (
-                      <button
-                        key={e}
-                        className={`estado-btn ${estado === e ? 'active' : ''}`}
-                        style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
-                        onClick={() => updateEstado(c.id, e)}
-                      >
-                        {e}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-          fontSize: '13px', fontWeight: 500, zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease',
-        }}>
-          ✅ {toast}
-        </div>
-      )}
-    </div>
-  )
-}
+             

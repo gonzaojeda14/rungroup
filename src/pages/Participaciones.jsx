@@ -1,3 +1,4 @@
+import PageLoader from '../components/PageLoader'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -35,7 +36,8 @@ export default function Participaciones() {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtro, setFiltro] = useState('proximas') // proximas | todas
+  const [filtro, setFiltro] = useState('proximas')
+  const [mesActivo, setMesActivo] = useState(null)
 
   useEffect(() => { fetchMisCarreras() }, [])
 
@@ -58,20 +60,43 @@ export default function Participaciones() {
   const hoy = new Date().toISOString().split('T')[0]
 
   const filtradas = items.filter(p => {
-    if (filtro === 'proximas') return !p.carrera?.fecha || p.carrera.fecha >= hoy
+    if (filtro === 'proximas' && p.carrera?.fecha && p.carrera.fecha < hoy) return false
     return true
   })
 
+  // Calcular meses disponibles
+  const mesesDisponibles = []
+  const mesesVistos = new Set()
+  filtradas.forEach(p => {
+    const fecha = p.carrera?.fecha
+    if (!fecha) return
+    const d = new Date(fecha + 'T00:00:00')
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    if (!mesesVistos.has(key)) {
+      mesesVistos.add(key)
+      mesesDisponibles.push({ key, label: `${MESES[d.getMonth()].slice(0,3)} ${d.getFullYear()}` })
+    }
+  })
+
+  // Filtrar por mes activo
+  const porFiltroMes = mesActivo
+    ? filtradas.filter(p => {
+        if (!p.carrera?.fecha) return false
+        const d = new Date(p.carrera.fecha + 'T00:00:00')
+        return `${d.getFullYear()}-${d.getMonth()}` === mesActivo
+      })
+    : filtradas
+
   // Agrupar por mes
   const porMes = {}
-  filtradas.forEach(p => {
+  porFiltroMes.forEach(p => {
     const fecha = p.carrera?.fecha
     const key = fecha ? `${new Date(fecha + 'T00:00:00').getFullYear()}-${new Date(fecha + 'T00:00:00').getMonth()}` : 'sin-fecha'
     if (!porMes[key]) porMes[key] = { label: fecha ? `${MESES[new Date(fecha + 'T00:00:00').getMonth()]} ${new Date(fecha + 'T00:00:00').getFullYear()}` : 'Sin fecha', items: [] }
     porMes[key].items.push(p)
   })
 
-  if (loading) return <div className="page-loading">Cargando...</div>
+  if (loading) return <PageLoader />
 
   return (
     <div className="page">
@@ -84,7 +109,18 @@ export default function Participaciones() {
         </div>
       </div>
 
-      {filtradas.length === 0 && (
+      {mesesDisponibles.length > 1 && (
+        <div className="filtros-bar" style={{ marginBottom: '12px' }}>
+          <div className="filtro-group">
+            <button className={`filtro-btn ${!mesActivo ? 'active' : ''}`} onClick={() => setMesActivo(null)}>Todos</button>
+            {mesesDisponibles.map(m => (
+              <button key={m.key} className={`filtro-btn ${mesActivo === m.key ? 'active' : ''}`} onClick={() => setMesActivo(m.key)}>{m.label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {porFiltroMes.length === 0 && (
         <div className="empty-state">
           {filtro === 'proximas' ? 'No tenés carreras próximas marcadas' : 'No tenés carreras marcadas todavía'}
         </div>
@@ -123,36 +159,4 @@ export default function Participaciones() {
                         {p.carrera?.fecha && (
                           <span className="tag">📅 {formatFechaHora(p.carrera.fecha, p.carrera.hora)}</span>
                         )}
-                        {(p.distancia_elegida || p.carrera?.distancia) && (
-                          <span className="tag">📏 {p.distancia_elegida || p.carrera?.distancia}</span>
-                        )}
-                        {p.carrera?.lugar && <span className="tag">📍 {p.carrera.lugar}</span>}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
-                      <span className="badge" style={{ background: ESTADO_COLOR[p.estado] + '22', color: ESTADO_COLOR[p.estado] }}>
-                        {p.estado}
-                      </span>
-                      {dias !== null && (
-                        <span style={{ fontSize: '11px', color: urgente ? '#fbbf24' : '#64748b', fontWeight: urgente ? 600 : 400 }}>
-                          {labelDias(dias)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {p.carrera?.link && !pasada && (
-                    <a href={p.carrera.link} target="_blank" rel="noopener noreferrer" className="race-link" style={{ marginTop: '8px', display: 'inline-block' }}>
-                      Ver inscripción →
-                    </a>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
+                        {(p.distanci

@@ -74,7 +74,16 @@ body {
   animation: pulse 1.2s ease-in-out infinite;
 }
 @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
-.page-loading { padding: 48px 16px; text-align: center; color: var(--text2); }
+.page-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 64px 16px; gap: 16px;
+  animation: fadeIn .25s ease;
+}
+.page-loading img { opacity: 0.7; animation: pulse 1.2s ease-in-out infinite; }
+
+/* Page fade-in */
+.page { animation: pageFadeIn .2s ease; }
+@keyframes pageFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* PAGES */
 .page { padding: 16px; max-width: 640px; margin: 0 auto; }

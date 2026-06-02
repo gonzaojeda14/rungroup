@@ -1,3 +1,4 @@
+import PageLoader from '../components/PageLoader'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -216,7 +217,7 @@ export default function Ventas() {
   const misVentas = ventas.filter(v => v.vendedor_id === user.id)
   const ventasOtros = ventas.filter(v => v.vendedor_id !== user.id && v.estado === 'disponible')
 
-  if (loading) return <div className="page-loading">Cargando...</div>
+  if (loading) return <PageLoader />
 
   return (
     <div className="page">

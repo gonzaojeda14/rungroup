@@ -1,3 +1,4 @@
+import PageLoader from '../components/PageLoader'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/utils'
@@ -36,6 +37,7 @@ function StatsRow({ counts, total }) {
 export default function Resumen() {
   const [carreras, setCarreras] = useState([])
   const [loading, setLoading] = useState(true)
+  const [carreraFiltro, setCarreraFiltro] = useState('todas')
 
   useEffect(() => { fetchResumen() }, [])
 
@@ -70,13 +72,25 @@ export default function Resumen() {
     setLoading(false)
   }
 
-  if (loading) return <div className="page-loading">Cargando...</div>
+  if (loading) return <PageLoader />
 
   return (
     <div className="page">
-      <div className="page-header"><h2>Resumen</h2></div>
+      <div className="page-header">
+        <h2>Resumen</h2>
+        {carreras.length > 1 && (
+          <select
+            value={carreraFiltro}
+            onChange={e => setCarreraFiltro(e.target.value)}
+            style={{ height: 34, fontSize: 13, padding: '0 10px', borderRadius: 8, maxWidth: 180 }}
+          >
+            <option value="todas">Todas</option>
+            {carreras.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        )}
+      </div>
       {carreras.length === 0 && <div className="empty-state">No hay datos todavía</div>}
-      {carreras.map(c => (
+      {carreras.filter(c => carreraFiltro === 'todas' || c.id === carreraFiltro).map(c => (
         <div key={c.id} className="card summary-card">
           <div className="summary-header">
             <div>

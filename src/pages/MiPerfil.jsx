@@ -1,3 +1,4 @@
+import PageLoader from '../components/PageLoader'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -134,7 +135,7 @@ export default function MiPerfil() {
   const certAnio = certInfo.fecha ? new Date(certInfo.fecha).getFullYear() : null
   const certVencido = certAnio !== null && certAnio < thisYear
 
-  if (loading) return <div className="page-loading">Cargando...</div>
+  if (loading) return <PageLoader />
 
   return (
     <div className="page">
