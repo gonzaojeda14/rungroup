@@ -99,6 +99,18 @@ export default function Carreras() {
     fetchAll()
   }
 
+  async function updateDistancia(carreraId, distancia) {
+    setDistanciasSeleccionadas(prev => ({ ...prev, [carreraId]: distancia }))
+    const part = participaciones.find(p => p.carrera_id === carreraId)
+    if (part) {
+      await supabase.from('participaciones')
+        .upsert(
+          { carrera_id: carreraId, user_id: user.id, estado: part.estado, distancia_elegida: distancia },
+          { onConflict: 'carrera_id,user_id' }
+        )
+    }
+  }
+
   async function updateEstado(carreraId, estado) {
     const distanciaElegida = distanciasSeleccionadas[carreraId] || null
     await supabase.from('participaciones')
@@ -342,8 +354,11 @@ export default function Carreras() {
                     {dists.map(d => (
                       <button
                         key={d}
-                        className={`filtro-btn ${distSeleccionada === d ? 'active' : ''}`}
-                        onClick={() => setDistanciasSeleccionadas(prev => ({ ...prev, [c.id]: d }))}
+                        className="filtro-btn"
+                        style={distSeleccionada === d
+                          ? { background: 'rgba(255,45,45,0.2)', color: '#ff2d2d', border: '1px solid rgba(255,45,45,0.4)', fontWeight: 600 }
+                          : {}}
+                        onClick={() => updateDistancia(c.id, d)}
                       >
                         {d}
                       </button>
@@ -355,22 +370,24 @@ export default function Carreras() {
               <div className="race-estado-section">
                 <div className="race-estado-label">
                   Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
-                  {distSeleccionada && estado === 'Inscripto' && (
-                    <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>
-                  )}
+                  {distSeleccionada && <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
                 </div>
-                <div className="estado-buttons">
-                  {ESTADOS.map(e => (
-                    <button
-                      key={e}
-                      className={`estado-btn ${estado === e ? 'active' : ''}`}
-                      style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
-                      onClick={() => updateEstado(c.id, e)}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
+                {multiDist && !distSeleccionada ? (
+                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Elegí una distancia para marcar tu estado</p>
+                ) : (
+                  <div className="estado-buttons">
+                    {ESTADOS.map(e => (
+                      <button
+                        key={e}
+                        className={`estado-btn ${estado === e ? 'active' : ''}`}
+                        style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
+                        onClick={() => updateEstado(c.id, e)}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )

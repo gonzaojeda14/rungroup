@@ -60,13 +60,7 @@ export default function Resumen() {
           ESTADOS.forEach(e => c2[e] = psDist.filter(p => p.estado === e).length)
           return { distancia: d, counts: c2, total: psDist.length }
         })
-        // Los que no eligieron distancia
-        const sinDist = ps.filter(p => !p.distancia_elegida)
-        if (sinDist.length > 0) {
-          const c2 = {}
-          ESTADOS.forEach(e => c2[e] = sinDist.filter(p => p.estado === e).length)
-          porDistancia.push({ distancia: 'Sin elegir', counts: c2, total: sinDist.length })
-        }
+        // Ignorar los que no eligieron distancia en el desglose
       }
 
       return { ...c, counts, total: ps.length, dists, multiDist, porDistancia }
