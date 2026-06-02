@@ -38,13 +38,15 @@ export default function Participaciones() {
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState('proximas')
   const [mesActivo, setMesActivo] = useState(null)
+  const [toast, setToast] = useState('')
+  const [notas, setNotas] = useState({}) // { carreraId: texto }
 
   useEffect(() => { fetchMisCarreras() }, [])
 
   async function fetchMisCarreras() {
     const { data: parts } = await supabase
       .from('participaciones')
-      .select('estado, distancia_elegida, feedback, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
+      .select('estado, distancia_elegida, feedback, feedback_nota, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
       .eq('user_id', user.id)
       .neq('estado', 'Pendiente')
 
@@ -58,13 +60,26 @@ export default function Participaciones() {
   }
 
   async function handleFeedback(carreraId, valor) {
+    const nota = notas[carreraId] || null
     await supabase.from('participaciones')
-      .update({ feedback: valor })
+      .update({ feedback: valor, feedback_nota: nota })
       .eq('carrera_id', carreraId)
       .eq('user_id', user.id)
     setItems(prev => prev.map(p =>
-      p.carrera?.id === carreraId ? { ...p, feedback: valor } : p
+      p.carrera?.id === carreraId ? { ...p, feedback: valor, feedback_nota: nota } : p
     ))
+    if (valor === 'excelente') {
+      setToast('¡Vamos por más! 🔥')
+      setTimeout(() => setToast(''), 2500)
+    }
+  }
+
+  async function handleNota(carreraId, texto) {
+    setNotas(prev => ({ ...prev, [carreraId]: texto }))
+    await supabase.from('participaciones')
+      .update({ feedback_nota: texto })
+      .eq('carrera_id', carreraId)
+      .eq('user_id', user.id)
   }
 
   const hoy = new Date().toISOString().split('T')[0]
@@ -197,18 +212,18 @@ export default function Participaciones() {
                   {pasada && p.estado === 'Inscripto' && (
                     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
                       <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
-                        {p.feedback ? '¿Cómo estuvo?' : '¿Cómo estuvo la carrera?'}
+                        ¿Cómo estuvo la carrera?
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        {[['excelente','😍'],['regular','😐'],['mal','😞']].map(([val, emoji]) => (
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                                {[['excelente','😍'],['regular','😐'],['mal','😞']].map(([val, emoji]) => (
                           <button
                             key={val}
                             onClick={() => handleFeedback(p.carrera.id, val)}
                             style={{
-                              fontSize: '22px', background: 'none', border: 'none', cursor: 'pointer',
+                              fontSize: '22px', border: 'none', cursor: 'pointer',
                               padding: '4px 8px', borderRadius: '8px', lineHeight: 1,
-                              background: p.feedback === val ? 'rgba(255,255,255,0.1)' : 'transparent',
-                              transform: p.feedback === val ? 'scale(1.2)' : 'scale(1)',
+                              background: p.feedback === val ? 'rgba(255,255,255,0.12)' : 'transparent',
+                              transform: p.feedback === val ? 'scale(1.25)' : 'scale(1)',
                               transition: 'all .15s',
                             }}
                           >
@@ -216,6 +231,19 @@ export default function Participaciones() {
                           </button>
                         ))}
                       </div>
+                      {(p.feedback === 'mal' || p.feedback === 'regular') && (
+                        <textarea
+                          placeholder="¿Qué pasó? (opcional)"
+                          defaultValue={p.feedback_nota || ''}
+                          onBlur={e => handleNota(p.carrera.id, e.target.value)}
+                          style={{
+                            width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
+                            borderRadius: '8px', color: 'var(--text)', padding: '8px 12px',
+                            fontSize: '13px', resize: 'none', minHeight: '60px',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -224,6 +252,19 @@ export default function Participaciones() {
           </div>
         </div>
       ))}
+
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
+          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
+          fontSize: '13px', fontWeight: 500, zIndex: 999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          animation: 'fadeIn .2s ease', whiteSpace: 'nowrap',
+        }}>
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

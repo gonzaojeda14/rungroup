@@ -43,7 +43,13 @@ export default function Resumen() {
 
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')
-    const { data: parts } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, user_id, profiles(nombre)')
+    const { data: partsRaw } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id')
+    const userIds = [...new Set((partsRaw || []).map(p => p.user_id))]
+    const { data: perfiles } = userIds.length
+      ? await supabase.from('profiles').select('id, nombre').in('id', userIds)
+      : { data: [] }
+    const perfilesMap = Object.fromEntries((perfiles || []).map(p => [p.id, p]))
+    const parts = (partsRaw || []).map(p => ({ ...p, profiles: perfilesMap[p.user_id] || null }))
 
     const enriched = (cars || []).map(c => {
       const ps = (parts || []).filter(p => p.carrera_id === c.id)
@@ -70,8 +76,8 @@ export default function Resumen() {
       const feedbacks = ps.filter(p => p.feedback)
       const porFeedback = {
         excelente: feedbacks.filter(p => p.feedback === 'excelente'),
-        regular: feedbacks.filter(p => p.feedback === 'regular'),
-        mal: feedbacks.filter(p => p.feedback === 'mal'),
+        regular: feedbacks.filter(p => p.feedback === 'regular').map(p => ({ ...p, nombre: p.profiles?.nombre })),
+        mal: feedbacks.filter(p => p.feedback === 'mal').map(p => ({ ...p, nombre: p.profiles?.nombre })),
       }
 
       return { ...c, counts, total: ps.length, dists, multiDist, porDistancia, feedbacks, porFeedback }
@@ -145,12 +151,21 @@ export default function Resumen() {
                   )
                 ))}
               </div>
-              {c.porFeedback.mal.length > 0 && (
-                <div style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', padding: '8px 12px' }}>
-                  <div style={{ fontSize: '11px', color: '#f87171', fontWeight: 600, marginBottom: '6px' }}>😞 Hablar con:</div>
-                  {c.porFeedback.mal.map((p, i) => (
-                    <div key={i} style={{ fontSize: '12px', color: '#94a3b8' }}>• {p.profiles?.nombre || '—'}</div>
-                  ))}
+              {(c.porFeedback.mal.length > 0 || c.porFeedback.regular.length > 0) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                  {[['mal', '😞', '#f87171'], ['regular', '😐', '#fbbf24']].map(([key, emoji, color]) =>
+                    c.porFeedback[key].length > 0 && (
+                      <div key={key} style={{ background: color + '11', border: `1px solid ${color}33`, borderRadius: '8px', padding: '8px 12px' }}>
+                        <div style={{ fontSize: '11px', color, fontWeight: 600, marginBottom: '6px' }}>{emoji} Hablar con:</div>
+                        {c.porFeedback[key].map((p, i) => (
+                          <div key={i} style={{ fontSize: '12px', color: '#94a3b8', marginBottom: p.feedback_nota ? '2px' : '0' }}>
+                            • {p.nombre || '—'}
+                            {p.feedback_nota && <span style={{ color: '#64748b' }}> — "{p.feedback_nota}"</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </div>
