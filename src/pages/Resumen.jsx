@@ -93,15 +93,18 @@ export default function Resumen() {
           </div>
 
           {c.multiDist ? (
-            c.porDistancia.map((pd, i) => (
-              <div key={pd.distancia} style={i > 0 ? { marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' } : {}}>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>📏 {pd.distancia}</span>
-                  <span>{pd.total} corredores</span>
+            <>
+              <StatsRow counts={c.counts} total={c.total} />
+              {c.porDistancia.filter(pd => pd.total > 0).map((pd, i) => (
+                <div key={pd.distancia} style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>📏 {pd.distancia}</span>
+                    <span>{pd.total} eligieron</span>
+                  </div>
+                  <StatsRow counts={pd.counts} total={pd.total} />
                 </div>
-                <StatsRow counts={pd.counts} total={pd.total} />
-              </div>
-            ))
+              ))}
+            </>
           ) : (
             <StatsRow counts={c.counts} total={c.total} />
           )}

@@ -101,23 +101,18 @@ export default function Carreras() {
 
   async function updateDistancia(carreraId, distancia) {
     setDistanciasSeleccionadas(prev => ({ ...prev, [carreraId]: distancia }))
-    const part = participaciones.find(p => p.carrera_id === carreraId)
-    if (part) {
-      await supabase.from('participaciones')
-        .upsert(
-          { carrera_id: carreraId, user_id: user.id, estado: part.estado, distancia_elegida: distancia },
-          { onConflict: 'carrera_id,user_id' }
-        )
-    }
+    await supabase.from('participaciones')
+      .update({ distancia_elegida: distancia })
+      .eq('carrera_id', carreraId)
+      .eq('user_id', user.id)
   }
 
   async function updateEstado(carreraId, estado) {
     const distanciaElegida = distanciasSeleccionadas[carreraId] || null
     await supabase.from('participaciones')
-      .upsert(
-        { carrera_id: carreraId, user_id: user.id, estado, distancia_elegida: distanciaElegida },
-        { onConflict: 'carrera_id,user_id' }
-      )
+      .update({ estado, distancia_elegida: distanciaElegida })
+      .eq('carrera_id', carreraId)
+      .eq('user_id', user.id)
     setParticipaciones(prev => {
       const exists = prev.find(p => p.carrera_id === carreraId)
       if (exists) return prev.map(p => p.carrera_id === carreraId ? { ...p, estado } : p)
