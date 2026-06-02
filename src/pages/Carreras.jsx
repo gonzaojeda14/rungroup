@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { formatFecha } from '../lib/utils'
 
 const EMPTY = { nombre: '', fecha: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
 const ESTADOS = ['Inscripto', 'No voy', 'Tal vez']
@@ -329,7 +330,7 @@ export default function Carreras() {
                     )}
                   </div>
                   <div className="race-meta">
-                    {c.fecha && <span className="tag">📅 {c.fecha}</span>}
+                    {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
                     {dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
                     {c.lugar && <span className="tag">📍 {c.lugar}</span>}
                     {c.codigo && <span className="tag code-tag">🎟 {c.codigo}</span>}

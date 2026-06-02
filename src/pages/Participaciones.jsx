@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { formatFecha } from '../lib/utils'
 
 const ESTADO_COLOR = {
   'Inscripto': '#ff2d2d',
@@ -66,7 +67,7 @@ export default function Participaciones() {
             <label>Carrera</label>
             <select value={carreraId} onChange={e => setCarreraId(e.target.value)}>
               {carreras.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre}{c.fecha ? ` — ${c.fecha}` : ''}</option>
+                <option key={c.id} value={c.id}>{c.nombre}{c.fecha ? ` — ${formatFecha(c.fecha)}` : ''}</option>
               ))}
             </select>
           </div>

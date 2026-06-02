@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/utils'
 
 const ESTADOS = ['Inscripto', 'Tal vez', 'Lista de espera', 'No voy', 'Pendiente']
 const COLORS = { 'Inscripto': '#4ade80', 'Tal vez': '#fbbf24', 'Lista de espera': '#60a5fa', 'No voy': '#f87171', 'Pendiente': '#94a3b8' }
@@ -87,7 +88,7 @@ export default function Resumen() {
                   </span>
                 )}
               </div>
-              {c.fecha && <span className="tag">📅 {c.fecha}</span>}
+              {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
             </div>
             <span className="summary-total">{c.total} corredores</span>
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { formatFecha } from '../lib/utils'
 
 const thisYear = new Date().getFullYear()
 
@@ -227,7 +228,7 @@ export default function MiPerfil() {
         {certInfo.url && !certVencido && (
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
-              Subido el {certInfo.fecha} · Válido hasta el 31/12/{certAnio}
+              Subido el {formatFecha(certInfo.fecha)} · Válido hasta el 31/12/{certAnio}
             </div>
             <button onClick={verCertificado} className="race-link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}>
               Ver certificado →

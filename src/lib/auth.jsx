@@ -8,18 +8,49 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const INACTIVITY_DAYS = 30
+  const LAST_ACTIVE_KEY = 'flama_last_active'
+
+  function updateLastActive() {
+    localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString())
+  }
+
+  function isInactive() {
+    const last = localStorage.getItem(LAST_ACTIVE_KEY)
+    if (!last) return false
+    const days = (Date.now() - parseInt(last)) / (1000 * 60 * 60 * 24)
+    return days > INACTIVITY_DAYS
+  }
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user && isInactive()) {
+        localStorage.removeItem(LAST_ACTIVE_KEY)
+        await supabase.auth.signOut()
+        setLoading(false)
+        return
+      }
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) { updateLastActive(); fetchProfile(session.user.id) }
       else setLoading(false)
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) { updateLastActive(); fetchProfile(session.user.id) }
       else { setProfile(null); setLoading(false) }
     })
-    return () => subscription.unsubscribe()
+
+    // Actualizar timestamp cada vez que el usuario interactúa
+    const handleActivity = () => updateLastActive()
+    window.addEventListener('pointerdown', handleActivity)
+    window.addEventListener('keydown', handleActivity)
+
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('pointerdown', handleActivity)
+      window.removeEventListener('keydown', handleActivity)
+    }
   }, [])
 
   async function fetchProfile(userId) {
