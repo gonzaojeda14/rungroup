@@ -3,13 +3,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f172a;
-  --bg2: #1e293b;
-  --bg3: #334155;
+  --bg: #0a0a0a;
+  --bg2: #141414;
+  --bg3: #1f1f1f;
   --text: #f1f5f9;
   --text2: #94a3b8;
-  --accent: #e8ff47;
-  --accent-dark: #0f172a;
+  --accent: #ff2d2d;
+  --accent-dark: #ffffff;
   --border: rgba(255,255,255,0.08);
   --radius: 14px;
   --nav-h: 64px;
@@ -96,7 +96,7 @@ body {
   background: var(--bg3); border-radius: 6px;
   padding: 2px 8px;
 }
-.code-tag { color: var(--accent); background: rgba(232,255,71,0.1); font-family: 'DM Mono', monospace; }
+.code-tag { color: var(--accent); background: rgba(255,45,45,0.1); font-family: 'DM Mono', monospace; }
 .race-link { display: inline-block; margin-top: 10px; font-size: 13px; color: var(--accent); text-decoration: none; }
 .race-link:hover { text-decoration: underline; }
 .race-estado-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
@@ -165,7 +165,7 @@ input, select {
   width: 100%; transition: border-color .15s;
 }
 input::placeholder { color: var(--text2); }
-input:focus, select:focus { outline: none; border-color: rgba(232,255,71,0.4); }
+input:focus, select:focus { outline: none; border-color: rgba(255,45,45,0.4); }
 select option { background: var(--bg2); }
 .form-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
 

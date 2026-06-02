@@ -21,12 +21,12 @@ export default function Login() {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="login-logo">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <circle cx="18" cy="18" r="18" fill="#e8ff47"/>
-            <path d="M11 22 L15 14 L18 19 L21 12 L25 22" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+          <svg height="40" viewBox="0 0 140 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="28" fontFamily="Arial Black, Arial, sans-serif" fontWeight="900" fontSize="30" fill="white" letterSpacing="-0.5">FLAMA</text>
+            <text x="2" y="39" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="10" fill="#94a3b8" letterSpacing="4">RUN</text>
           </svg>
         </div>
-        <h1>RunGroup</h1>
+        <h1 style={{ display: 'none' }}>Flama Run</h1>
         <p className="login-sub">Tu grupo. Tus carreras.</p>
         <form onSubmit={handleSubmit}>
           <div className="field">

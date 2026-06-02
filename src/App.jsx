@@ -11,10 +11,7 @@ function Shell() {
 
   if (loading) return (
     <div className="splash">
-      <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="18" r="18" fill="#e8ff47"/>
-        <path d="M11 22 L15 14 L18 19 L21 12 L25 22" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      </svg>
+      <FlamaLogo height={36} />
     </div>
   )
 
@@ -24,11 +21,7 @@ function Shell() {
     <div className="shell">
       <header className="topbar">
         <div className="topbar-logo">
-          <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
-            <circle cx="18" cy="18" r="18" fill="#e8ff47"/>
-            <path d="M11 22 L15 14 L18 19 L21 12 L25 22" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-          </svg>
-          <span>RunGroup</span>
+          <FlamaLogo height={28} />
         </div>
         <button className="btn-ghost" onClick={signOut}>Salir</button>
       </header>
@@ -64,6 +57,15 @@ function Shell() {
         )}
       </nav>
     </div>
+  )
+}
+
+function FlamaLogo({ height = 32 }) {
+  return (
+    <svg height={height} viewBox="0 0 120 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="24" fontFamily="Arial Black, Arial, sans-serif" fontWeight="900" fontSize="26" fill="white" letterSpacing="-0.5">FLAMA</text>
+      <text x="2" y="34" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="9" fill="#94a3b8" letterSpacing="3">RUN</text>
+    </svg>
   )
 }
 
