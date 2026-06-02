@@ -20,6 +20,7 @@ const today = new Date().toISOString().split('T')[0]
 
 export default function Carreras() {
   const { isAdmin, user } = useAuth()
+  const [toast, setToast] = useState('')
   const [carreras, setCarreras] = useState([])
   const [participaciones, setParticipaciones] = useState([])
   const [distanciasSeleccionadas, setDistanciasSeleccionadas] = useState({})
@@ -143,7 +144,7 @@ export default function Carreras() {
   if (loading) return <div className="page-loading">Cargando...</div>
 
   return (
-    <div className="page">
+    <div className="page" style={{ position: 'relative' }}>
       <div className="page-header">
         <h2>Carreras</h2>
         {isAdmin && (
@@ -334,19 +335,26 @@ export default function Carreras() {
                     {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
                     {dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
                     {c.lugar && <span className="tag">📍 {c.lugar}</span>}
-                    {c.codigo && (
-                      <span
-                        className="tag code-tag"
-                        style={{ cursor: 'pointer', userSelect: 'none' }}
-                        title="Copiar código"
-                        onClick={() => {
-                          navigator.clipboard.writeText(c.codigo)
-                          alert(`Código "${c.codigo}" copiado`)
-                        }}
-                      >
-                        🎟 {c.codigo} 📋
-                      </span>
-                    )}
+                    {c.codigo && (() => {
+                      const esCupon = /^\S+$/.test(c.codigo.trim())
+                      return esCupon ? (
+                        <span
+                          className="tag code-tag"
+                          style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                          title="Tocar para copiar"
+                          onClick={() => {
+                            navigator.clipboard.writeText(c.codigo)
+                            setToast(`Código "${c.codigo}" copiado`)
+                            setTimeout(() => setToast(''), 2500)
+                          }}
+                        >
+                          🎟 {c.codigo}
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </span>
+                      ) : (
+                        <span className="tag code-tag">🎟 {c.codigo}</span>
+                      )
+                    })()}
                   </div>
                 </div>
                 {isAdmin && (
@@ -409,6 +417,19 @@ export default function Carreras() {
           )
         })}
       </div>
+
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
+          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
+          fontSize: '13px', fontWeight: 500, zIndex: 999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          animation: 'fadeIn .2s ease',
+        }}>
+          ✅ {toast}
+        </div>
+      )}
     </div>
   )
 }
