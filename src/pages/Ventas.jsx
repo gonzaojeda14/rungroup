@@ -44,6 +44,7 @@ export default function Ventas() {
   const [form, setForm] = useState({ carrera_id: '', precio: '', nota: '' })
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   const avanzarCola = useCallback(async (venta, rechazadoId) => {
@@ -78,24 +79,38 @@ export default function Ventas() {
   }, [])
 
   const fetchAll = useCallback(async () => {
-    const [{ data: cars }, { data: vs }] = await Promise.all([
+    const [{ data: cars }, { data: vsRaw }] = await Promise.all([
       supabase.from('carreras').select('id, nombre, fecha').order('fecha'),
       supabase.from('ventas_inscripciones')
-        .select('*, vendedor:profiles!ventas_inscripciones_vendedor_id_fkey(nombre, telefono), carrera:carreras(nombre, fecha)')
+        .select('*, carrera:carreras(nombre, fecha)')
         .in('estado', ['disponible', 'ofertada', 'contactada'])
         .order('created_at'),
     ])
+
+    // Enriquecer con datos del vendedor desde profiles
+    const vendedorIds = [...new Set((vsRaw || []).map(v => v.vendedor_id))]
+    const { data: perfiles } = vendedorIds.length
+      ? await supabase.from('profiles').select('id, nombre, telefono').in('id', vendedorIds)
+      : { data: [] }
+    const perfilesMap = Object.fromEntries((perfiles || []).map(p => [p.id, p]))
+    const vs = (vsRaw || []).map(v => ({ ...v, vendedor: perfilesMap[v.vendedor_id] || null }))
 
     setCarreras(cars || [])
     setVentas(vs || [])
 
     // Verificar si hay oferta activa para mí
-    const { data: oferta } = await supabase
+    const { data: ofertaRaw } = await supabase
       .from('ventas_inscripciones')
-      .select('*, vendedor:profiles!ventas_inscripciones_vendedor_id_fkey(nombre, telefono), carrera:carreras(nombre, fecha)')
+      .select('*, carrera:carreras(nombre, fecha)')
       .eq('ofertado_a', user.id)
       .in('estado', ['ofertada', 'contactada'])
       .maybeSingle()
+    let oferta = ofertaRaw
+    if (ofertaRaw) {
+      const { data: vendedorPerfil } = await supabase
+        .from('profiles').select('nombre, telefono').eq('id', ofertaRaw.vendedor_id).single()
+      oferta = { ...ofertaRaw, vendedor: vendedorPerfil }
+    }
 
     if (oferta && new Date(oferta.oferta_expira_at) < new Date()) {
       await avanzarCola(oferta, null)
@@ -112,6 +127,7 @@ export default function Ventas() {
   async function handlePublicar(e) {
     e.preventDefault()
     setSaving(true)
+    setError('')
     const carrera = carreras.find(c => c.id === form.carrera_id)
 
     const { data: espera } = await supabase
@@ -125,7 +141,7 @@ export default function Ventas() {
     const primero = espera?.[0] || null
     const expira = primero ? calcularExpiracion(carrera?.fecha) : null
 
-    await supabase.from('ventas_inscripciones').insert([{
+    const { error: insertError } = await supabase.from('ventas_inscripciones').insert([{
       carrera_id: form.carrera_id,
       vendedor_id: user.id,
       precio: parseFloat(form.precio) || null,
@@ -135,6 +151,12 @@ export default function Ventas() {
       oferta_expira_at: expira,
       rechazados: primero ? [primero.user_id] : [],
     }])
+
+    if (insertError) {
+      setError('Error al publicar: ' + insertError.message)
+      setSaving(false)
+      return
+    }
 
     setForm({ carrera_id: '', precio: '', nota: '' })
     setShowForm(false)
@@ -265,6 +287,7 @@ export default function Ventas() {
               <input value={form.nota} onChange={e => setForm({ ...form, nota: e.target.value })} placeholder="Con remera talle M, sin kit, etc." />
             </div>
           </div>
+          {error && <div className="error-msg" style={{ marginTop: '8px' }}>{error}</div>}
           <div className="form-actions">
             <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Publicando...' : 'Publicar'}</button>
