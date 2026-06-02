@@ -20,6 +20,7 @@ export default function Novedades() {
   const [titulo, setTitulo] = useState('')
   const [contenido, setContenido] = useState('')
   const [archivo, setArchivo] = useState(null)
+  const [programarEn, setProgramarEn] = useState('')
   const [saving, setSaving] = useState(false)
   const [verAnteriores, setVerAnteriores] = useState(false)
 
@@ -29,10 +30,16 @@ export default function Novedades() {
     const { data } = await supabase
       .from('novedades')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('publicar_en', { ascending: false, nullsFirst: true })
     setItems(data || [])
     setLoading(false)
   }
+
+  const ahora = new Date().toISOString()
+  // Admin ve todo, corredores solo los publicados
+  const itemsVisibles = isAdmin
+    ? items
+    : items.filter(i => !i.publicar_en || i.publicar_en <= ahora)
 
   async function handlePublicar(e) {
     e.preventDefault()
@@ -59,11 +66,13 @@ export default function Novedades() {
       contenido: contenido || null,
       archivo_url: archivoUrl,
       archivo_nombre: archivoNombre,
+      publicar_en: programarEn ? new Date(programarEn).toISOString() : null,
     }])
 
     setTitulo('')
     setContenido('')
     setArchivo(null)
+    setProgramarEn('')
     setShowForm(false)
     setSaving(false)
     fetchNovedades()
@@ -83,10 +92,10 @@ export default function Novedades() {
     window.open(data.signedUrl, '_blank')
   }
 
-  const planes = items.filter(i => i.tipo === 'plan')
+  const planes = itemsVisibles.filter(i => i.tipo === 'plan')
   const planesRecientes = planes.slice(0, 4)
   const planesAnteriores = planes.slice(4)
-  const anuncios = items.filter(i => i.tipo === 'anuncio')
+  const anuncios = itemsVisibles.filter(i => i.tipo === 'anuncio')
 
   if (loading) return <PageLoader />
 
@@ -155,10 +164,20 @@ export default function Novedades() {
             </>
           )}
 
+          <div className="field" style={{ marginBottom: '14px' }}>
+            <label>Programar para más tarde (opcional)</label>
+            <input
+              type="datetime-local"
+              value={programarEn}
+              onChange={e => setProgramarEn(e.target.value)}
+            />
+            {programarEn && <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Se publicará el {new Date(programarEn).toLocaleString('es-AR')}</span>}
+          </div>
+
           <div className="form-actions">
             <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Publicando...' : 'Publicar'}
+              {saving ? 'Guardando...' : programarEn ? '🕐 Programar' : 'Publicar ahora'}
             </button>
           </div>
         </form>
@@ -229,7 +248,12 @@ export default function Novedades() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: a.contenido ? '8px' : 0 }}>
                   <div>
                     {a.titulo && <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '2px' }}>{a.titulo}</div>}
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>{tiempoAtras(a.created_at)}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {isAdmin && a.publicar_en && new Date(a.publicar_en) > new Date()
+                        ? <span style={{ color: '#fbbf24' }}>🕐 Programado para {new Date(a.publicar_en).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                        : tiempoAtras(a.created_at)
+                      }
+                    </div>
                   </div>
                   {isAdmin && <button className="btn-icon danger" onClick={() => handleEliminar(a.id)}>✕</button>}
                 </div>
