@@ -70,8 +70,7 @@ export default function Register() {
         .from('certificados')
         .upload(path, certFile, { upsert: true })
       if (!uploadError) {
-        const { data: { publicUrl } } = supabase.storage.from('certificados').getPublicUrl(path)
-        certificadoUrl = publicUrl
+        certificadoUrl = path
       }
     }
 

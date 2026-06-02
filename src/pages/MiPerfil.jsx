@@ -79,16 +79,23 @@ export default function MiPerfil() {
       .upload(path, certFile, { upsert: true })
     if (uploadError) { setMsgCert('Error al subir el archivo'); setSavingCert(false); return }
 
-    const { data: { publicUrl } } = supabase.storage.from('certificados').getPublicUrl(path)
     const hoy = new Date().toISOString().split('T')[0]
     await supabase.from('profiles').update({
-      certificado_url: publicUrl,
+      certificado_url: path,
       certificado_fecha: hoy,
     }).eq('id', user.id)
-    setCertInfo({ url: publicUrl, fecha: hoy })
+    setCertInfo({ url: path, fecha: hoy })
     setCertFile(null)
     setMsgCert('✅ Certificado actualizado')
     setSavingCert(false)
+  }
+
+  async function verCertificado() {
+    const { data, error } = await supabase.storage
+      .from('certificados')
+      .createSignedUrl(certInfo.url, 60 * 60) // válida 1 hora
+    if (error || !data?.signedUrl) { alert('No se pudo abrir el certificado'); return }
+    window.open(data.signedUrl, '_blank')
   }
 
   const certAnio = certInfo.fecha ? new Date(certInfo.fecha).getFullYear() : null
@@ -150,9 +157,9 @@ export default function MiPerfil() {
             <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
               Subido el {certInfo.fecha} · Válido hasta el 31/12/{certAnio}
             </div>
-            <a href={certInfo.url} target="_blank" rel="noopener noreferrer" className="race-link">
+            <button onClick={verCertificado} className="race-link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}>
               Ver certificado →
-            </a>
+            </button>
           </div>
         )}
 
