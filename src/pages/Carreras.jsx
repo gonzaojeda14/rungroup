@@ -334,7 +334,19 @@ export default function Carreras() {
                     {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
                     {dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
                     {c.lugar && <span className="tag">📍 {c.lugar}</span>}
-                    {c.codigo && <span className="tag code-tag">🎟 {c.codigo}</span>}
+                    {c.codigo && (
+                      <span
+                        className="tag code-tag"
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        title="Copiar código"
+                        onClick={() => {
+                          navigator.clipboard.writeText(c.codigo)
+                          alert(`Código "${c.codigo}" copiado`)
+                        }}
+                      >
+                        🎟 {c.codigo} 📋
+                      </span>
+                    )}
                   </div>
                 </div>
                 {isAdmin && (
