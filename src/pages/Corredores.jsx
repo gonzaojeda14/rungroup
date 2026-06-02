@@ -20,12 +20,21 @@ export default function Corredores() {
     setLoading(false)
   }
 
+  async function handleBloquear(corredor) {
+    if (!confirm(`¿Bloquear el email de ${corredor.nombre}? No podrá volver a registrarse con ${corredor.email}.`)) return
+    const { error } = await supabase.from('emails_bloqueados').insert([{ email: corredor.email }])
+    if (error) { setMsg('Error al bloquear: ' + error.message); return }
+    setMsg(`🚫 ${corredor.email} bloqueado`)
+  }
+
   async function handleDelete(corredor) {
-    if (!confirm(`¿Eliminar a ${corredor.nombre}? Esto borrará su cuenta y todas sus participaciones.`)) return
-    // Eliminar el usuario de auth (requiere admin API — hace cascade en profiles y participaciones)
+    const bloquear = confirm(`¿Eliminar a ${corredor.nombre}?\n\nEsto borrará su cuenta y todas sus participaciones.\n\nOK = Eliminar y bloquear el email\nCancelar = Solo eliminar`)
     const { error } = await supabase.auth.admin.deleteUser(corredor.id)
     if (error) { setMsg('Error al eliminar: ' + error.message); return }
-    setMsg(`✓ ${corredor.nombre} eliminado/a`)
+    if (bloquear) {
+      await supabase.from('emails_bloqueados').insert([{ email: corredor.email }])
+    }
+    setMsg(`✓ ${corredor.nombre} eliminado/a${bloquear ? ' y email bloqueado' : ''}`)
     fetchCorredores()
   }
 
@@ -108,7 +117,10 @@ export default function Corredores() {
             </div>
             {c.role === 'admin' && <span className="badge green">Admin</span>}
             {c.role !== 'admin' && (
-              <button className="btn-icon danger" onClick={() => handleDelete(c)} title="Eliminar">✕</button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button className="btn-icon" onClick={() => handleBloquear(c)} title="Bloquear email" style={{ fontSize: '13px' }}>🚫</button>
+                <button className="btn-icon danger" onClick={() => handleDelete(c)} title="Eliminar">✕</button>
+              </div>
             )}
           </div>
         ))}

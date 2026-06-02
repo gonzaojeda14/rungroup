@@ -47,6 +47,18 @@ export default function Register() {
     }
     setSaving(true)
 
+    // 0. Verificar si el email está bloqueado
+    const { data: bloqueado } = await supabase
+      .from('emails_bloqueados')
+      .select('email')
+      .eq('email', form.email.toLowerCase())
+      .maybeSingle()
+    if (bloqueado) {
+      setError('Este email no puede registrarse en la plataforma.')
+      setSaving(false)
+      return
+    }
+
     // 1. Crear cuenta
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
