@@ -237,6 +237,41 @@ create policy "Avatares: usuario actualiza el propio"
   on storage.objects for update
   using (bucket_id = 'avatares' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+-- =============================================
+-- MIGRACIÓN: Sistema de cesión de inscripciones
+-- =============================================
+
+create table if not exists public.ventas_inscripciones (
+  id uuid default gen_random_uuid() primary key,
+  carrera_id uuid references public.carreras on delete cascade not null,
+  vendedor_id uuid references auth.users on delete cascade not null,
+  precio numeric,
+  nota text,
+  estado text not null default 'disponible'
+    check (estado in ('disponible', 'ofertada', 'contactada', 'vendida', 'cancelada')),
+  ofertado_a uuid references auth.users on delete set null,
+  oferta_expira_at timestamptz,
+  rechazados uuid[] default '{}',
+  created_at timestamptz default now()
+);
+
+alter table public.ventas_inscripciones enable row level security;
+
+-- Todos los autenticados pueden ver las activas
+create policy "Ventas: todos leen"
+  on public.ventas_inscripciones for select
+  using (auth.role() = 'authenticated');
+
+-- Solo el vendedor puede insertar
+create policy "Ventas: vendedor inserta"
+  on public.ventas_inscripciones for insert
+  with check (auth.uid() = vendedor_id);
+
+-- Vendedor o comprador ofertado pueden actualizar
+create policy "Ventas: vendedor o comprador actualiza"
+  on public.ventas_inscripciones for update
+  using (auth.uid() = vendedor_id OR auth.uid() = ofertado_a);
+
 -- 5. Política de update para carreras (admin)
 create policy if not exists "Carreras: solo admin actualiza"
   on public.carreras for update

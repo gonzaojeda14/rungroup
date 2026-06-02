@@ -33,6 +33,14 @@ export default function Register() {
       setError('Las contraseñas no coinciden')
       return
     }
+    if (!form.fechaNacimiento) {
+      setError('La fecha de nacimiento es obligatoria')
+      return
+    }
+    if (!form.telefono.trim()) {
+      setError('El teléfono es obligatorio')
+      return
+    }
     if (form.password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres')
       return
@@ -139,12 +147,13 @@ export default function Register() {
             />
           </div>
           <div className="field" style={{ marginBottom: '12px' }}>
-            <label>Teléfono</label>
+            <label>Teléfono *</label>
             <input
               type="tel"
               value={form.telefono}
               onChange={e => setForm({ ...form, telefono: e.target.value })}
               placeholder="+54 11 1234-5678"
+              required
             />
           </div>
           <div className="field" style={{ marginBottom: '12px' }}>

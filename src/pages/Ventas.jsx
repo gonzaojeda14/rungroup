@@ -1,0 +1,345 @@
+import { useEffect, useState, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
+import { formatFecha } from '../lib/utils'
+
+function calcularHorasLimite(fechaCarrera) {
+  if (!fechaCarrera) return 24
+  const ahora = new Date()
+  const carrera = new Date(fechaCarrera + 'T23:59:00')
+  const diffHs = (carrera - ahora) / (1000 * 60 * 60)
+  if (diffHs > 168) return 24
+  if (diffHs > 96)  return 12
+  if (diffHs > 24)  return 6
+  return 2
+}
+
+function calcularExpiracion(fechaCarrera) {
+  const hs = calcularHorasLimite(fechaCarrera)
+  const exp = new Date()
+  exp.setHours(exp.getHours() + hs)
+  return exp.toISOString()
+}
+
+function tiempoRestante(expiresAt) {
+  const diff = new Date(expiresAt) - new Date()
+  if (diff <= 0) return 'Tiempo agotado'
+  const hs = Math.floor(diff / (1000 * 60 * 60))
+  const min = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  if (hs > 0) return `${hs}h ${min}m restantes`
+  return `${min} min restantes`
+}
+
+const WpIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor">
+    <path d="M16 2C8.28 2 2 8.28 2 16c0 2.44.65 4.73 1.79 6.72L2 30l7.47-1.76A13.93 13.93 0 0 0 16 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm0 25.5c-2.2 0-4.27-.6-6.04-1.64l-.43-.26-4.43 1.04 1.07-4.3-.28-.45A11.45 11.45 0 0 1 4.5 16C4.5 9.6 9.6 4.5 16 4.5S27.5 9.6 27.5 16 22.4 27.5 16 27.5zm6.27-8.57c-.34-.17-2.02-1-2.34-1.11-.32-.11-.55-.17-.78.17-.23.34-.9 1.11-1.1 1.34-.2.23-.4.26-.74.09-.34-.17-1.44-.53-2.74-1.69-1.01-.9-1.7-2.01-1.9-2.35-.2-.34-.02-.52.15-.69.15-.15.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.09-.17-.78-1.88-1.07-2.57-.28-.67-.57-.58-.78-.59h-.67c-.23 0-.6.09-.91.43-.32.34-1.2 1.17-1.2 2.86s1.23 3.32 1.4 3.55c.17.23 2.42 3.7 5.87 5.19.82.35 1.46.56 1.96.72.82.26 1.57.22 2.16.13.66-.1 2.02-.82 2.31-1.62.28-.8.28-1.48.2-1.62-.09-.14-.32-.23-.66-.4z"/>
+  </svg>
+)
+
+export default function Ventas() {
+  const { user } = useAuth()
+  const [ventas, setVentas] = useState([])
+  const [carreras, setCarreras] = useState([])
+  const [miOferta, setMiOferta] = useState(null)   // oferta activa donde soy el comprador
+  const [form, setForm] = useState({ carrera_id: '', precio: '', nota: '' })
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const avanzarCola = useCallback(async (venta, rechazadoId) => {
+    const yaRechazados = [...(venta.rechazados || []), rechazadoId].filter(Boolean)
+
+    const { data: espera } = await supabase
+      .from('participaciones')
+      .select('user_id, updated_at')
+      .eq('carrera_id', venta.carrera_id)
+      .eq('estado', 'Lista de espera')
+      .neq('user_id', venta.vendedor_id)
+      .order('updated_at')
+
+    const siguiente = espera?.find(p => !yaRechazados.includes(p.user_id))
+
+    if (siguiente) {
+      const expira = calcularExpiracion(venta.carrera?.fecha || venta.carreraFecha)
+      await supabase.from('ventas_inscripciones').update({
+        ofertado_a: siguiente.user_id,
+        oferta_expira_at: expira,
+        rechazados: yaRechazados,
+        estado: 'ofertada',
+      }).eq('id', venta.id)
+    } else {
+      await supabase.from('ventas_inscripciones').update({
+        ofertado_a: null,
+        oferta_expira_at: null,
+        rechazados: yaRechazados,
+        estado: 'disponible',
+      }).eq('id', venta.id)
+    }
+  }, [])
+
+  const fetchAll = useCallback(async () => {
+    const [{ data: cars }, { data: vs }] = await Promise.all([
+      supabase.from('carreras').select('id, nombre, fecha').order('fecha'),
+      supabase.from('ventas_inscripciones')
+        .select('*, vendedor:profiles!ventas_inscripciones_vendedor_id_fkey(nombre, telefono), carrera:carreras(nombre, fecha)')
+        .in('estado', ['disponible', 'ofertada', 'contactada'])
+        .order('created_at'),
+    ])
+
+    setCarreras(cars || [])
+    setVentas(vs || [])
+
+    // Verificar si hay oferta activa para mí
+    const { data: oferta } = await supabase
+      .from('ventas_inscripciones')
+      .select('*, vendedor:profiles!ventas_inscripciones_vendedor_id_fkey(nombre, telefono), carrera:carreras(nombre, fecha)')
+      .eq('ofertado_a', user.id)
+      .in('estado', ['ofertada', 'contactada'])
+      .maybeSingle()
+
+    if (oferta && new Date(oferta.oferta_expira_at) < new Date()) {
+      await avanzarCola(oferta, null)
+      setMiOferta(null)
+    } else {
+      setMiOferta(oferta || null)
+    }
+
+    setLoading(false)
+  }, [user.id, avanzarCola])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  async function handlePublicar(e) {
+    e.preventDefault()
+    setSaving(true)
+    const carrera = carreras.find(c => c.id === form.carrera_id)
+
+    const { data: espera } = await supabase
+      .from('participaciones')
+      .select('user_id, updated_at')
+      .eq('carrera_id', form.carrera_id)
+      .eq('estado', 'Lista de espera')
+      .neq('user_id', user.id)
+      .order('updated_at')
+
+    const primero = espera?.[0] || null
+    const expira = primero ? calcularExpiracion(carrera?.fecha) : null
+
+    await supabase.from('ventas_inscripciones').insert([{
+      carrera_id: form.carrera_id,
+      vendedor_id: user.id,
+      precio: parseFloat(form.precio) || null,
+      nota: form.nota || null,
+      estado: primero ? 'ofertada' : 'disponible',
+      ofertado_a: primero?.user_id || null,
+      oferta_expira_at: expira,
+      rechazados: primero ? [primero.user_id] : [],
+    }])
+
+    setForm({ carrera_id: '', precio: '', nota: '' })
+    setShowForm(false)
+    setSaving(false)
+    fetchAll()
+  }
+
+  // El interesado indica que se va a contactar → cambia estado a "contactada"
+  async function handleMeInteresa(venta) {
+    await supabase.from('ventas_inscripciones')
+      .update({ estado: 'contactada' })
+      .eq('id', venta.id)
+    fetchAll()
+  }
+
+  // El interesado descarta la oferta
+  async function handleNoMeInteresa(venta) {
+    await avanzarCola(venta, user.id)
+    setMiOferta(null)
+    fetchAll()
+  }
+
+  // El VENDEDOR confirma que se vendió
+  async function handleConfirmarVenta(venta) {
+    await supabase.from('ventas_inscripciones').update({ estado: 'vendida' }).eq('id', venta.id)
+    await supabase.from('participaciones')
+      .update({ estado: 'Inscripto' })
+      .eq('carrera_id', venta.carrera_id)
+      .eq('user_id', venta.ofertado_a)
+    fetchAll()
+  }
+
+  // El VENDEDOR indica que no se concretó → avanzar cola
+  async function handleNoConcretada(venta) {
+    await avanzarCola(venta, venta.ofertado_a)
+    fetchAll()
+  }
+
+  async function handleCancelarVenta(ventaId) {
+    if (!confirm('¿Cancelar la publicación de tu inscripción?')) return
+    await supabase.from('ventas_inscripciones').update({ estado: 'cancelada' }).eq('id', ventaId)
+    fetchAll()
+  }
+
+  const misVentas = ventas.filter(v => v.vendedor_id === user.id)
+  const ventasOtros = ventas.filter(v => v.vendedor_id !== user.id && v.estado === 'disponible')
+
+  if (loading) return <div className="page-loading">Cargando...</div>
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h2>Inscripciones</h2>
+        <button className="btn-accent" onClick={() => setShowForm(s => !s)}>
+          {showForm ? 'Cancelar' : '+ Ceder inscripción'}
+        </button>
+      </div>
+
+      <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px', marginTop: '-8px' }}>
+        Espacio para ceder inscripciones a quienes quieran correr y no consiguieron lugar.
+      </p>
+
+      {/* ALERTA: oferta activa para mí como comprador */}
+      {miOferta && (
+        <div className="card" style={{ marginBottom: '12px', border: '1px solid rgba(251,191,36,0.4)', background: 'rgba(251,191,36,0.06)' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#fbbf24', marginBottom: '10px' }}>
+            🔔 ¡Hay una inscripción disponible para vos!
+          </div>
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>{miOferta.carrera?.nombre}</div>
+          {miOferta.carrera?.fecha && <span className="tag" style={{ display: 'inline-block', marginBottom: '8px' }}>📅 {formatFecha(miOferta.carrera.fecha)}</span>}
+          {miOferta.precio && <div style={{ fontSize: '14px', margin: '6px 0' }}>💰 ${Number(miOferta.precio).toLocaleString()}</div>}
+          {miOferta.nota && <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>📝 {miOferta.nota}</div>}
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+            Vendedor: <strong style={{ color: '#f1f5f9' }}>{miOferta.vendedor?.nombre}</strong>
+          </div>
+          <div style={{ fontSize: '11px', color: '#fbbf24', marginBottom: '12px' }}>
+            ⏱ {tiempoRestante(miOferta.oferta_expira_at)}
+          </div>
+
+          {miOferta.estado === 'ofertada' && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <a
+                href={`https://wa.me/${(miOferta.vendedor?.telefono || '').replace(/\D/g, '')}`}
+                target="_blank" rel="noopener noreferrer"
+                className="btn-primary"
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', height: '40px', padding: '0 16px', fontSize: '14px' }}
+                onClick={() => handleMeInteresa(miOferta)}
+              >
+                <WpIcon /> Me interesa — contactar
+              </a>
+              <button className="btn-ghost" onClick={() => handleNoMeInteresa(miOferta)}>No me interesa</button>
+            </div>
+          )}
+
+          {miOferta.estado === 'contactada' && (
+            <div>
+              <div style={{ fontSize: '13px', color: '#4ade80', marginBottom: '8px' }}>
+                ✅ Ya te contactaste con el vendedor. Una vez que lo confirme, quedará registrado.
+              </div>
+              <button className="btn-ghost" style={{ fontSize: '12px' }} onClick={() => handleNoMeInteresa(miOferta)}>
+                No llegamos a un acuerdo
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* FORM */}
+      {showForm && (
+        <form className="card form-card" onSubmit={handlePublicar}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Ceder inscripción</h3>
+          <div className="form-grid">
+            <div className="field full">
+              <label>Carrera *</label>
+              <select value={form.carrera_id} onChange={e => setForm({ ...form, carrera_id: e.target.value })} required>
+                <option value="">— Elegí una carrera —</option>
+                {carreras.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre}{c.fecha ? ` — ${formatFecha(c.fecha)}` : ''}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>Precio ($)</label>
+              <input type="number" min="0" value={form.precio} onChange={e => setForm({ ...form, precio: e.target.value })} placeholder="Lo que pagaste" />
+            </div>
+            <div className="field full">
+              <label>Detalle (opcional)</label>
+              <input value={form.nota} onChange={e => setForm({ ...form, nota: e.target.value })} placeholder="Con remera talle M, sin kit, etc." />
+            </div>
+          </div>
+          <div className="form-actions">
+            <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Publicando...' : 'Publicar'}</button>
+          </div>
+        </form>
+      )}
+
+      {/* MIS PUBLICACIONES (vendedor) */}
+      {misVentas.length > 0 && (
+        <>
+          <h3 style={{ fontSize: '13px', color: '#94a3b8', margin: '16px 0 8px' }}>Mis publicaciones</h3>
+          {misVentas.map(v => (
+            <div key={v.id} className="card" style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, marginBottom: '4px' }}>{v.carrera?.nombre}</div>
+                  {v.carrera?.fecha && <span className="tag">📅 {formatFecha(v.carrera.fecha)}</span>}
+                  {v.precio && <div style={{ fontSize: '14px', marginTop: '6px' }}>💰 ${Number(v.precio).toLocaleString()}</div>}
+                  {v.nota && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>📝 {v.nota}</div>}
+                  <div style={{ fontSize: '12px', marginTop: '8px' }}>
+                    {v.estado === 'disponible' && <span style={{ color: '#4ade80' }}>✅ Disponible — sin interesados aún</span>}
+                    {v.estado === 'ofertada' && <span style={{ color: '#fbbf24' }}>⏳ Ofrecida — esperando respuesta</span>}
+                    {v.estado === 'contactada' && (
+                      <div>
+                        <div style={{ color: '#60a5fa', marginBottom: '8px' }}>📞 Alguien se contactó con vos. ¿Se concretó?</div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button className="btn-primary" style={{ height: 32, fontSize: 12, padding: '0 12px' }} onClick={() => handleConfirmarVenta(v)}>
+                            ✓ Sí, se vendió
+                          </button>
+                          <button className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px' }} onClick={() => handleNoConcretada(v)}>
+                            No se concretó
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button className="btn-icon danger" onClick={() => handleCancelarVenta(v.id)} title="Cancelar publicación">✕</button>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* DISPONIBLES (otros vendedores, sin lista de espera activa) */}
+      {ventasOtros.length > 0 && (
+        <>
+          <h3 style={{ fontSize: '13px', color: '#94a3b8', margin: '16px 0 8px' }}>Disponibles</h3>
+          {ventasOtros.map(v => (
+            <div key={v.id} className="card" style={{ marginBottom: '8px' }}>
+              <div style={{ fontWeight: 600, marginBottom: '4px' }}>{v.carrera?.nombre}</div>
+              {v.carrera?.fecha && <span className="tag">📅 {formatFecha(v.carrera.fecha)}</span>}
+              {v.precio && <div style={{ fontSize: '14px', marginTop: '6px' }}>💰 ${Number(v.precio).toLocaleString()}</div>}
+              {v.nota && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>📝 {v.nota}</div>}
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
+                Cede: <strong style={{ color: '#f1f5f9' }}>{v.vendedor?.nombre}</strong>
+              </div>
+              {v.vendedor?.telefono && (
+                <a
+                  href={`https://wa.me/${v.vendedor.telefono.replace(/\D/g, '')}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="race-link"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}
+                >
+                  <WpIcon /> Contactar por WhatsApp
+                </a>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+
+      {misVentas.length === 0 && ventasOtros.length === 0 && !miOferta && (
+        <div className="empty-state">No hay inscripciones disponibles para ceder</div>
+      )}
+    </div>
+  )
+}

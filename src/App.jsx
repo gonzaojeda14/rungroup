@@ -7,6 +7,7 @@ import Participaciones from './pages/Participaciones'
 import Resumen from './pages/Resumen'
 import Corredores from './pages/Corredores'
 import MiPerfil from './pages/MiPerfil'
+import Ventas from './pages/Ventas'
 
 function Shell() {
   const { user, loading, isAdmin, signOut } = useAuth()
@@ -49,6 +50,7 @@ function Shell() {
           <Route path="/resumen" element={<Resumen />} />
           <Route path="/corredores" element={<Corredores />} />
           <Route path="/perfil" element={<MiPerfil />} />
+          <Route path="/ventas" element={<Ventas />} />
         </Routes>
       </main>
 
@@ -71,6 +73,10 @@ function Shell() {
             <span>Corredores</span>
           </NavLink>
         )}
+        <NavLink to="/ventas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span>Inscripciones</span>
+        </NavLink>
         <NavLink to="/perfil" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
           <span>Mi perfil</span>
