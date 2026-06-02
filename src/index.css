@@ -99,6 +99,8 @@ body {
 .code-tag { color: var(--accent); background: rgba(232,255,71,0.1); font-family: 'DM Mono', monospace; }
 .race-link { display: inline-block; margin-top: 10px; font-size: 13px; color: var(--accent); text-decoration: none; }
 .race-link:hover { text-decoration: underline; }
+.race-estado-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.race-estado-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
 
 /* RUNNER CARD */
 .runner-card { display: flex; align-items: center; gap: 12px; }
