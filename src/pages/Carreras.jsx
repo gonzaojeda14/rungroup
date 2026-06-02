@@ -156,4 +156,33 @@ export default function Carreras() {
                     <button className="btn-icon danger" onClick={() => handleDelete(c.id)} title="Eliminar">✕</button>
                   </div>
                 )}
-    
+              </div>
+              {c.link && (
+                <a href={c.link} target="_blank" rel="noopener noreferrer" className="race-link">
+                  Ver inscripción →
+                </a>
+              )}
+              <div className="race-estado-section">
+                <div className="race-estado-label">
+                  Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
+                </div>
+                <div className="estado-buttons">
+                  {ESTADOS.map(e => (
+                    <button
+                      key={e}
+                      className={`estado-btn ${estado === e ? 'active' : ''}`}
+                      style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
+                      onClick={() => updateEstado(c.id, e)}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
