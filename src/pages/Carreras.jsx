@@ -26,7 +26,7 @@ export default function Carreras() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [filtros, setFiltros] = useState({ tipo: '', distancia: '', fecha: 'proximas' })
+  const [filtros, setFiltros] = useState({ tipo: '', distancias: [], fecha: 'proximas' })
   const formRef = useRef(null)
 
   useEffect(() => { fetchAll() }, [])
@@ -132,7 +132,7 @@ export default function Carreras() {
   // Aplicar filtros
   const carrerasFiltradas = carreras.filter(c => {
     if (filtros.tipo && c.tipo !== filtros.tipo) return false
-    if (filtros.distancia && !getDistancias(c).includes(filtros.distancia)) return false
+    if (filtros.distancias.length > 0 && !filtros.distancias.some(d => getDistancias(c).includes(d))) return false
     if (filtros.fecha === 'proximas' && c.fecha && c.fecha < today) return false
     if (filtros.fecha === 'pasadas' && (!c.fecha || c.fecha >= today)) return false
     return true
@@ -227,20 +227,27 @@ export default function Carreras() {
         {todasDistancias.length > 0 && (
           <div className="filtro-group">
             <button
-              className={`filtro-btn ${filtros.distancia === '' ? 'active' : ''}`}
-              onClick={() => setFiltros(f => ({ ...f, distancia: '' }))}
+              className={`filtro-btn ${filtros.distancias.length === 0 ? 'active' : ''}`}
+              onClick={() => setFiltros(f => ({ ...f, distancias: [] }))}
             >
               Todas las distancias
             </button>
-            {todasDistancias.map(d => (
-              <button
-                key={d}
-                className={`filtro-btn ${filtros.distancia === d ? 'active' : ''}`}
-                onClick={() => setFiltros(f => ({ ...f, distancia: d }))}
-              >
-                {d}
-              </button>
-            ))}
+            {todasDistancias.map(d => {
+              const selected = filtros.distancias.includes(d)
+              return (
+                <button
+                  key={d}
+                  className="filtro-btn"
+                  style={selected ? { background: 'rgba(255,45,45,0.2)', color: '#ff2d2d', border: '1px solid rgba(255,45,45,0.4)', fontWeight: 600 } : {}}
+                  onClick={() => setFiltros(f => ({
+                    ...f,
+                    distancias: selected ? f.distancias.filter(x => x !== d) : [...f.distancias, d]
+                  }))}
+                >
+                  {d}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

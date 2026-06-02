@@ -169,6 +169,51 @@ alter table public.carreras
 alter table public.participaciones
   add column if not exists distancia_elegida text;
 
+-- =============================================
+-- MIGRACIÓN: Datos de perfil y certificado médico
+-- =============================================
+
+-- Nuevos campos en profiles
+alter table public.profiles
+  add column if not exists fecha_nacimiento date;
+alter table public.profiles
+  add column if not exists telefono text;
+alter table public.profiles
+  add column if not exists certificado_url text;
+alter table public.profiles
+  add column if not exists certificado_fecha date;
+
+-- Política update para que cada usuario pueda actualizar su propio perfil
+create policy "Profiles: usuario actualiza el propio"
+  on public.profiles for update
+  using (auth.uid() = id);
+
+-- Storage: bucket certificados
+-- Crear manualmente en Supabase > Storage > New bucket
+-- Nombre: certificados | Public: NO (privado)
+-- Luego ejecutar estas políticas:
+
+-- insert (el corredor sube su propio certificado)
+create policy "Certificados: usuario sube el propio"
+  on storage.objects for insert
+  with check (bucket_id = 'certificados' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- select (el corredor ve el suyo, admin ve todos)
+create policy "Certificados: usuario ve el propio"
+  on storage.objects for select
+  using (bucket_id = 'certificados' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Certificados: admin ve todos"
+  on storage.objects for select
+  using (bucket_id = 'certificados' AND exists (
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+  ));
+
+-- update (reemplazar certificado)
+create policy "Certificados: usuario actualiza el propio"
+  on storage.objects for update
+  using (bucket_id = 'certificados' AND auth.uid()::text = (storage.foldername(name))[1]);
+
 -- 5. Política de update para carreras (admin)
 create policy if not exists "Carreras: solo admin actualiza"
   on public.carreras for update

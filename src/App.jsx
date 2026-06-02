@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import Carreras from './pages/Carreras'
 import Participaciones from './pages/Participaciones'
 import Resumen from './pages/Resumen'
 import Corredores from './pages/Corredores'
+import MiPerfil from './pages/MiPerfil'
 
 function Shell() {
   const { user, loading, isAdmin, signOut } = useAuth()
@@ -33,6 +35,7 @@ function Shell() {
           <Route path="/participaciones" element={<Participaciones />} />
           <Route path="/resumen" element={<Resumen />} />
           <Route path="/corredores" element={<Corredores />} />
+          <Route path="/perfil" element={<MiPerfil />} />
         </Routes>
       </main>
 
@@ -55,6 +58,10 @@ function Shell() {
             <span>Corredores</span>
           </NavLink>
         )}
+        <NavLink to="/perfil" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+          <span>Mi perfil</span>
+        </NavLink>
       </nav>
     </div>
   )
@@ -73,7 +80,10 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Shell />
+        <Routes>
+          <Route path="/registro" element={<Register />} />
+          <Route path="*" element={<Shell />} />
+        </Routes>
       </BrowserRouter>
     </AuthProvider>
   )
