@@ -24,7 +24,7 @@ export default function Login() {
           <img src="/logo-flama.png" alt="Flama Run" style={{ height: 40, width: 'auto' }} />
         </div>
         <h1 style={{ display: 'none' }}>Flama Run</h1>
-        <p className="login-sub">Tu grupo. Tus carreras.</p>
+        <p className="login-sub">Siempre todo Flama</p>
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Email</label>
