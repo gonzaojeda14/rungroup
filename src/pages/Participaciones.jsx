@@ -191,6 +191,7 @@ export default function Participaciones() {
                           <span className="tag">📏 {p.distancia_elegida || p.carrera?.distancia}</span>
                         )}
                         {p.carrera?.lugar && <span className="tag">📍 {p.carrera.lugar}</span>}
+                        {p.carrera?.tipo && <span className="tag" style={{ background: p.carrera.tipo === 'Trail' ? 'rgba(251,146,60,0.15)' : 'rgba(96,165,250,0.15)', color: p.carrera.tipo === 'Trail' ? '#fb923c' : '#60a5fa', border: `1px solid ${p.carrera.tipo === 'Trail' ? 'rgba(251,146,60,0.3)' : 'rgba(96,165,250,0.3)'}`, fontWeight: 600 }}>{p.carrera.tipo}</span>}
                       </div>
                     </div>
 

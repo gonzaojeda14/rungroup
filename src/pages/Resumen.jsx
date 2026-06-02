@@ -131,15 +131,11 @@ export default function Resumen() {
         <div key={c.id} className="card summary-card">
           <div className="summary-header">
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
-                <h3 style={{ margin: 0 }}>{c.nombre}</h3>
-                {c.tipo && (
-                  <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>
-                    {c.tipo}
-                  </span>
-                )}
+              <h3 style={{ margin: '0 0 4px 0' }}>{c.nombre}</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
+                {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
               </div>
-              {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
             </div>
             <span className="summary-total">{c.total} corredores</span>
           </div>

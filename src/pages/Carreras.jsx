@@ -372,16 +372,12 @@ export default function Carreras() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     {c.destacada && <span style={{ fontSize: '15px', lineHeight: 1 }}>⭐</span>}
                     <h3 style={{ margin: 0 }}>{c.nombre}</h3>
-                    {c.tipo && (
-                      <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>
-                        {c.tipo}
-                      </span>
-                    )}
                   </div>
                   <div className="race-meta">
                     {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
                     {dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
                     {c.lugar && <span className="tag">📍 {c.lugar}</span>}
+                    {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
                     {c.codigo && (() => {
                       const esCupon = /^\S+$/.test(c.codigo.trim())
                       return esCupon ? (
