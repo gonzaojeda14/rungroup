@@ -435,19 +435,26 @@ export default function Carreras() {
                   </span>
                 </div>
               )}
-              {isAdmin && (
-                <button
-                  onClick={() => compartirUbicacion(c.id)}
-                  className="race-link"
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    font: 'inherit', marginTop: '6px', display: 'block',
-                    color: c.encuentro_lat ? '#64748b' : 'var(--accent)',
-                  }}
-                >
-                  {c.encuentro_lat ? '🔄 Actualizar ubicación' : '📍 Compartir punto de encuentro'}
-                </button>
-              )}
+              {isAdmin && (() => {
+                const horasRestantes = c.fecha
+                  ? (new Date(c.fecha + 'T23:59:00') - new Date()) / (1000 * 60 * 60)
+                  : null
+                const mostrar = horasRestantes === null || horasRestantes <= 24
+                if (!mostrar) return null
+                return (
+                  <button
+                    onClick={() => compartirUbicacion(c.id)}
+                    style={{
+                      background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
+                      padding: '3px 10px', borderRadius: '6px', marginTop: '8px',
+                      fontSize: '11px', color: '#64748b', fontFamily: 'inherit',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {c.encuentro_lat ? '🔄 Actualizar ubicación' : '📍 Compartir punto de encuentro'}
+                  </button>
+                )
+              })()}
 
               {multiDist && (
                 <div className="dist-selector">
