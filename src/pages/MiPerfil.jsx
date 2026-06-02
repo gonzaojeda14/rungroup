@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
-const thisYear = new Date().getFullYear()
+const thisYear = new Date().getFullYear() + 1 // TEMP: para probar alerta de vencimiento
 
 export default function MiPerfil() {
   const { user, profile } = useAuth()
@@ -242,7 +242,7 @@ export default function MiPerfil() {
         )}
 
         <div className="field" style={{ marginBottom: '10px' }}>
-          <label>Subir {certInfo.url ? 'nuevo' : ''} certificado (JPG o PDF)</label>
+          <label>{certInfo.url ? 'Renovar certificado (JPG o PDF)' : 'Subir certificado (JPG o PDF)'}</label>
           <label className="file-upload-label">
             <input type="file" accept=".jpg,.jpeg,.pdf" onChange={handleFile} style={{ display: 'none' }} />
             <span className="file-upload-btn">
@@ -259,7 +259,7 @@ export default function MiPerfil() {
           onClick={handleSubirCert}
           disabled={!certFile || savingCert}
         >
-          {savingCert ? 'Subiendo...' : 'Subir certificado'}
+          {savingCert ? 'Subiendo...' : certInfo.url ? 'Renovar certificado' : 'Subir certificado'}
         </button>
       </div>
 
