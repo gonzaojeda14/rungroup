@@ -93,7 +93,7 @@ export default function Novedades() {
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Del profe</h2>
+        <h2>Avisos</h2>
         {isAdmin && (
           <button className="btn-accent" onClick={() => setShowForm(s => !s)}>
             {showForm ? 'Cancelar' : '+ Publicar'}
