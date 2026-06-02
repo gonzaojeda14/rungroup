@@ -250,4 +250,33 @@ export default function Participaciones() {
                           <button
                             className="btn-primary"
                             style={{ height: 32, fontSize: 12, padding: '0 14px', alignSelf: 'flex-end' }}
-                            onC
+                            onClick={() => handleNota(p.carrera.id, notas[p.carrera.id] || '')}
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
+          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
+          fontSize: '13px', fontWeight: 500, zIndex: 999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          animation: 'fadeIn .2s ease', whiteSpace: 'nowrap',
+        }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  )
+}
