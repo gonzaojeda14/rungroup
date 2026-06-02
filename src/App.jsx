@@ -5,9 +5,10 @@ import Carreras from './pages/Carreras'
 import Participaciones from './pages/Participaciones'
 import Resumen from './pages/Resumen'
 import Corredores from './pages/Corredores'
+import Avisos from './pages/Avisos'
 
 function Shell() {
-  const { user, loading, isAdmin, signOut } = useAuth()
+  const { user, loading, isAdmin, signOut, avisosNuevos } = useAuth()
 
   if (loading) return (
     <div className="splash">
@@ -33,6 +34,7 @@ function Shell() {
           <Route path="/participaciones" element={<Participaciones />} />
           <Route path="/resumen" element={<Resumen />} />
           <Route path="/corredores" element={<Corredores />} />
+          <Route path="/avisos" element={<Avisos />} />
         </Routes>
       </main>
 
@@ -48,6 +50,27 @@ function Shell() {
         <NavLink to="/resumen" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
           <span>Resumen</span>
+        </NavLink>
+        <NavLink to="/avisos" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+          <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+            {avisosNuevos > 0 && (
+              <span style={{
+                position: 'absolute', top: '-5px', right: '-8px',
+                background: 'var(--accent)', color: 'white',
+                borderRadius: '10px', fontSize: '9px', fontWeight: 700,
+                minWidth: '16px', height: '16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 4px', lineHeight: 1,
+              }}>
+                {avisosNuevos > 9 ? '9+' : avisosNuevos}
+              </span>
+            )}
+          </div>
+          <span>Avisos</span>
         </NavLink>
         {isAdmin && (
           <NavLink to="/corredores" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>

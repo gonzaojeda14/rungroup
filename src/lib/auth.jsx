@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [avisosNuevos, setAvisosNuevos] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -26,6 +27,21 @@ export function AuthProvider({ children }) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
     setProfile(data)
     setLoading(false)
+    fetchAvisosNuevos(data?.avisos_leido_hasta)
+  }
+
+  async function fetchAvisosNuevos(leidoHasta) {
+    let query = supabase.from('avisos').select('id', { count: 'exact', head: true })
+    if (leidoHasta) query = query.gt('created_at', leidoHasta)
+    const { count } = await query
+    setAvisosNuevos(count || 0)
+  }
+
+  async function marcarAvisosLeidos() {
+    if (!user) return
+    const ahora = new Date().toISOString()
+    await supabase.from('profiles').update({ avisos_leido_hasta: ahora }).eq('id', user.id)
+    setAvisosNuevos(0)
   }
 
   async function signIn(email, password) {
@@ -40,7 +56,7 @@ export function AuthProvider({ children }) {
   const isAdmin = profile?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, signIn, signOut, avisosNuevos, marcarAvisosLeidos }}>
       {children}
     </AuthContext.Provider>
   )
