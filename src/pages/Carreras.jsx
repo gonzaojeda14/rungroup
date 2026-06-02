@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
@@ -27,6 +27,7 @@ export default function Carreras() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [filtros, setFiltros] = useState({ tipo: '', distancia: '', fecha: 'proximas' })
+  const formRef = useRef(null)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -83,7 +84,7 @@ export default function Carreras() {
     })
     setEditId(c.id)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
 
   function handleCancelForm() {
@@ -143,8 +144,8 @@ export default function Carreras() {
         )}
       </div>
 
-      {isAdmin && showForm && (
-        <form className="card form-card" onSubmit={handleSave}>
+      {isAdmin && showForm && !editId && (
+        <form ref={formRef} className="card form-card" onSubmit={handleSave}>
           <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>
             {editId ? 'Editar carrera' : 'Nueva carrera'}
           </h3>
@@ -245,6 +246,56 @@ export default function Carreras() {
 
       <div className="cards-list">
         {carrerasFiltradas.map(c => {
+          // Mostrar form de edición en lugar de la card
+          if (editId === c.id && showForm) {
+            return (
+              <form key={c.id} ref={formRef} className="card form-card" onSubmit={handleSave}>
+                <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>Editar carrera</h3>
+                <div className="form-grid">
+                  <div className="field">
+                    <label>Nombre *</label>
+                    <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="21K Buenos Aires" required />
+                  </div>
+                  <div className="field">
+                    <label>Fecha</label>
+                    <input type="date" value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} />
+                  </div>
+                  <div className="field">
+                    <label>Distancia(s)</label>
+                    <input value={form.distancias} onChange={e => setForm({ ...form, distancias: e.target.value })} placeholder="5K, 10K" />
+                    <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Separar con comas si hay varias</span>
+                  </div>
+                  <div className="field">
+                    <label>Tipo</label>
+                    <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
+                      <option value="">— Sin especificar —</option>
+                      <option value="Trail">Trail</option>
+                      <option value="Calle">Calle</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Lugar</label>
+                    <input value={form.lugar} onChange={e => setForm({ ...form, lugar: e.target.value })} placeholder="Parque Tres de Febrero" />
+                  </div>
+                  <div className="field">
+                    <label>Código de descuento</label>
+                    <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="FLAMA20" />
+                  </div>
+                  <div className="field full">
+                    <label>Link de inscripción</label>
+                    <input value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} placeholder="https://..." />
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button type="button" className="btn-ghost" onClick={handleCancelForm}>Cancelar</button>
+                  <button type="submit" className="btn-primary" disabled={saving}>
+                    {saving ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
+                </div>
+              </form>
+            )
+          }
+
           const part = participaciones.find(p => p.carrera_id === c.id)
           const estado = part?.estado || 'Pendiente'
           const dists = getDistancias(c)
