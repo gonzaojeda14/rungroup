@@ -231,18 +231,27 @@ export default function Participaciones() {
                           </button>
                         ))}
                       </div>
-                      {(p.feedback === 'mal' || p.feedback === 'regular') && (
-                        <textarea
-                          placeholder="¿Qué pasó? (opcional)"
-                          defaultValue={p.feedback_nota || ''}
-                          onBlur={e => handleNota(p.carrera.id, e.target.value)}
-                          style={{
-                            width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
-                            borderRadius: '8px', color: 'var(--text)', padding: '8px 12px',
-                            fontSize: '13px', resize: 'none', minHeight: '60px',
-                            fontFamily: 'inherit',
-                          }}
-                        />
+                      {p.feedback === 'mal' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <textarea
+                            placeholder="¿Qué pasó? (opcional)"
+                            value={notas[p.carrera.id] ?? (p.feedback_nota || '')}
+                            onChange={e => setNotas(prev => ({ ...prev, [p.carrera.id]: e.target.value }))}
+                            style={{
+                              width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
+                              borderRadius: '8px', color: 'var(--text)', padding: '8px 12px',
+                              fontSize: '13px', resize: 'none', minHeight: '60px',
+                              fontFamily: 'inherit',
+                            }}
+                          />
+                          <button
+                            className="btn-primary"
+                            style={{ height: 32, fontSize: 12, padding: '0 14px', alignSelf: 'flex-end' }}
+                            onClick={() => handleNota(p.carrera.id, notas[p.carrera.id] || '')}
+                          >
+                            Guardar
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
