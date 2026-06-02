@@ -126,7 +126,7 @@ export default function Participaciones() {
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Mis carreras</h2>
+        <h2>Agenda</h2>
         <div className="filtro-group">
           {[['proximas', 'Próximas'], ['todas', 'Todas']].map(([val, label]) => (
             <button key={val} className={`filtro-btn ${filtro === val ? 'active' : ''}`} onClick={() => setFiltro(val)}>{label}</button>
