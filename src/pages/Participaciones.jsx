@@ -45,9 +45,13 @@ export default function Participaciones() {
       .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
       .eq('user_id', user.id)
       .neq('estado', 'Pendiente')
-      .order('carreras(fecha)', { ascending: true })
 
-    setItems(parts || [])
+    const sorted = (parts || []).sort((a, b) => {
+      if (!a.carrera?.fecha) return 1
+      if (!b.carrera?.fecha) return -1
+      return a.carrera.fecha.localeCompare(b.carrera.fecha)
+    })
+    setItems(sorted)
     setLoading(false)
   }
 
