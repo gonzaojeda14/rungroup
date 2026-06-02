@@ -50,6 +50,7 @@ function OfertaAlert() {
 
 function Shell() {
   const { user, loading, isAdmin, signOut } = useAuth()
+  const [adminMenu, setAdminMenu] = useState(false)
 
   if (loading) return (
     <div className="splash">
@@ -95,6 +96,33 @@ function Shell() {
         </Routes>
       </main>
 
+      {/* Admin drawer */}
+      {isAdmin && adminMenu && (
+        <>
+          <div onClick={() => setAdminMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)' }} />
+          <div style={{
+            position: 'fixed', bottom: 'var(--nav-h)', left: 0, right: 0, zIndex: 70,
+            background: 'var(--bg2)', borderTop: '1px solid var(--border)',
+            borderRadius: '16px 16px 0 0', padding: '16px',
+          }}>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Admin</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {[
+                ['/resumen', 'Resumen', <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>],
+                ['/corredores', 'Corredores', <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>],
+              ].map(([path, label, icon]) => (
+                <NavLink key={path} to={path} onClick={() => setAdminMenu(false)}
+                  className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+                  style={{ background: 'var(--bg3)', borderRadius: '10px', padding: '12px 8px', height: 'auto', gap: '6px' }}
+                >
+                  {icon}<span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       <nav className="bottom-nav">
         <NavLink to="/novedades" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -108,16 +136,6 @@ function Shell() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
           <span>Historial</span>
         </NavLink>
-        <NavLink to="/resumen" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
-          <span>Resumen</span>
-        </NavLink>
-        {isAdmin && (
-          <NavLink to="/corredores" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Corredores</span>
-          </NavLink>
-        )}
         <NavLink to="/ventas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span>Inscripciones</span>
@@ -126,6 +144,12 @@ function Shell() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
           <span>Mi perfil</span>
         </NavLink>
+        {isAdmin && (
+          <button className="nav-item" onClick={() => setAdminMenu(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: adminMenu ? 'var(--accent)' : 'var(--text2)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+            <span>Admin</span>
+          </button>
+        )}
       </nav>
     </div>
   )
