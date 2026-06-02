@@ -105,6 +105,11 @@ export default function Carreras() {
     fetchAll()
   }
 
+  async function toggleDestacada(c) {
+    await supabase.from('carreras').update({ destacada: !c.destacada }).eq('id', c.id)
+    setCarreras(prev => prev.map(r => r.id === c.id ? { ...r, destacada: !r.destacada } : r))
+  }
+
   async function updateDistancia(carreraId, distancia) {
     setDistanciasSeleccionadas(prev => ({ ...prev, [carreraId]: distancia }))
     await supabase.from('participaciones')
@@ -331,10 +336,11 @@ export default function Carreras() {
           const distSeleccionada = distanciasSeleccionadas[c.id] || (dists.length === 1 ? dists[0] : null)
 
           return (
-            <div key={c.id} className="card race-card">
+            <div key={c.id} className="card race-card" style={c.destacada ? { borderColor: 'rgba(234,179,8,0.5)', boxShadow: '0 0 0 1px rgba(234,179,8,0.2)' } : {}}>
               <div className="race-card-top">
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    {c.destacada && <span style={{ fontSize: '15px', lineHeight: 1 }}>⭐</span>}
                     <h3 style={{ margin: 0 }}>{c.nombre}</h3>
                     {c.tipo && (
                       <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>
@@ -370,6 +376,7 @@ export default function Carreras() {
                 </div>
                 {isAdmin && (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn-icon" onClick={() => toggleDestacada(c)} title={c.destacada ? 'Quitar destacada' : 'Marcar como destacada'} style={c.destacada ? { color: '#eab308', borderColor: 'rgba(234,179,8,0.4)' } : {}}>⭐</button>
                     <button className="btn-icon" onClick={() => handleEdit(c)} title="Editar">✏️</button>
                     <button className="btn-icon danger" onClick={() => handleDelete(c.id)} title="Eliminar">✕</button>
                   </div>
