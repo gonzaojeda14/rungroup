@@ -214,6 +214,29 @@ create policy "Certificados: usuario actualiza el propio"
   on storage.objects for update
   using (bucket_id = 'certificados' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+-- =============================================
+-- MIGRACIÓN: Foto de perfil (avatar)
+-- =============================================
+
+alter table public.profiles
+  add column if not exists avatar_url text;
+
+-- Storage: bucket "avatares" (público)
+-- Crear en Supabase > Storage > New bucket
+-- Nombre: avatares | Public: SÍ
+
+create policy "Avatares: usuario sube el propio"
+  on storage.objects for insert
+  with check (bucket_id = 'avatares' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Avatares: todos pueden ver"
+  on storage.objects for select
+  using (bucket_id = 'avatares');
+
+create policy "Avatares: usuario actualiza el propio"
+  on storage.objects for update
+  using (bucket_id = 'avatares' AND auth.uid()::text = (storage.foldername(name))[1]);
+
 -- 5. Política de update para carreras (admin)
 create policy if not exists "Carreras: solo admin actualiza"
   on public.carreras for update

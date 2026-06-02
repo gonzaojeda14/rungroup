@@ -20,6 +20,15 @@ export default function Corredores() {
     setLoading(false)
   }
 
+  async function handleDelete(corredor) {
+    if (!confirm(`¿Eliminar a ${corredor.nombre}? Esto borrará su cuenta y todas sus participaciones.`)) return
+    // Eliminar el usuario de auth (requiere admin API — hace cascade en profiles y participaciones)
+    const { error } = await supabase.auth.admin.deleteUser(corredor.id)
+    if (error) { setMsg('Error al eliminar: ' + error.message); return }
+    setMsg(`✓ ${corredor.nombre} eliminado/a`)
+    fetchCorredores()
+  }
+
   async function handleAdd(e) {
     e.preventDefault()
     setSaving(true)
@@ -87,12 +96,20 @@ export default function Corredores() {
       <div className="cards-list">
         {corredores.map(c => (
           <div key={c.id} className="card runner-card">
-            <div className="runner-avatar">{(c.nombre || '?')[0].toUpperCase()}</div>
-            <div>
+            <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+              {c.avatar_url
+                ? <img src={c.avatar_url} alt={c.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : <span style={{ fontSize: 14, fontWeight: 600 }}>{(c.nombre || '?')[0].toUpperCase()}</span>
+              }
+            </div>
+            <div style={{ flex: 1 }}>
               <div className="runner-name">{c.nombre}</div>
               <div className="runner-email">{c.email}</div>
             </div>
-            {c.role === 'admin' && <span className="badge green" style={{ marginLeft: 'auto' }}>Admin</span>}
+            {c.role === 'admin' && <span className="badge green">Admin</span>}
+            {c.role !== 'admin' && (
+              <button className="btn-icon danger" onClick={() => handleDelete(c)} title="Eliminar">✕</button>
+            )}
           </div>
         ))}
       </div>

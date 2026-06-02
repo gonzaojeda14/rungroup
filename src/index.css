@@ -242,7 +242,7 @@ select option { background: var(--bg2); }
   cursor: pointer; transition: all .15s; white-space: nowrap;
 }
 .filtro-btn:hover { color: var(--text); background: var(--bg3); }
-.filtro-btn.active { background: var(--bg3); color: var(--text); }
+.filtro-btn.active { background: rgba(255,45,45,0.2); color: #ff2d2d; border: 1px solid rgba(255,45,45,0.4); font-weight: 600; }
 
 /* DIST SELECTOR */
 .dist-selector {

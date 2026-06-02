@@ -9,6 +9,9 @@ export default function MiPerfil() {
   const [form, setForm] = useState({ nombre: '', fechaNacimiento: '', telefono: '' })
   const [certInfo, setCertInfo] = useState({ url: null, fecha: null })
   const [certFile, setCertFile] = useState(null)
+  const [avatarUrl, setAvatarUrl] = useState(null)
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [savingAvatar, setSavingAvatar] = useState(false)
   const [pwd, setPwd] = useState({ nueva: '', confirmar: '' })
   const [saving, setSaving] = useState(false)
   const [savingPwd, setSavingPwd] = useState(false)
@@ -29,8 +32,37 @@ export default function MiPerfil() {
         telefono: data.telefono || '',
       })
       setCertInfo({ url: data.certificado_url || null, fecha: data.certificado_fecha || null })
+      setAvatarUrl(data.avatar_url || null)
     }
     setLoading(false)
+  }
+
+  function handleAvatarFile(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { alert('Solo se permiten imágenes'); return }
+    if (file.size > 5 * 1024 * 1024) { alert('La imagen no puede superar 5MB'); return }
+    setAvatarFile(file)
+    // Preview local
+    const reader = new FileReader()
+    reader.onload = ev => setAvatarUrl(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  async function handleSubirAvatar() {
+    if (!avatarFile) return
+    setSavingAvatar(true)
+    const ext = avatarFile.name.split('.').pop().toLowerCase()
+    const path = `${user.id}/avatar.${ext}`
+    const { error } = await supabase.storage.from('avatares').upload(path, avatarFile, { upsert: true })
+    if (error) { alert('Error al subir la foto'); setSavingAvatar(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('avatares').getPublicUrl(path)
+    // Agregar cache buster
+    const url = `${publicUrl}?t=${Date.now()}`
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
+    setAvatarUrl(url)
+    setAvatarFile(null)
+    setSavingAvatar(false)
   }
 
   async function handleSaveDatos(e) {
@@ -106,6 +138,46 @@ export default function MiPerfil() {
   return (
     <div className="page">
       <div className="page-header"><h2>Mi perfil</h2></div>
+
+      {/* FOTO DE PERFIL */}
+      <div className="card" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <label style={{ cursor: 'pointer', flexShrink: 0 }}>
+          <input type="file" accept="image/*" onChange={handleAvatarFile} style={{ display: 'none' }} />
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%',
+            background: avatarUrl ? 'transparent' : 'rgba(255,45,45,0.15)',
+            border: '2px solid rgba(255,45,45,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden', position: 'relative'
+          }}>
+            {avatarUrl
+              ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontSize: 28, color: '#ff2d2d', fontWeight: 700 }}>{form.nombre?.[0]?.toUpperCase() || '?'}</span>
+            }
+            <div style={{
+              position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: 0, transition: 'opacity .15s',
+              borderRadius: '50%',
+            }}
+              onMouseEnter={e => e.currentTarget.style.opacity = 1}
+              onMouseLeave={e => e.currentTarget.style.opacity = 0}
+            >
+              <span style={{ fontSize: 11, color: 'white' }}>Cambiar</span>
+            </div>
+          </div>
+        </label>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>{form.nombre || 'Sin nombre'}</div>
+          <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>{user.email}</div>
+          {avatarFile && (
+            <button className="btn-primary" style={{ height: 32, fontSize: 13, padding: '0 14px' }} onClick={handleSubirAvatar} disabled={savingAvatar}>
+              {savingAvatar ? 'Subiendo...' : 'Guardar foto'}
+            </button>
+          )}
+          {!avatarFile && <span style={{ fontSize: 12, color: '#64748b' }}>Tocá la foto para cambiarla</span>}
+        </div>
+      </div>
 
       {/* DATOS PERSONALES */}
       <div className="card" style={{ marginBottom: '12px' }}>
