@@ -3,12 +3,20 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
 const EMPTY = { nombre: '', fecha: '', distancia: '', lugar: '', link: '', codigo: '' }
+const ESTADOS = ['Inscripto', 'No voy', 'Tal vez']
+const ESTADO_COLOR = {
+  'Inscripto': '#4ade80',
+  'No voy': '#f87171',
+  'Tal vez': '#fbbf24',
+  'Pendiente': '#64748b',
+}
 
 export default function Carreras() {
   const { isAdmin, user } = useAuth()
   const [carreras, setCarreras] = useState([])
   const [participaciones, setParticipaciones] = useState([])
   const [form, setForm] = useState(EMPTY)
+  const [editId, setEditId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -28,13 +36,29 @@ export default function Carreras() {
   async function handleSave(e) {
     e.preventDefault()
     setSaving(true)
-    const { error } = await supabase.from('carreras').insert([form])
-    if (!error) {
-      setForm(EMPTY)
-      setShowForm(false)
-      fetchAll()
+    if (editId) {
+      await supabase.from('carreras').update(form).eq('id', editId)
+    } else {
+      await supabase.from('carreras').insert([form])
     }
+    setForm(EMPTY)
+    setEditId(null)
+    setShowForm(false)
+    fetchAll()
     setSaving(false)
+  }
+
+  function handleEdit(c) {
+    setForm({ nombre: c.nombre, fecha: c.fecha || '', distancia: c.distancia || '', lugar: c.lugar || '', link: c.link || '', codigo: c.codigo || '' })
+    setEditId(c.id)
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleCancelForm() {
+    setForm(EMPTY)
+    setEditId(null)
+    setShowForm(false)
   }
 
   async function handleDelete(id) {
@@ -45,21 +69,12 @@ export default function Carreras() {
 
   async function updateEstado(carreraId, estado) {
     await supabase.from('participaciones')
-      .update({ estado })
-      .eq('carrera_id', carreraId)
-      .eq('user_id', user.id)
-    setParticipaciones(prev =>
-      prev.map(p => p.carrera_id === carreraId ? { ...p, estado } : p)
-    )
-  }
-
-  const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera']
-  const ESTADO_COLOR = {
-    'Inscripto': '#4ade80',
-    'No voy': '#f87171',
-    'Tal vez': '#fbbf24',
-    'Lista de espera': '#60a5fa',
-    'Pendiente': '#64748b',
+      .upsert({ carrera_id: carreraId, user_id: user.id, estado }, { onConflict: 'carrera_id,user_id' })
+    setParticipaciones(prev => {
+      const exists = prev.find(p => p.carrera_id === carreraId)
+      if (exists) return prev.map(p => p.carrera_id === carreraId ? { ...p, estado } : p)
+      return [...prev, { carrera_id: carreraId, estado }]
+    })
   }
 
   if (loading) return <div className="page-loading">Cargando...</div>
@@ -69,7 +84,7 @@ export default function Carreras() {
       <div className="page-header">
         <h2>Carreras</h2>
         {isAdmin && (
-          <button className="btn-accent" onClick={() => setShowForm(v => !v)}>
+          <button className="btn-accent" onClick={() => { if (showForm) handleCancelForm(); else setShowForm(true) }}>
             {showForm ? 'Cancelar' : '+ Nueva'}
           </button>
         )}
@@ -77,6 +92,9 @@ export default function Carreras() {
 
       {isAdmin && showForm && (
         <form className="card form-card" onSubmit={handleSave}>
+          <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>
+            {editId ? 'Editar carrera' : 'Nueva carrera'}
+          </h3>
           <div className="form-grid">
             <div className="field">
               <label>Nombre *</label>
@@ -96,7 +114,7 @@ export default function Carreras() {
             </div>
             <div className="field">
               <label>Código de descuento</label>
-              <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="RUN20" />
+              <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="FLAMA20" />
             </div>
             <div className="field full">
               <label>Link de inscripción</label>
@@ -104,8 +122,9 @@ export default function Carreras() {
             </div>
           </div>
           <div className="form-actions">
+            <button type="button" className="btn-ghost" onClick={handleCancelForm}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Guardando...' : 'Guardar carrera'}
+              {saving ? 'Guardando...' : editId ? 'Guardar cambios' : 'Crear carrera'}
             </button>
           </div>
         </form>
@@ -132,35 +151,9 @@ export default function Carreras() {
                   </div>
                 </div>
                 {isAdmin && (
-                  <button className="btn-icon danger" onClick={() => handleDelete(c.id)}>✕</button>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn-icon" onClick={() => handleEdit(c)} title="Editar">✏️</button>
+                    <button className="btn-icon danger" onClick={() => handleDelete(c.id)} title="Eliminar">✕</button>
+                  </div>
                 )}
-              </div>
-              {c.link && (
-                <a href={c.link} target="_blank" rel="noopener noreferrer" className="race-link">
-                  Ver inscripción →
-                </a>
-              )}
-              <div className="race-estado-section">
-                <div className="race-estado-label">
-                  Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
-                </div>
-                <div className="estado-buttons">
-                  {ESTADOS.map(e => (
-                    <button
-                      key={e}
-                      className={`estado-btn ${estado === e ? 'active badge ' + e.toLowerCase().replace(/ /g, '-') : ''}`}
-                      style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
-                      onClick={() => updateEstado(c.id, e)}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
+    

@@ -2,26 +2,29 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
-const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera', 'Pendiente']
+const ESTADO_COLOR = {
+  'Inscripto': '#4ade80',
+  'No voy': '#f87171',
+  'Tal vez': '#fbbf24',
+  'Pendiente': '#64748b',
+}
 
-const ESTADO_STYLE = {
-  'Inscripto': 'badge green',
-  'No voy': 'badge red',
-  'Tal vez': 'badge amber',
-  'Lista de espera': 'badge blue',
-  'Pendiente': 'badge gray',
+const ESTADO_ICON = {
+  'Inscripto': '✓',
+  'No voy': '✕',
+  'Tal vez': '?',
+  'Pendiente': '—',
 }
 
 export default function Participaciones() {
-  const { user, isAdmin, profile } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [carreras, setCarreras] = useState([])
   const [carreraId, setCarreraId] = useState('')
   const [participaciones, setParticipaciones] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingParts, setLoadingParts] = useState(false)
 
-  useEffect(() => {
-    fetchCarreras()
-  }, [])
+  useEffect(() => { fetchCarreras() }, [])
 
   useEffect(() => {
     if (carreraId) fetchParticipaciones()
@@ -35,32 +38,33 @@ export default function Participaciones() {
   }
 
   async function fetchParticipaciones() {
-    let query = supabase
+    setLoadingParts(true)
+    const { data } = await supabase
       .from('participaciones')
       .select('*, profiles(nombre)')
       .eq('carrera_id', carreraId)
       .order('profiles(nombre)')
-
-    // Si no es admin, solo ve la propia
-    if (!isAdmin) {
-      query = query.eq('user_id', user.id)
-    }
-
-    const { data } = await query
     setParticipaciones(data || [])
+    setLoadingParts(false)
   }
 
-  async function updateEstado(id, estado) {
-    await supabase.from('participaciones').update({ estado }).eq('id', id)
-    setParticipaciones(prev => prev.map(p => p.id === id ? { ...p, estado } : p))
-  }
+  // Contadores para el resumen rápido
+  const counts = participaciones.reduce((acc, p) => {
+    acc[p.estado] = (acc[p.estado] || 0) + 1
+    return acc
+  }, {})
+
+  const inscriptos = participaciones.filter(p => p.estado === 'Inscripto')
+  const talvez = participaciones.filter(p => p.estado === 'Tal vez')
+  const noVan = participaciones.filter(p => p.estado === 'No voy')
+  const pendientes = participaciones.filter(p => p.estado === 'Pendiente')
 
   if (loading) return <div className="page-loading">Cargando...</div>
 
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Participaciones</h2>
+        <h2>Mis carreras</h2>
       </div>
 
       {carreras.length === 0 && (
@@ -69,7 +73,7 @@ export default function Participaciones() {
 
       {carreras.length > 0 && (
         <>
-          <div className="field" style={{ marginBottom: '1rem' }}>
+          <div className="field" style={{ marginBottom: '1.25rem' }}>
             <label>Carrera</label>
             <select value={carreraId} onChange={e => setCarreraId(e.target.value)}>
               {carreras.map(c => (
@@ -78,37 +82,24 @@ export default function Participaciones() {
             </select>
           </div>
 
-          {participaciones.length === 0 && (
-            <div className="empty-state">Sin registros para esta carrera</div>
-          )}
-
-          <div className="part-list">
-            {participaciones.map(p => {
-              const canEdit = isAdmin || p.user_id === user.id
-              return (
-                <div key={p.id} className="card part-card">
-                  <div className="part-name">{p.profiles?.nombre || '—'}</div>
-                  {canEdit ? (
-                    <div className="estado-buttons">
-                      {ESTADOS.map(e => (
-                        <button
-                          key={e}
-                          className={`estado-btn ${p.estado === e ? 'active ' + ESTADO_STYLE[e] : ''}`}
-                          onClick={() => updateEstado(p.id, e)}
-                        >
-                          {e}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={ESTADO_STYLE[p.estado] || 'badge gray'}>{p.estado}</span>
+          {loadingParts ? (
+            <div className="page-loading">Cargando...</div>
+          ) : (
+            <>
+              {/* Resumen rápido */}
+              {participaciones.length > 0 && (
+                <div className="card" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  {[['Inscripto', '#4ade80'], ['Tal vez', '#fbbf24'], ['No voy', '#f87171'], ['Pendiente', '#64748b']].map(([e, color]) =>
+                    counts[e] ? (
+                      <div key={e} style={{ textAlign: 'center', flex: 1 }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color }}>{counts[e]}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{e}</div>
+                      </div>
+                    ) : null
                   )}
                 </div>
-              )
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
+              )}
+
+              {/* Grupos por estado */}
+              {participaciones.length === 0 && (
+                <div className="em
