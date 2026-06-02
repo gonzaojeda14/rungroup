@@ -51,20 +51,20 @@ function OfertaAlert() {
 function Shell() {
   const { user, loading, isAdmin, signOut, profile } = useAuth()
   const [adminMenu, setAdminMenu] = useState(false)
-  const [avisosNoLeidos, setAvisosNoLeidos] = useState(false)
+  const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
 
   useEffect(() => {
     if (!user) return
     async function checkAvisos() {
-      const { data } = await supabase
-        .from('novedades')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      if (!data) return
+      const ahora = new Date().toISOString()
       const leidoHasta = profile?.avisos_leido_hasta
-      setAvisosNoLeidos(!leidoHasta || data.created_at > leidoHasta)
+      let query = supabase
+        .from('novedades')
+        .select('id', { count: 'exact', head: true })
+        .or(`publicar_en.is.null,publicar_en.lte.${ahora}`)
+      if (leidoHasta) query = query.gt('created_at', leidoHasta)
+      const { count } = await query
+      setAvisosNoLeidos(count || 0)
     }
     checkAvisos()
   }, [user, profile?.avisos_leido_hasta])
@@ -144,7 +144,19 @@ function Shell() {
         <NavLink to="/novedades" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div style={{ position: 'relative', display: 'inline-flex' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            {avisosNoLeidos && <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, background: '#ff2d2d', borderRadius: '50%', border: '1.5px solid var(--bg2)' }} />}
+            {avisosNoLeidos > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -6,
+                minWidth: 16, height: 16, padding: '0 4px',
+                background: '#ff2d2d', borderRadius: '999px',
+                border: '1.5px solid var(--bg2)',
+                fontSize: 10, fontWeight: 700, color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                lineHeight: 1,
+              }}>
+                {avisosNoLeidos > 99 ? '99+' : avisosNoLeidos}
+              </span>
+            )}
           </div>
           <span>Avisos</span>
         </NavLink>

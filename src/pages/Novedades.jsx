@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import PageLoader from '../components/PageLoader'
+import ConfirmModal from '../components/ConfirmModal'
 
 
 function tiempoAtras(fecha) {
@@ -13,7 +14,7 @@ function tiempoAtras(fecha) {
 }
 
 export default function Novedades() {
-  const { isAdmin, user, marcarAvisosLeidos } = useAuth()
+  const { isAdmin, user, marcarAvisosLeidos, profile } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -24,6 +25,7 @@ export default function Novedades() {
   const [programarEn, setProgramarEn] = useState('')
   const [saving, setSaving] = useState(false)
   const [verAnteriores, setVerAnteriores] = useState(false)
+  const [confirmarEliminar, setConfirmarEliminar] = useState(null) // id a eliminar
 
   useEffect(() => {
     fetchNovedades()
@@ -83,8 +85,8 @@ export default function Novedades() {
   }
 
   async function handleEliminar(id) {
-    if (!confirm('¿Eliminar esta novedad?')) return
     await supabase.from('novedades').delete().eq('id', id)
+    setConfirmarEliminar(null)
     fetchNovedades()
   }
 
@@ -209,7 +211,7 @@ export default function Novedades() {
                       Abrir →
                     </button>
                   )}
-                  {isAdmin && <button className="btn-icon danger" onClick={() => handleEliminar(p.id)}>✕</button>}
+                  {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>✕</button>}
                 </div>
               </div>
             ))}
@@ -230,7 +232,7 @@ export default function Novedades() {
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {p.archivo_url && <button onClick={() => abrirArchivo(p.archivo_url)} className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px' }}>Abrir →</button>}
-                      {isAdmin && <button className="btn-icon danger" onClick={() => handleEliminar(p.id)}>✕</button>}
+                      {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>✕</button>}
                     </div>
                   </div>
                 ))}
@@ -259,7 +261,7 @@ export default function Novedades() {
                       }
                     </div>
                   </div>
-                  {isAdmin && <button className="btn-icon danger" onClick={() => handleEliminar(a.id)}>✕</button>}
+                  {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(a.id)}>✕</button>}
                 </div>
                 {a.contenido && (
                   <div style={{ fontSize: '14px', color: '#cbd5e1', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
@@ -274,6 +276,14 @@ export default function Novedades() {
 
       {items.length === 0 && (
         <div className="empty-state">No hay novedades todavía</div>
+      )}
+
+      {confirmarEliminar && (
+        <ConfirmModal
+          mensaje="¿Querés eliminar esta novedad?"
+          onConfirm={() => handleEliminar(confirmarEliminar)}
+          onCancel={() => setConfirmarEliminar(null)}
+        />
       )}
     </div>
   )
