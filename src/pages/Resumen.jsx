@@ -38,6 +38,7 @@ export default function Resumen() {
   const [carreras, setCarreras] = useState([])
   const [loading, setLoading] = useState(true)
   const [carreraFiltro, setCarreraFiltro] = useState('todas')
+  const [mesFiltro, setMesFiltro] = useState('todos')
 
   useEffect(() => { fetchResumen() }, [])
 
@@ -103,8 +104,30 @@ export default function Resumen() {
           </select>
         )}
       </div>
+      {/* Filtro de meses */}
+      {carreraFiltro === 'todas' && (() => {
+        const meses = [...new Set(carreras.filter(c => c.fecha).map(c => c.fecha.slice(0, 7)))]
+        if (meses.length <= 1) return null
+        return (
+          <div className="filtros-bar" style={{ marginBottom: '12px' }}>
+            <div className="filtro-group">
+              <button className={`filtro-btn ${mesFiltro === 'todos' ? 'active' : ''}`} onClick={() => setMesFiltro('todos')}>Todos</button>
+              {meses.map(m => {
+                const [y, mo] = m.split('-')
+                const label = `${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]} ${y}`
+                return <button key={m} className={`filtro-btn ${mesFiltro === m ? 'active' : ''}`} onClick={() => setMesFiltro(m)}>{label}</button>
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
       {carreras.length === 0 && <div className="empty-state">No hay datos todavía</div>}
-      {carreras.filter(c => carreraFiltro === 'todas' || c.id === carreraFiltro).map(c => (
+      {carreras.filter(c => {
+        if (carreraFiltro !== 'todas' && c.id !== carreraFiltro) return false
+        if (mesFiltro !== 'todos' && (!c.fecha || !c.fecha.startsWith(mesFiltro))) return false
+        return true
+      }).map(c => (
         <div key={c.id} className="card summary-card">
           <div className="summary-header">
             <div>
