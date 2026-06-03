@@ -220,33 +220,43 @@ export default function Carreras() {
     setProgreso(0)
     const folder = `flamarun/${fotosModal.nombre.replace(/\s+/g, '_')}`
 
-    // Traer public_ids ya existentes para esta carrera
+    // Traer hashes ya existentes para esta carrera
     const { data: existentes } = await supabase
       .from('fotos_carreras')
-      .select('cloudinary_public_id')
+      .select('file_hash')
       .eq('carrera_id', fotosModal.id)
-    const idsExistentes = new Set((existentes || []).map(f => f.cloudinary_public_id))
+    const hashesExistentes = new Set((existentes || []).map(f => f.file_hash).filter(Boolean))
+
+    async function hashArchivo(file) {
+      const buffer = await file.arrayBuffer()
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
+    }
 
     let duplicadas = 0
     for (let i = 0; i < archivos.length; i++) {
+      const archivo = archivos[i]
+      const hash = await hashArchivo(archivo)
+      if (hashesExistentes.has(hash)) {
+        duplicadas++
+        setProgreso(Math.round(((i + 1) / archivos.length) * 100))
+        continue
+      }
       const fd = new FormData()
-      fd.append('file', archivos[i])
+      fd.append('file', archivo)
       fd.append('upload_preset', PRESET)
       fd.append('folder', folder)
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
       const data = await res.json()
       if (data.secure_url) {
-        if (idsExistentes.has(data.public_id)) {
-          duplicadas++
-        } else {
-          await supabase.from('fotos_carreras').insert({
-            carrera_id: fotosModal.id,
-            user_id: user.id,
-            cloudinary_url: data.secure_url,
-            cloudinary_public_id: data.public_id,
-          })
-          idsExistentes.add(data.public_id)
-        }
+        await supabase.from('fotos_carreras').insert({
+          carrera_id: fotosModal.id,
+          user_id: user.id,
+          cloudinary_url: data.secure_url,
+          cloudinary_public_id: data.public_id,
+          file_hash: hash,
+        })
+        hashesExistentes.add(hash)
       }
       setProgreso(Math.round(((i + 1) / archivos.length) * 100))
     }
