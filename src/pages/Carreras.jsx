@@ -218,9 +218,23 @@ export default function Carreras() {
     setUploading(true)
     setProgreso(0)
     const folder = `flamarun/${fotosModal.nombre.replace(/\s+/g, '_')}`
+
+    // Traer public_ids ya existentes para esta carrera
+    const { data: existentes } = await supabase
+      .from('fotos_carreras')
+      .select('cloudinary_public_id')
+      .eq('carrera_id', fotosModal.id)
+    const idsExistentes = new Set((existentes || []).map(f => f.cloudinary_public_id))
+
+    let duplicadas = 0
     for (let i = 0; i < archivos.length; i++) {
+      const archivo = archivos[i]
+      const nombreSinExt = archivo.name.replace(/\.[^/.]+$/, '')
+      const publicIdEsperado = `${folder}/${nombreSinExt}`
+      if (idsExistentes.has(publicIdEsperado)) { duplicadas++; setProgreso(Math.round(((i + 1) / archivos.length) * 100)); continue }
+
       const fd = new FormData()
-      fd.append('file', archivos[i])
+      fd.append('file', archivo)
       fd.append('upload_preset', PRESET)
       fd.append('folder', folder)
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
@@ -237,7 +251,12 @@ export default function Carreras() {
     }
     setUploading(false)
     fotoInputRef.current.value = ''
-    setToast(archivos.length === 1 ? '📸 ¡Foto compartida con el equipo!' : `📸 ¡${archivos.length} fotos compartidas con el equipo!`)
+    const subidas = archivos.length - duplicadas
+    if (subidas > 0) {
+      setToast(subidas === 1 ? '📸 ¡Foto compartida con el equipo!' : `📸 ¡${subidas} fotos compartidas con el equipo!`)
+    } else {
+      setToast('⚠️ Esas fotos ya fueron subidas')
+    }
     setTimeout(() => setToast(''), 3000)
     abrirFotos(fotosModal)
   }
@@ -657,13 +676,14 @@ export default function Carreras() {
                     />
                     {foto.uploader?.nombre && (
                       <div style={{
-                        position: 'absolute', bottom: 0, left: 0, right: 0,
-                        padding: '12px 6px 4px',
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.65), transparent)',
-                        fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 500,
-                        pointerEvents: 'none',
+                        position: 'absolute', bottom: 4, left: 4,
+                        background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(4px)',
+                        borderRadius: 4, padding: '2px 6px',
+                        fontSize: 10, color: '#fff', fontWeight: 500,
+                        pointerEvents: 'none', maxWidth: 'calc(100% - 32px)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
-                        {foto.uploader.nombre.split(' ')[0]}
+                        {foto.uploader.nombre}
                       </div>
                     )}
                     {(isAdmin || foto.user_id === user.id) && (
