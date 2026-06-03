@@ -659,6 +659,18 @@ export default function Carreras() {
           </div>
 
           <input ref={fotoInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleSubirFotos} />
+
+          {toast && (
+            <div style={{
+              position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+              background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
+              color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
+              fontSize: '13px', fontWeight: 500, zIndex: 10,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)', whiteSpace: 'nowrap',
+            }}>
+              {toast}
+            </div>
+          )}
         </div>
       )}
 
