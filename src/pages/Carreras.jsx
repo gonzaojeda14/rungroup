@@ -698,9 +698,9 @@ export default function Carreras() {
                 )
               })()}
 
-              {multiDist && estado !== 'No voy' && (
-                <div className="dist-selector">
-                  <span style={{ fontSize: '12px', color: '#94a3b8', marginRight: '0.5rem' }}>¿En qué distancia corrés?</span>
+              {multiDist && (
+                <div className="dist-selector" style={estado === 'No voy' ? { opacity: 0.35, pointerEvents: 'none' } : {}}>
+                  <span style={{ fontSize: '12px', color: 'var(--text2)', marginRight: '0.5rem' }}>¿En qué distancia corrés?</span>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {dists.map(d => (
                       <button

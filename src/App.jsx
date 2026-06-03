@@ -61,7 +61,7 @@ function Shell() {
   }, [])
 
   useEffect(() => {
-    if (!user) return
+    if (!user || profile === null) return
     async function checkAvisos() {
       const ahora = new Date().toISOString()
       const leidoHasta = profile?.avisos_leido_hasta
