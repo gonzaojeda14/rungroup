@@ -718,7 +718,7 @@ export default function Carreras() {
         />
       )}
 
-      {toast && (
+      {toast && !fotosModal && (
         <div style={{
           position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
           background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
