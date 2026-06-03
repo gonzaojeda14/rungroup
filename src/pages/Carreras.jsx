@@ -1,6 +1,7 @@
 import PageLoader from '../components/PageLoader'
 import ConfirmModal from '../components/ConfirmModal'
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatFechaHora } from '../lib/utils'
@@ -25,6 +26,7 @@ const today = new Date().toISOString().split('T')[0]
 
 export default function Carreras() {
   const { isAdmin, user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [toast, setToast] = useState('')
   const [carreras, setCarreras] = useState([])
   const [participaciones, setParticipaciones] = useState([])
@@ -59,9 +61,19 @@ export default function Carreras() {
   const [fotoAmpliada, setFotoAmpliada] = useState(null)
   const [confirmarEliminarFoto, setConfirmarEliminarFoto] = useState(null)
   const [confirmarBorrarTodas, setConfirmarBorrarTodas] = useState(false)
+  const [seleccionadas, setSeleccionadas] = useState(new Set())
+  const [confirmarBorrarSeleccion, setConfirmarBorrarSeleccion] = useState(false)
   const fotoInputRef = useRef()
 
   useEffect(() => { fetchAll() }, [])
+
+  useEffect(() => {
+    const fotosId = searchParams.get('fotos')
+    if (fotosId && carreras.length > 0 && !fotosModal) {
+      const carrera = carreras.find(c => c.id === fotosId)
+      if (carrera) abrirFotos(carrera)
+    }
+  }, [carreras, searchParams])
 
   async function fetchAll() {
     const [{ data: cars }, { data: parts }] = await Promise.all([
@@ -191,6 +203,7 @@ export default function Carreras() {
 
   async function abrirFotos(carrera) {
     setFotosModal(carrera)
+    setSearchParams({ fotos: carrera.id }, { replace: true })
     setFotos([])
     setFotosLoading(true)
     const { data } = await supabase
@@ -284,6 +297,21 @@ export default function Carreras() {
     await supabase.from('fotos_carreras').delete().eq('carrera_id', fotosModal.id)
     setConfirmarBorrarTodas(false)
     setFotos([])
+  }
+
+  async function borrarSeleccionadas() {
+    await supabase.from('fotos_carreras').delete().in('id', [...seleccionadas])
+    setSeleccionadas(new Set())
+    setConfirmarBorrarSeleccion(false)
+    setFotos(prev => prev.filter(f => !seleccionadas.has(f.id)))
+  }
+
+  function toggleSeleccion(id) {
+    setSeleccionadas(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
   }
 
   function getDistancias(c) {
@@ -666,7 +694,7 @@ export default function Carreras() {
               >
                 {uploading ? `${progreso}%` : '+ Subir'}
               </button>
-              <button onClick={() => setFotosModal(null)} className="btn-ghost" style={{ height: 34, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button onClick={() => { setFotosModal(null); setSeleccionadas(new Set()); setSearchParams({}, { replace: true }) }} className="btn-ghost" style={{ height: 34, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                 Volver
               </button>
@@ -692,45 +720,76 @@ export default function Carreras() {
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
-                {fotos.map(foto => (
-                  <div key={foto.id} style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'var(--bg3)' }}>
-                    <img
-                      src={foto.cloudinary_url.replace('/upload/', '/upload/w_400,q_auto/')}
-                      alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                      onClick={() => setFotoAmpliada(foto)}
-                      loading="lazy"
-                    />
-                    {foto.uploader?.nombre && (
-                      <div style={{
-                        position: 'absolute', bottom: 4, left: 4,
-                        background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(4px)',
-                        borderRadius: 4, padding: '2px 6px',
-                        fontSize: 10, color: '#fff', fontWeight: 500,
-                        pointerEvents: 'none', maxWidth: 'calc(100% - 32px)',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {foto.uploader.nombre}
-                      </div>
-                    )}
-                    {(isAdmin || foto.user_id === user.id) && (
-                      <button
-                        onClick={() => setConfirmarEliminarFoto(foto)}
-                        style={{
-                          position: 'absolute', top: 4, right: 4, width: 22, height: 22,
-                          borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: 'none',
-                          color: '#fff', fontSize: 11, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}
-                      >✕</button>
-                    )}
-                  </div>
-                ))}
+                {fotos.map(foto => {
+                  const estaSeleccionada = seleccionadas.has(foto.id)
+                  const puedeBorrar = isAdmin || foto.user_id === user.id
+                  return (
+                    <div
+                      key={foto.id}
+                      style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'var(--bg3)', outline: estaSeleccionada ? '3px solid #ff2d2d' : 'none', outlineOffset: '-3px' }}
+                      onClick={() => seleccionadas.size > 0 ? (puedeBorrar && toggleSeleccion(foto.id)) : setFotoAmpliada(foto)}
+                    >
+                      <img
+                        src={foto.cloudinary_url.replace('/upload/', '/upload/w_400,q_auto/')}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                        loading="lazy"
+                      />
+                      {estaSeleccionada && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,45,45,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#ff2d2d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </div>
+                        </div>
+                      )}
+                      {foto.uploader?.nombre && (
+                        <div style={{
+                          position: 'absolute', bottom: 4, left: 4,
+                          background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(4px)',
+                          borderRadius: 4, padding: '2px 6px',
+                          fontSize: 10, color: '#fff', fontWeight: 500,
+                          pointerEvents: 'none', maxWidth: 'calc(100% - 32px)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {foto.uploader.nombre}
+                        </div>
+                      )}
+                      {puedeBorrar && seleccionadas.size === 0 && (
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleSeleccion(foto.id) }}
+                          style={{
+                            position: 'absolute', top: 4, right: 4, width: 22, height: 22,
+                            borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: 'none',
+                            color: '#fff', fontSize: 11, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >✕</button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
 
           <input ref={fotoInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleSubirFotos} />
+
+          {seleccionadas.size > 0 && (
+            <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 10 }}>
+              <button
+                onClick={() => setConfirmarBorrarSeleccion(true)}
+                style={{ padding: '10px 20px', background: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.4)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
+              >
+                🗑 Borrar {seleccionadas.size} foto{seleccionadas.size !== 1 ? 's' : ''}
+              </button>
+              <button
+                onClick={() => setSeleccionadas(new Set())}
+                style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.6)', color: '#94a3b8', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
 
           {toast && (
             <div style={{
@@ -781,6 +840,14 @@ export default function Carreras() {
           mensaje={`¿Borrar las ${fotos.length} fotos de ${fotosModal?.nombre}? Esta acción no se puede deshacer.`}
           onConfirm={borrarTodasLasFotos}
           onCancel={() => setConfirmarBorrarTodas(false)}
+        />
+      )}
+
+      {confirmarBorrarSeleccion && (
+        <ConfirmModal
+          mensaje={`¿Borrar ${seleccionadas.size} foto${seleccionadas.size !== 1 ? 's' : ''} seleccionada${seleccionadas.size !== 1 ? 's' : ''}?`}
+          onConfirm={borrarSeleccionadas}
+          onCancel={() => setConfirmarBorrarSeleccion(false)}
         />
       )}
 
