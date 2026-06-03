@@ -743,8 +743,8 @@ export default function Carreras() {
 
               {/* Quiénes van */}
               {(() => {
-                const total = participaciones.filter(p => p.carrera_id === c.id && p.estado === 'Inscripto').length
                 const abierto = inscriptosAbiertos[c.id]
+                const total = Array.isArray(abierto) ? abierto.length : participaciones.filter(p => p.carrera_id === c.id && p.estado === 'Inscripto').length
                 return (
                   <div style={{ marginTop: '10px' }}>
                     <button
