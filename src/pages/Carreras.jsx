@@ -58,6 +58,7 @@ export default function Carreras() {
   const [progreso, setProgreso] = useState(0)
   const [fotoAmpliada, setFotoAmpliada] = useState(null)
   const [confirmarEliminarFoto, setConfirmarEliminarFoto] = useState(null)
+  const [confirmarBorrarTodas, setConfirmarBorrarTodas] = useState(false)
   const fotoInputRef = useRef()
 
   useEffect(() => { fetchAll() }, [])
@@ -265,6 +266,12 @@ export default function Carreras() {
     await supabase.from('fotos_carreras').delete().eq('id', foto.id)
     setConfirmarEliminarFoto(null)
     setFotos(prev => prev.filter(f => f.id !== foto.id))
+  }
+
+  async function borrarTodasLasFotos() {
+    await supabase.from('fotos_carreras').delete().eq('carrera_id', fotosModal.id)
+    setConfirmarBorrarTodas(false)
+    setFotos([])
   }
 
   function getDistancias(c) {
@@ -631,6 +638,14 @@ export default function Carreras() {
               <div style={{ fontSize: '12px', color: '#64748b' }}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</div>
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {isAdmin && fotos.length > 0 && (
+                <button
+                  onClick={() => setConfirmarBorrarTodas(true)}
+                  style={{ height: 34, fontSize: 13, padding: '0 12px', background: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  🗑 Borrar todas
+                </button>
+              )}
               <button
                 onClick={() => fotoInputRef.current?.click()}
                 disabled={uploading}
@@ -746,6 +761,14 @@ export default function Carreras() {
           mensaje="¿Eliminar esta foto?"
           onConfirm={() => eliminarFoto(confirmarEliminarFoto)}
           onCancel={() => setConfirmarEliminarFoto(null)}
+        />
+      )}
+
+      {confirmarBorrarTodas && (
+        <ConfirmModal
+          mensaje={`¿Borrar las ${fotos.length} fotos de ${fotosModal?.nombre}? Esta acción no se puede deshacer.`}
+          onConfirm={borrarTodasLasFotos}
+          onCancel={() => setConfirmarBorrarTodas(false)}
         />
       )}
 
