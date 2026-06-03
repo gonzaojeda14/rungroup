@@ -13,7 +13,27 @@ export default function Corredores() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
 
-  useEffect(() => { fetchCorredores() }, [])
+  const [bugs, setBugs] = useState([])
+
+  useEffect(() => { fetchCorredores(); fetchBugs() }, [])
+
+  async function fetchBugs() {
+    const { data } = await supabase
+      .from('bug_reports')
+      .select('*, reporter:profiles(nombre)')
+      .order('created_at', { ascending: false })
+    setBugs(data || [])
+  }
+
+  async function resolverBug(id) {
+    await supabase.from('bug_reports').update({ estado: 'resuelto', resuelto_at: new Date().toISOString() }).eq('id', id)
+    fetchBugs()
+  }
+
+  async function eliminarBug(id) {
+    await supabase.from('bug_reports').delete().eq('id', id)
+    fetchBugs()
+  }
 
   async function fetchCorredores() {
     const { data } = await supabase.from('profiles').select('*').order('nombre')
@@ -130,6 +150,47 @@ export default function Corredores() {
           </div>
         ))}
       </div>
+
+      {/* BUGS */}
+      {bugs.length > 0 && (
+        <div style={{ marginTop: '24px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+            🐛 Reportes de problemas
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {bugs.map(b => (
+              <div key={b.id} className="card" style={{ borderLeft: b.estado === 'resuelto' ? '3px solid rgba(74,222,128,0.4)' : '3px solid rgba(251,191,36,0.4)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '2px' }}>{b.reporter?.nombre}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{new Date(b.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                  <span style={{
+                    fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px',
+                    background: b.estado === 'resuelto' ? 'rgba(74,222,128,0.15)' : 'rgba(251,191,36,0.15)',
+                    color: b.estado === 'resuelto' ? '#4ade80' : '#fbbf24',
+                  }}>
+                    {b.estado === 'resuelto' ? '✓ Resuelto' : '⏳ Pendiente'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '14px', marginBottom: b.foto_url ? '10px' : '10px' }}>{b.descripcion}</div>
+                {b.foto_url && (
+                  <img src={b.foto_url.replace('/upload/', '/upload/w_600,q_auto/')} alt="bug" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' }}
+                    onClick={() => window.open(b.foto_url, '_blank')} />
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {b.estado === 'pendiente' && (
+                    <button onClick={() => resolverBug(b.id)} className="btn-ghost" style={{ fontSize: '12px', height: 30, padding: '0 12px', color: '#4ade80', borderColor: 'rgba(74,222,128,0.3)' }}>
+                      ✓ Marcar resuelto
+                    </button>
+                  )}
+                  <button onClick={() => eliminarBug(b.id)} className="btn-icon danger" style={{ fontSize: '12px' }}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

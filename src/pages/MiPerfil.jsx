@@ -1,10 +1,12 @@
 import PageLoader from '../components/PageLoader'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatFecha } from '../lib/utils'
 
 const thisYear = new Date().getFullYear()
+const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
 export default function MiPerfil() {
   const { user, profile } = useAuth()
@@ -24,7 +26,50 @@ export default function MiPerfil() {
   const [loading, setLoading] = useState(true)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
 
-  useEffect(() => { fetchProfile() }, [])
+  // Bugs
+  const [bugs, setBugs] = useState([])
+  const [bugDesc, setBugDesc] = useState('')
+  const [bugFoto, setBugFoto] = useState(null)
+  const [savingBug, setSavingBug] = useState(false)
+  const [msgBug, setMsgBug] = useState('')
+  const bugFotoRef = useRef()
+
+  useEffect(() => { fetchProfile(); fetchBugs() }, [])
+
+  async function fetchBugs() {
+    // Borrar los resueltos con más de 24h
+    const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    await supabase.from('bug_reports').delete()
+      .eq('user_id', user.id).eq('estado', 'resuelto').lt('resuelto_at', hace24h)
+    const { data } = await supabase.from('bug_reports')
+      .select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+    setBugs(data || [])
+  }
+
+  async function enviarBug(e) {
+    e.preventDefault()
+    if (!bugDesc.trim()) return
+    setSavingBug(true)
+    setMsgBug('')
+    let foto_url = null
+    if (bugFoto) {
+      const fd = new FormData()
+      fd.append('file', bugFoto)
+      fd.append('upload_preset', PRESET)
+      fd.append('folder', 'flamarun/bugs')
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.secure_url) foto_url = data.secure_url
+    }
+    await supabase.from('bug_reports').insert({ user_id: user.id, descripcion: bugDesc.trim(), foto_url })
+    setBugDesc('')
+    setBugFoto(null)
+    if (bugFotoRef.current) bugFotoRef.current.value = ''
+    setMsgBug('✅ Reporte enviado, gracias!')
+    setTimeout(() => setMsgBug(''), 3000)
+    setSavingBug(false)
+    fetchBugs()
+  }
 
   function toggleModo() {
     const nuevoModo = !modoClaro
@@ -307,6 +352,59 @@ export default function MiPerfil() {
             {modoClaro ? '☀️' : '🌙'}
           </span>
         </button>
+      </div>
+
+      {/* REPORTAR PROBLEMA */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>🐛 Reportar un problema</h3>
+        <form onSubmit={enviarBug}>
+          <div className="field" style={{ marginBottom: '10px' }}>
+            <label>¿Qué pasó?</label>
+            <textarea
+              value={bugDesc}
+              onChange={e => setBugDesc(e.target.value)}
+              placeholder="Describí el problema lo más claro posible..."
+              required
+              style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', padding: '10px 12px', fontSize: '14px', resize: 'none', minHeight: '90px', fontFamily: 'inherit' }}
+            />
+          </div>
+          <div className="field" style={{ marginBottom: '12px' }}>
+            <label>Foto (opcional)</label>
+            <label className="file-upload-label">
+              <input ref={bugFotoRef} type="file" accept="image/*" onChange={e => setBugFoto(e.target.files[0])} style={{ display: 'none' }} />
+              <span className="file-upload-btn">{bugFoto ? `✅ ${bugFoto.name}` : '📎 Adjuntar imagen'}</span>
+            </label>
+          </div>
+          {msgBug && <div className="success-msg" style={{ marginBottom: '10px' }}>{msgBug}</div>}
+          <button type="submit" className="btn-primary" disabled={savingBug || !bugDesc.trim()}>
+            {savingBug ? 'Enviando...' : 'Enviar reporte'}
+          </button>
+        </form>
+
+        {bugs.length > 0 && (
+          <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Mis reportes</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {bugs.map(b => (
+                <div key={b.id} style={{ background: 'var(--bg3)', borderRadius: '8px', padding: '10px 12px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', marginBottom: '4px' }}>{b.descripcion}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text2)' }}>
+                      {new Date(b.created_at).toLocaleDateString('es-AR')}
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', flexShrink: 0,
+                    background: b.estado === 'resuelto' ? 'rgba(74,222,128,0.15)' : 'rgba(251,191,36,0.15)',
+                    color: b.estado === 'resuelto' ? '#4ade80' : '#fbbf24',
+                  }}>
+                    {b.estado === 'resuelto' ? '✓ Resuelto' : '⏳ Pendiente'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* CAMBIAR CONTRASEÑA */}
