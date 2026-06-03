@@ -132,13 +132,23 @@ export default function MiPerfil() {
     setSavingCert(false)
   }
 
+  function abrirEnNuevaPestana(url) {
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   async function verCertificado() {
-    if (certInfo.url.startsWith('http')) { window.open(certInfo.url, '_blank'); return }
+    if (certInfo.url.startsWith('http')) { abrirEnNuevaPestana(certInfo.url); return }
     const { data, error } = await supabase.storage
       .from('certificados')
       .createSignedUrl(certInfo.url, 60 * 60)
     if (error || !data?.signedUrl) { alert('No se pudo abrir el certificado'); return }
-    window.open(data.signedUrl, '_blank')
+    abrirEnNuevaPestana(data.signedUrl)
   }
 
   const certAnio = certInfo.fecha ? new Date(certInfo.fecha).getFullYear() : null

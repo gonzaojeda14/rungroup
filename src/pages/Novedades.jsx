@@ -95,7 +95,13 @@ export default function Novedades() {
       .from('planes')
       .createSignedUrl(url, 60 * 60)
     if (error || !data?.signedUrl) { alert('No se pudo abrir el archivo'); return }
-    window.open(data.signedUrl, '_blank')
+    const a = document.createElement('a')
+    a.href = data.signedUrl
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   const planes = itemsVisibles.filter(i => i.tipo === 'plan')
