@@ -157,8 +157,8 @@ export default function MiPerfil() {
   function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    const validTypes = ['image/jpeg', 'image/jpg', 'application/pdf']
-    if (!validTypes.includes(file.type)) { setMsgCert('El archivo debe ser JPG o PDF'); return }
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/octet-stream', '']
+    if (file.type && !validTypes.includes(file.type) && !file.type.startsWith('image/')) { setMsgCert('El archivo debe ser JPG, PNG o PDF'); return }
     if (file.size > 10 * 1024 * 1024) { setMsgCert('El archivo no puede superar 10MB'); return }
     setMsgCert('')
     setCertFile(file)
@@ -186,23 +186,14 @@ export default function MiPerfil() {
     setSavingCert(false)
   }
 
-  function abrirEnNuevaPestana(url) {
-    const a = document.createElement('a')
-    a.href = url
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
-
   async function verCertificado() {
-    if (certInfo.url.startsWith('http')) { abrirEnNuevaPestana(certInfo.url); return }
+    if (certInfo.url.startsWith('http')) { window.open(certInfo.url, '_blank'); return }
+    const win = window.open('', '_blank')
     const { data, error } = await supabase.storage
       .from('certificados')
       .createSignedUrl(certInfo.url, 60 * 60)
-    if (error || !data?.signedUrl) { alert('No se pudo abrir el certificado'); return }
-    abrirEnNuevaPestana(data.signedUrl)
+    if (error || !data?.signedUrl) { win?.close(); alert('No se pudo abrir el certificado'); return }
+    win.location.href = data.signedUrl
   }
 
   const certAnio = certInfo.fecha ? new Date(certInfo.fecha).getFullYear() : null

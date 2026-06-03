@@ -91,17 +91,12 @@ export default function Novedades() {
   }
 
   async function abrirArchivo(url) {
+    const win = window.open('', '_blank')
     const { data, error } = await supabase.storage
       .from('planes')
       .createSignedUrl(url, 60 * 60)
-    if (error || !data?.signedUrl) { alert('No se pudo abrir el archivo'); return }
-    const a = document.createElement('a')
-    a.href = data.signedUrl
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    if (error || !data?.signedUrl) { win?.close(); alert('No se pudo abrir el archivo'); return }
+    win.location.href = data.signedUrl
   }
 
   const planes = itemsVisibles.filter(i => i.tipo === 'plan')
