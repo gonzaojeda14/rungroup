@@ -322,6 +322,7 @@ export default function Carreras() {
 
   // Distancias únicas para el filtro
   const todasDistancias = [...new Set(carreras.flatMap(c => getDistancias(c)))]
+    .sort((a, b) => parseFloat(a) - parseFloat(b))
 
   // Aplicar filtros
   const carrerasFiltradas = carreras.filter(c => {
