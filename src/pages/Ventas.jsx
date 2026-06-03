@@ -224,12 +224,12 @@ export default function Ventas() {
       <div className="page-header">
         <h2>Inscripciones</h2>
         <button className="btn-accent" onClick={() => setShowForm(s => !s)}>
-          {showForm ? 'Cancelar' : '+ Ceder inscripción'}
+          {showForm ? 'Cancelar' : '+ Transferir inscripción'}
         </button>
       </div>
 
       <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px', marginTop: '-8px' }}>
-        Espacio para ceder inscripciones a quienes quieran correr y no consiguieron lugar.
+        Espacio para transferir inscripciones a quienes quieran correr y no consiguieron lugar.
       </p>
 
       {/* ALERTA: oferta activa para mí como comprador */}
@@ -281,7 +281,7 @@ export default function Ventas() {
       {/* FORM */}
       {showForm && (
         <form className="card form-card" onSubmit={handlePublicar}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Ceder inscripción</h3>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Transferir inscripción</h3>
           <div className="form-grid">
             <div className="field full">
               <label>Carrera *</label>
@@ -371,7 +371,7 @@ export default function Ventas() {
               {v.precio && <div style={{ fontSize: '14px', marginTop: '6px' }}>💰 ${Number(v.precio).toLocaleString()}</div>}
               {v.nota && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>📝 {v.nota}</div>}
               <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
-                Cede: <strong style={{ color: '#f1f5f9' }}>{v.vendedor?.nombre}</strong>
+                Transfiere: <strong style={{ color: '#f1f5f9' }}>{v.vendedor?.nombre}</strong>
               </div>
               {v.vendedor?.telefono && (
                 <a
@@ -389,7 +389,7 @@ export default function Ventas() {
       )}
 
       {misVentas.length === 0 && ventasOtros.length === 0 && !miOferta && (
-        <div className="empty-state">No hay inscripciones disponibles para ceder</div>
+        <div className="empty-state">No hay inscripciones disponibles para transferir</div>
       )}
     </div>
   )
