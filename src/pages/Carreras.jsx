@@ -229,34 +229,36 @@ export default function Carreras() {
 
     let duplicadas = 0
     for (let i = 0; i < archivos.length; i++) {
-      const archivo = archivos[i]
-      const nombreSinExt = archivo.name.replace(/\.[^/.]+$/, '')
-      const publicIdEsperado = `${folder}/${nombreSinExt}`
-      if (idsExistentes.has(publicIdEsperado)) { duplicadas++; setProgreso(Math.round(((i + 1) / archivos.length) * 100)); continue }
-
       const fd = new FormData()
-      fd.append('file', archivo)
+      fd.append('file', archivos[i])
       fd.append('upload_preset', PRESET)
       fd.append('folder', folder)
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
       const data = await res.json()
       if (data.secure_url) {
-        await supabase.from('fotos_carreras').insert({
-          carrera_id: fotosModal.id,
-          user_id: user.id,
-          cloudinary_url: data.secure_url,
-          cloudinary_public_id: data.public_id,
-        })
+        if (idsExistentes.has(data.public_id)) {
+          duplicadas++
+        } else {
+          await supabase.from('fotos_carreras').insert({
+            carrera_id: fotosModal.id,
+            user_id: user.id,
+            cloudinary_url: data.secure_url,
+            cloudinary_public_id: data.public_id,
+          })
+          idsExistentes.add(data.public_id)
+        }
       }
       setProgreso(Math.round(((i + 1) / archivos.length) * 100))
     }
     setUploading(false)
     fotoInputRef.current.value = ''
     const subidas = archivos.length - duplicadas
-    if (subidas > 0) {
-      setToast(subidas === 1 ? '📸 ¡Foto compartida con el equipo!' : `📸 ¡${subidas} fotos compartidas con el equipo!`)
+    if (duplicadas > 0 && subidas === 0) {
+      setToast('⚠️ Esas fotos ya estaban subidas')
+    } else if (duplicadas > 0) {
+      setToast(`📸 ${subidas} subida${subidas !== 1 ? 's' : ''} · ${duplicadas} ya existía${duplicadas !== 1 ? 'n' : ''}`)
     } else {
-      setToast('⚠️ Esas fotos ya fueron subidas')
+      setToast(subidas === 1 ? '📸 ¡Foto compartida con el equipo!' : `📸 ¡${subidas} fotos compartidas con el equipo!`)
     }
     setTimeout(() => setToast(''), 3000)
     abrirFotos(fotosModal)
