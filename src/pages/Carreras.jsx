@@ -43,6 +43,7 @@ export default function Carreras() {
     } catch { return { tipo: '', distancias: [], fecha: 'proximas', mes: '' } }
   })
   const [showFiltros, setShowFiltros] = useState(false)
+  const [inscriptosAbiertos, setInscriptosAbiertos] = useState({}) // carreraId -> [perfiles] | 'loading'
 
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
@@ -315,6 +316,20 @@ export default function Carreras() {
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
+  }
+
+  async function toggleInscriptos(carreraId) {
+    if (inscriptosAbiertos[carreraId]) {
+      setInscriptosAbiertos(prev => { const n = { ...prev }; delete n[carreraId]; return n })
+      return
+    }
+    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: 'loading' }))
+    const { data } = await supabase
+      .from('participaciones')
+      .select('profiles(nombre, avatar_url)')
+      .eq('carrera_id', carreraId)
+      .eq('estado', 'Inscripto')
+    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: data?.map(p => p.profiles).filter(Boolean) || [] }))
   }
 
   function getDistancias(c) {
@@ -719,6 +734,59 @@ export default function Carreras() {
                   </div>
                 )}
               </div>
+
+              {/* Quiénes van */}
+              {(() => {
+                const total = participaciones.filter(p => p.carrera_id === c.id && p.estado === 'Inscripto').length
+                const abierto = inscriptosAbiertos[c.id]
+                return (
+                  <div style={{ marginTop: '10px' }}>
+                    <button
+                      onClick={() => toggleInscriptos(c.id)}
+                      style={{
+                        width: '100%', padding: '8px',
+                        background: abierto ? 'var(--bg3)' : 'var(--bg3)',
+                        border: '1px solid var(--border)',
+                        borderRadius: abierto ? '8px 8px 0 0' : '8px',
+                        color: 'var(--text2)', fontSize: '13px',
+                        cursor: 'pointer', fontFamily: 'inherit',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      }}
+                    >
+                      <span>👟 {total} inscripto{total !== 1 ? 's' : ''}</span>
+                      <span style={{ fontSize: '11px' }}>{abierto ? '▲ Ocultar' : '▼ Ver quiénes van'}</span>
+                    </button>
+                    {abierto && (
+                      <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '8px 12px' }}>
+                        {abierto === 'loading' ? (
+                          <div style={{ fontSize: '13px', color: 'var(--text2)', textAlign: 'center', padding: '4px 0' }}>Cargando...</div>
+                        ) : abierto.length === 0 ? (
+                          <div style={{ fontSize: '13px', color: 'var(--text2)' }}>Nadie inscripto todavía</div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {abierto.map((p, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                                <div style={{
+                                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                                  background: 'rgba(255,45,45,0.15)', overflow: 'hidden',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 10, fontWeight: 700, color: 'var(--accent)',
+                                }}>
+                                  {p.avatar_url
+                                    ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                    : p.nombre?.[0]?.toUpperCase()
+                                  }
+                                </div>
+                                <span>{p.nombre}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               {/* Botón fotos solo en carreras pasadas */}
               {c.fecha && c.fecha < today && (
