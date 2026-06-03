@@ -1,8 +1,12 @@
 import PageLoader from '../components/PageLoader'
+import ConfirmModal from '../components/ConfirmModal'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatFechaHora } from '../lib/utils'
+
+const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
 const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
 const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera']
@@ -32,6 +36,16 @@ export default function Carreras() {
   const [showForm, setShowForm] = useState(false)
   const [filtros, setFiltros] = useState({ tipo: '', distancias: [], fecha: 'proximas' })
   const formRef = useRef(null)
+
+  // Fotos
+  const [fotosModal, setFotosModal] = useState(null) // carrera seleccionada
+  const [fotos, setFotos] = useState([])
+  const [fotosLoading, setFotosLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [progreso, setProgreso] = useState(0)
+  const [fotoAmpliada, setFotoAmpliada] = useState(null)
+  const [confirmarEliminarFoto, setConfirmarEliminarFoto] = useState(null)
+  const fotoInputRef = useRef()
 
   useEffect(() => { fetchAll() }, [])
 
@@ -159,6 +173,53 @@ export default function Carreras() {
       if (exists) return prev.map(p => p.carrera_id === carreraId ? { ...p, estado } : p)
       return [...prev, { carrera_id: carreraId, estado }]
     })
+  }
+
+  async function abrirFotos(carrera) {
+    setFotosModal(carrera)
+    setFotos([])
+    setFotosLoading(true)
+    const { data } = await supabase
+      .from('fotos_carreras')
+      .select('*, uploader:profiles(nombre)')
+      .eq('carrera_id', carrera.id)
+      .order('created_at', { ascending: false })
+    setFotos(data || [])
+    setFotosLoading(false)
+  }
+
+  async function handleSubirFotos(e) {
+    const archivos = Array.from(e.target.files)
+    if (!archivos.length || !fotosModal) return
+    setUploading(true)
+    setProgreso(0)
+    const folder = `flamarun/${fotosModal.nombre.replace(/\s+/g, '_')}`
+    for (let i = 0; i < archivos.length; i++) {
+      const fd = new FormData()
+      fd.append('file', archivos[i])
+      fd.append('upload_preset', PRESET)
+      fd.append('folder', folder)
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.secure_url) {
+        await supabase.from('fotos_carreras').insert({
+          carrera_id: fotosModal.id,
+          user_id: user.id,
+          cloudinary_url: data.secure_url,
+          cloudinary_public_id: data.public_id,
+        })
+      }
+      setProgreso(Math.round(((i + 1) / archivos.length) * 100))
+    }
+    setUploading(false)
+    fotoInputRef.current.value = ''
+    abrirFotos(fotosModal)
+  }
+
+  async function eliminarFoto(foto) {
+    await supabase.from('fotos_carreras').delete().eq('id', foto.id)
+    setConfirmarEliminarFoto(null)
+    setFotos(prev => prev.filter(f => f.id !== foto.id))
   }
 
   function getDistancias(c) {
@@ -494,10 +555,128 @@ export default function Carreras() {
                   </div>
                 )}
               </div>
+
+              {/* Botón fotos solo en carreras pasadas */}
+              {c.fecha && c.fecha < today && (
+                <button
+                  onClick={() => abrirFotos(c)}
+                  style={{
+                    marginTop: '10px', width: '100%', padding: '8px',
+                    background: 'var(--bg3)', border: '1px solid var(--border)',
+                    borderRadius: '8px', color: '#94a3b8', fontSize: '13px',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  }}
+                >
+                  📷 Ver fotos
+                </button>
+              )}
             </div>
           )
         })}
       </div>
+
+      {/* Modal fotos */}
+      {fotosModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '15px' }}>{fotosModal.nombre}</div>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={() => fotoInputRef.current?.click()}
+                disabled={uploading}
+                className="btn-accent"
+                style={{ height: 34, fontSize: 13, padding: '0 14px' }}
+              >
+                {uploading ? `${progreso}%` : '+ Subir'}
+              </button>
+              <button onClick={() => setFotosModal(null)} className="btn-ghost" style={{ height: 34, fontSize: 13 }}>✕</button>
+            </div>
+          </div>
+
+          {/* Barra de progreso */}
+          {uploading && (
+            <div style={{ height: 3, background: 'var(--bg3)', flexShrink: 0 }}>
+              <div style={{ height: '100%', width: `${progreso}%`, background: 'var(--accent)', transition: 'width 0.3s' }} />
+            </div>
+          )}
+
+          {/* Grid */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '2px' }}>
+            {fotosLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>Cargando...</div>
+            ) : fotos.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '8px', color: '#64748b' }}>
+                <span style={{ fontSize: '36px' }}>📷</span>
+                <span style={{ fontSize: '14px' }}>Todavía no hay fotos</span>
+                <span style={{ fontSize: '12px' }}>¡Subí las tuyas!</span>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
+                {fotos.map(foto => (
+                  <div key={foto.id} style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'var(--bg3)' }}>
+                    <img
+                      src={foto.cloudinary_url.replace('/upload/', '/upload/w_400,q_auto/')}
+                      alt=""
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                      onClick={() => setFotoAmpliada(foto)}
+                      loading="lazy"
+                    />
+                    {(isAdmin || foto.user_id === user.id) && (
+                      <button
+                        onClick={() => setConfirmarEliminarFoto(foto)}
+                        style={{
+                          position: 'absolute', top: 4, right: 4, width: 22, height: 22,
+                          borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: 'none',
+                          color: '#fff', fontSize: 11, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >✕</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <input ref={fotoInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleSubirFotos} />
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {fotoAmpliada && (
+        <div
+          onClick={() => setFotoAmpliada(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <img
+            src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')}
+            alt=""
+            style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }}
+          />
+          <div style={{ marginTop: 10, color: '#94a3b8', fontSize: 13 }}>{fotoAmpliada.uploader?.nombre}</div>
+          <a
+            href={fotoAmpliada.cloudinary_url}
+            download target="_blank" rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{ marginTop: 10, padding: '8px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 13, textDecoration: 'none' }}
+          >
+            ⬇ Descargar original
+          </a>
+        </div>
+      )}
+
+      {confirmarEliminarFoto && (
+        <ConfirmModal
+          mensaje="¿Eliminar esta foto?"
+          onConfirm={() => eliminarFoto(confirmarEliminarFoto)}
+          onCancel={() => setConfirmarEliminarFoto(null)}
+        />
+      )}
 
       {toast && (
         <div style={{
