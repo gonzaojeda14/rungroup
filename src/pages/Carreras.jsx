@@ -181,7 +181,7 @@ export default function Carreras() {
     setFotosLoading(true)
     const { data } = await supabase
       .from('fotos_carreras')
-      .select('*, uploader:profiles(nombre)')
+      .select('*')
       .eq('carrera_id', carrera.id)
       .order('created_at', { ascending: false })
     setFotos(data || [])
@@ -658,7 +658,6 @@ export default function Carreras() {
             alt=""
             style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }}
           />
-          <div style={{ marginTop: 10, color: '#94a3b8', fontSize: 13 }}>{fotoAmpliada.uploader?.nombre}</div>
           <a
             href={fotoAmpliada.cloudinary_url}
             download target="_blank" rel="noopener noreferrer"
