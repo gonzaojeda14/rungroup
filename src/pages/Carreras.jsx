@@ -34,7 +34,20 @@ export default function Carreras() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [filtros, setFiltros] = useState({ tipo: '', distancias: [], fecha: 'proximas' })
+  const [filtros, setFiltros] = useState(() => {
+    try {
+      const saved = localStorage.getItem('carreras_filtros')
+      return saved ? JSON.parse(saved) : { tipo: '', distancias: [], fecha: 'proximas' }
+    } catch { return { tipo: '', distancias: [], fecha: 'proximas' } }
+  })
+
+  function setFiltrosGuardados(fn) {
+    setFiltros(prev => {
+      const next = typeof fn === 'function' ? fn(prev) : fn
+      localStorage.setItem('carreras_filtros', JSON.stringify(next))
+      return next
+    })
+  }
   const formRef = useRef(null)
 
   // Fotos
@@ -313,7 +326,7 @@ export default function Carreras() {
             <button
               key={val}
               className={`filtro-btn ${filtros.fecha === val ? 'active' : ''}`}
-              onClick={() => setFiltros(f => ({ ...f, fecha: val }))}
+              onClick={() => setFiltrosGuardados(f => ({ ...f, fecha: val }))}
             >
               {val === 'proximas' ? 'Próximas' : val === 'pasadas' ? 'Anteriores' : 'Todas'}
             </button>
@@ -324,7 +337,7 @@ export default function Carreras() {
             <button
               key={val}
               className={`filtro-btn ${filtros.tipo === val ? 'active' : ''}`}
-              onClick={() => setFiltros(f => ({ ...f, tipo: val }))}
+              onClick={() => setFiltrosGuardados(f => ({ ...f, tipo: val }))}
             >
               {val || 'Todo tipo'}
             </button>
@@ -334,7 +347,7 @@ export default function Carreras() {
           <div className="filtro-group">
             <button
               className={`filtro-btn ${filtros.distancias.length === 0 ? 'active' : ''}`}
-              onClick={() => setFiltros(f => ({ ...f, distancias: [] }))}
+              onClick={() => setFiltrosGuardados(f => ({ ...f, distancias: [] }))}
             >
               Todas las distancias
             </button>
@@ -345,7 +358,7 @@ export default function Carreras() {
                   key={d}
                   className="filtro-btn"
                   style={selected ? { background: 'rgba(255,45,45,0.2)', color: '#ff2d2d', border: '1px solid rgba(255,45,45,0.4)', fontWeight: 600 } : {}}
-                  onClick={() => setFiltros(f => ({
+                  onClick={() => setFiltrosGuardados(f => ({
                     ...f,
                     distancias: selected ? f.distancias.filter(x => x !== d) : [...f.distancias, d]
                   }))}
