@@ -633,7 +633,7 @@ export default function Carreras() {
                   Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
                   {distSeleccionada && <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
                 </div>
-                {multiDist && !distSeleccionada ? (
+                {multiDist && !distSeleccionada && estado !== 'No voy' ? (
                   <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Elegí una distancia para marcar tu estado</p>
                 ) : (
                   <div className="estado-buttons">
