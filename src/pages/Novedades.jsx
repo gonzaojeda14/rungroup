@@ -177,7 +177,7 @@ export default function Novedades() {
               value={programarEn}
               onChange={e => setProgramarEn(e.target.value)}
             />
-            {programarEn && <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Se publicará el {new Date(programarEn).toLocaleString('es-AR')}</span>}
+            {programarEn && <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '4px' }}>Se publicará el {new Date(programarEn).toLocaleString('es-AR')}</span>}
           </div>
 
           <div className="form-actions">
@@ -192,7 +192,7 @@ export default function Novedades() {
       {/* PLANES SEMANALES */}
       {planes.length > 0 && (
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
             📄 Planes semanales
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -203,7 +203,7 @@ export default function Novedades() {
                     {p.titulo || 'Plan semanal'}
                     {i === 0 && <span style={{ marginLeft: '8px', fontSize: '11px', background: 'rgba(74,222,128,0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '20px' }}>Actual</span>}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>{tiempoAtras(p.created_at)}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{tiempoAtras(p.created_at)}</div>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                   {p.archivo_url && (
@@ -220,7 +220,7 @@ export default function Novedades() {
               <>
                 <button
                   onClick={() => setVerAnteriores(v => !v)}
-                  style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '13px', cursor: 'pointer', textAlign: 'left', padding: '4px 0' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', textAlign: 'left', padding: '4px 0' }}
                 >
                   {verAnteriores ? '▲ Ocultar anteriores' : `▼ Ver ${planesAnteriores.length} planes anteriores`}
                 </button>
@@ -228,7 +228,7 @@ export default function Novedades() {
                   <div key={p.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', opacity: 0.6 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '2px' }}>{p.titulo || 'Plan semanal'}</div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>{tiempoAtras(p.created_at)}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{tiempoAtras(p.created_at)}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {p.archivo_url && <button onClick={() => abrirArchivo(p.archivo_url)} className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px' }}>Abrir →</button>}
@@ -245,7 +245,7 @@ export default function Novedades() {
       {/* ANUNCIOS */}
       {anuncios.length > 0 && (
         <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
             📢 Anuncios
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -254,7 +254,7 @@ export default function Novedades() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: a.contenido ? '8px' : 0 }}>
                   <div>
                     {a.titulo && <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '2px' }}>{a.titulo}</div>}
-                    <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text2)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {isAdmin && a.publicar_en && new Date(a.publicar_en) > new Date()
                         ? <span style={{ color: '#fbbf24' }}>🕐 Programado para {new Date(a.publicar_en).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
                         : tiempoAtras(a.created_at)
@@ -264,7 +264,7 @@ export default function Novedades() {
                   {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(a.id)}>✕</button>}
                 </div>
                 {a.contenido && (
-                  <div style={{ fontSize: '14px', color: '#cbd5e1', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                     {a.contenido}
                   </div>
                 )}
