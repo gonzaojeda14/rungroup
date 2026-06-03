@@ -68,7 +68,9 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
-  const isAdmin = profile?.role === 'admin'
+  const [vistaCorredor, setVistaCorredor] = useState(false)
+  const isAdmin = !vistaCorredor && profile?.role === 'admin'
+  const esRealmenteAdmin = profile?.role === 'admin'
 
   async function marcarAvisosLeidos() {
     const ahora = new Date().toISOString()
@@ -77,7 +79,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, signIn, signOut, marcarAvisosLeidos }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signIn, signOut, marcarAvisosLeidos }}>
       {children}
     </AuthContext.Provider>
   )

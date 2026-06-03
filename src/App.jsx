@@ -49,7 +49,7 @@ function OfertaAlert() {
 }
 
 function Shell() {
-  const { user, loading, isAdmin, signOut, profile } = useAuth()
+  const { user, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signOut, profile } = useAuth()
   const [adminMenu, setAdminMenu] = useState(false)
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
 
@@ -99,6 +99,21 @@ function Shell() {
         <button className="btn-ghost" onClick={signOut}>Salir</button>
       </header>
 
+      {vistaCorredor && (
+        <div
+          onClick={() => setVistaCorredor(false)}
+          style={{
+            background: 'rgba(251,191,36,0.15)', borderBottom: '1px solid rgba(251,191,36,0.3)',
+            padding: '8px 16px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontSize: '13px', color: '#fbbf24',
+          }}
+        >
+          <span>👁 Modo vista corredor</span>
+          <span style={{ fontWeight: 600 }}>Volver a admin →</span>
+        </div>
+      )}
+
       <main className="main-content">
         <OfertaAlert />
         <Routes>
@@ -114,7 +129,7 @@ function Shell() {
       </main>
 
       {/* Admin drawer */}
-      {isAdmin && adminMenu && (
+      {esRealmenteAdmin && adminMenu && (
         <>
           <div onClick={() => setAdminMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)' }} />
           <div style={{
@@ -135,6 +150,14 @@ function Shell() {
                   {icon}<span>{label}</span>
                 </NavLink>
               ))}
+              <button
+                onClick={() => { setVistaCorredor(true); setAdminMenu(false) }}
+                className="nav-item"
+                style={{ background: 'var(--bg3)', borderRadius: '10px', padding: '12px 8px', height: 'auto', gap: '6px', border: 'none', cursor: 'pointer', flexDirection: 'column' }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Vista corredor</span>
+              </button>
             </div>
           </div>
         </>

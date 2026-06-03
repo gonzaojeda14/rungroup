@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function Register() {
+  const codigoUrl = new URLSearchParams(window.location.search).get('code') || ''
   const [form, setForm] = useState({
-    nombre: '', fechaNacimiento: '', telefono: '', email: '', password: '', confirmPassword: ''
+    nombre: '', fechaNacimiento: '', telefono: '', email: '', password: '', confirmPassword: '', codigo: codigoUrl
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -13,6 +14,11 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    const codigoEsperado = import.meta.env.VITE_INVITE_CODE
+    if (!codigoEsperado || form.codigo.trim().toLowerCase() !== codigoEsperado.trim().toLowerCase()) {
+      setError('Código de invitación incorrecto')
+      return
+    }
     if (form.password !== form.confirmPassword) {
       setError('Las contraseñas no coinciden')
       return
@@ -106,6 +112,15 @@ export default function Register() {
         <p className="login-sub">Completá tus datos para registrarte</p>
 
         <form onSubmit={handleSubmit}>
+          <div className="field" style={{ marginBottom: '12px' }}>
+            <label>Código de invitación *</label>
+            <input
+              value={form.codigo}
+              onChange={e => setForm({ ...form, codigo: e.target.value })}
+              placeholder="El código del grupo de WhatsApp"
+              required
+            />
+          </div>
           <div className="field" style={{ marginBottom: '12px' }}>
             <label>Nombre completo *</label>
             <input
