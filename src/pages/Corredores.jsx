@@ -9,8 +9,6 @@ export default function Corredores() {
   const [loading, setLoading] = useState(true)
   const [newEmail, setNewEmail] = useState('')
   const [newNombre, setNewNombre] = useState('')
-  const [newPass, setNewPass] = useState('')
-  const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
 
   const [bugs, setBugs] = useState([])
@@ -56,27 +54,20 @@ export default function Corredores() {
     fetchCorredores()
   }
 
-  async function handleAdd(e) {
+  function generarLink(e) {
     e.preventDefault()
-    setSaving(true)
-    setMsg('')
-    // Crear usuario en Supabase Auth via admin (requiere service role — ver README)
-    // En producción esto se hace desde un Edge Function. Por ahora usamos la API admin.
-    const { data, error } = await supabase.auth.admin.createUser({
+    const base = window.location.origin
+    const params = new URLSearchParams({
+      code: import.meta.env.VITE_INVITE_CODE || '',
+      nombre: newNombre,
       email: newEmail,
-      password: newPass,
-      email_confirm: true,
-      user_metadata: { nombre: newNombre }
     })
-    if (error) {
-      setMsg('Error: ' + error.message)
-    } else {
-      // El trigger de Supabase crea el perfil automáticamente
-      setMsg('✓ Corredor/a agregado/a')
-      setNewEmail(''); setNewNombre(''); setNewPass('')
-      fetchCorredores()
-    }
-    setSaving(false)
+    const link = `${base}/registro?${params.toString()}`
+    navigator.clipboard.writeText(link)
+    setMsg('📋 Link copiado — pegalo en WhatsApp')
+    setTimeout(() => setMsg(''), 3000)
+    setNewEmail('')
+    setNewNombre('')
   }
 
   if (!isAdmin) {
@@ -96,8 +87,8 @@ export default function Corredores() {
         <h2>Corredores ({corredores.length})</h2>
       </div>
 
-      <form className="card form-card" onSubmit={handleAdd}>
-        <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>Agregar corredor/a</h3>
+      <form className="card form-card" onSubmit={generarLink}>
+        <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>Invitar corredor/a</h3>
         <div className="form-grid">
           <div className="field">
             <label>Nombre completo</label>
@@ -107,15 +98,11 @@ export default function Corredores() {
             <label>Email</label>
             <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="ana@email.com" required />
           </div>
-          <div className="field">
-            <label>Contraseña inicial</label>
-            <input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="Min. 6 caracteres" minLength={6} required />
-          </div>
         </div>
-        {msg && <p className={msg.startsWith('✓') ? 'success-msg' : 'error-msg'}>{msg}</p>}
+        {msg && <p className="success-msg">{msg}</p>}
         <div className="form-actions">
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? 'Creando...' : 'Crear cuenta'}
+          <button type="submit" className="btn-primary">
+            Generar link
           </button>
         </div>
       </form>

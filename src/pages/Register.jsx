@@ -2,9 +2,15 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function Register() {
-  const codigoUrl = new URLSearchParams(window.location.search).get('code') || ''
+  const params = new URLSearchParams(window.location.search)
   const [form, setForm] = useState({
-    nombre: '', fechaNacimiento: '', telefono: '', email: '', password: '', confirmPassword: '', codigo: codigoUrl
+    nombre: params.get('nombre') || '',
+    fechaNacimiento: '',
+    telefono: '',
+    email: params.get('email') || '',
+    password: '',
+    confirmPassword: '',
+    codigo: params.get('code') || '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
