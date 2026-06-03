@@ -189,7 +189,9 @@ export default function Carreras() {
   }
 
   async function updateEstado(carreraId, estado) {
-    const distanciaElegida = distanciasSeleccionadas[carreraId] || null
+    const noVoy = estado === 'No voy'
+    const distanciaElegida = noVoy ? null : (distanciasSeleccionadas[carreraId] || null)
+    if (noVoy) setDistanciasSeleccionadas(prev => { const n = { ...prev }; delete n[carreraId]; return n })
     await supabase.from('participaciones')
       .update({ estado, distancia_elegida: distanciaElegida, updated_at: new Date().toISOString() })
       .eq('carrera_id', carreraId)
@@ -606,7 +608,7 @@ export default function Carreras() {
                 )
               })()}
 
-              {multiDist && (
+              {multiDist && estado !== 'No voy' && (
                 <div className="dist-selector">
                   <span style={{ fontSize: '12px', color: '#94a3b8', marginRight: '0.5rem' }}>¿En qué distancia corrés?</span>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -623,7 +625,7 @@ export default function Carreras() {
                       </button>
                     ))}
                   </div>
-                             </div>
+                </div>
               )}
 
               <div className="race-estado-section">
