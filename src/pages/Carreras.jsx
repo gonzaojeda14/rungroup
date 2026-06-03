@@ -226,6 +226,8 @@ export default function Carreras() {
     }
     setUploading(false)
     fotoInputRef.current.value = ''
+    setToast(archivos.length === 1 ? '📸 ¡Foto compartida con el equipo!' : `📸 ¡${archivos.length} fotos compartidas con el equipo!`)
+    setTimeout(() => setToast(''), 3000)
     abrirFotos(fotosModal)
   }
 
