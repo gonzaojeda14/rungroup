@@ -218,8 +218,25 @@ function FlamaLogo({ height = 32 }) {
 
 function GuestOnly({ children }) {
   const { user, loading } = useAuth()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!loading && user) {
+      const t = setTimeout(() => navigate('/carreras', { replace: true }), 2000)
+      return () => clearTimeout(t)
+    }
+  }, [user, loading])
+
   if (loading) return null
-  if (user) return <Navigate to="/carreras" replace />
+  if (user) return (
+    <div className="login-wrapper">
+      <div className="login-card" style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '16px' }}>👟</div>
+        <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>Ya estás logueado</h1>
+        <p style={{ color: '#94a3b8', fontSize: '14px' }}>Te llevamos a la app...</p>
+      </div>
+    </div>
+  )
   return children
 }
 
