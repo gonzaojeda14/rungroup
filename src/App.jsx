@@ -52,6 +52,13 @@ function Shell() {
   const { user, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signOut, profile } = useAuth()
   const [adminMenu, setAdminMenu] = useState(false)
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
+  const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => setModoClaro(document.body.classList.contains('light')))
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -71,7 +78,7 @@ function Shell() {
 
   if (loading) return (
     <div className="splash">
-      <FlamaLogo height={36} />
+      <FlamaLogo height={36} light={modoClaro} />
     </div>
   )
 
@@ -81,7 +88,7 @@ function Shell() {
     <div className="shell">
       <header className="topbar">
         <div className="topbar-logo">
-          <FlamaLogo height={28} />
+          <FlamaLogo height={28} light={modoClaro} />
         </div>
         <div className="topbar-social">
           <a href="https://www.instagram.com/flama.training/" target="_blank" rel="noopener noreferrer" className="social-btn" title="Instagram">
@@ -210,9 +217,9 @@ function Shell() {
   )
 }
 
-function FlamaLogo({ height = 32 }) {
+function FlamaLogo({ height = 32, light = false }) {
   return (
-    <img src="/logo-flama.png" alt="Flama Run" style={{ height, width: 'auto' }} />
+    <img src="/logo-flama.png" alt="Flama Run" style={{ height, width: 'auto', filter: light ? 'invert(1)' : 'none' }} />
   )
 }
 
