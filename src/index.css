@@ -16,6 +16,17 @@
   --top-h: 52px;
 }
 
+body.light {
+  --bg: #f4f4f5;
+  --bg2: #ffffff;
+  --bg3: #e8e8ea;
+  --text: #0f172a;
+  --text2: #64748b;
+  --accent: #e01e1e;
+  --accent-dark: #0f172a;
+  --border: rgba(0,0,0,0.08);
+}
+
 html, body, #root { height: 100%; }
 
 body {

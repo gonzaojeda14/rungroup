@@ -22,8 +22,16 @@ export default function MiPerfil() {
   const [msgPwd, setMsgPwd] = useState('')
   const [msgCert, setMsgCert] = useState('')
   const [loading, setLoading] = useState(true)
+  const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
 
   useEffect(() => { fetchProfile() }, [])
+
+  function toggleModo() {
+    const nuevoModo = !modoClaro
+    setModoClaro(nuevoModo)
+    document.body.classList.toggle('light', nuevoModo)
+    localStorage.setItem('tema', nuevoModo ? 'light' : 'dark')
+  }
 
   async function fetchProfile() {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -262,6 +270,31 @@ export default function MiPerfil() {
           disabled={!certFile || savingCert}
         >
           {savingCert ? 'Subiendo...' : certInfo.url ? 'Renovar certificado' : 'Subir certificado'}
+        </button>
+      </div>
+
+      {/* APARIENCIA */}
+      <div className="card" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: 2 }}>Apariencia</div>
+          <div style={{ fontSize: '12px', color: '#94a3b8' }}>{modoClaro ? '☀️ Modo claro' : '🌙 Modo oscuro'}</div>
+        </div>
+        <button
+          onClick={toggleModo}
+          style={{
+            width: 52, height: 28, borderRadius: 999, border: 'none', cursor: 'pointer',
+            background: modoClaro ? '#ff2d2d' : 'var(--bg3)',
+            position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: 3, left: modoClaro ? 27 : 3,
+            width: 22, height: 22, borderRadius: '50%',
+            background: '#fff', transition: 'left 0.2s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
+          }}>
+            {modoClaro ? '☀️' : '🌙'}
+          </span>
         </button>
       </div>
 
