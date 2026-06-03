@@ -216,12 +216,19 @@ function FlamaLogo({ height = 32 }) {
   )
 }
 
+function GuestOnly({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (user) return <Navigate to="/carreras" replace />
+  return children
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/registro" element={<Register />} />
+          <Route path="/registro" element={<GuestOnly><Register /></GuestOnly>} />
           <Route path="*" element={<Shell />} />
         </Routes>
       </BrowserRouter>
