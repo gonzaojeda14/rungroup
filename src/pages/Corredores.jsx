@@ -28,14 +28,11 @@ export default function Corredores() {
     setMsg(`🚫 ${corredor.email} bloqueado`)
   }
 
-  async function handleDelete(corredor) {
-    const bloquear = confirm(`¿Eliminar a ${corredor.nombre}?\n\nEsto borrará su cuenta y todas sus participaciones.\n\nOK = Eliminar y bloquear el email\nCancelar = Solo eliminar`)
-    const { error } = await supabase.auth.admin.deleteUser(corredor.id)
-    if (error) { setMsg('Error al eliminar: ' + error.message); return }
-    if (bloquear) {
-      await supabase.from('emails_bloqueados').insert([{ email: corredor.email }])
-    }
-    setMsg(`✓ ${corredor.nombre} eliminado/a${bloquear ? ' y email bloqueado' : ''}`)
+  async function handleToggleAcceso(corredor) {
+    const bloqueando = corredor.activo !== false
+    const { error } = await supabase.from('profiles').update({ activo: !bloqueando }).eq('id', corredor.id)
+    if (error) { setMsg('Error: ' + error.message); return }
+    setMsg(bloqueando ? `🚫 ${corredor.nombre} bloqueado — no podrá ingresar` : `✅ ${corredor.nombre} desbloqueado`)
     fetchCorredores()
   }
 
@@ -118,9 +115,16 @@ export default function Corredores() {
             </div>
             {c.role === 'admin' && <span className="badge green">Admin</span>}
             {c.role !== 'admin' && (
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button className="btn-icon" onClick={() => handleBloquear(c)} title="Bloquear email" style={{ fontSize: '13px' }}>🚫</button>
-                <button className="btn-icon danger" onClick={() => handleDelete(c)} title="Eliminar">✕</button>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                {c.activo === false && <span style={{ fontSize: '11px', color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '2px 7px' }}>Bloqueado</span>}
+                <button
+                  className="btn-icon"
+                  onClick={() => handleToggleAcceso(c)}
+                  title={c.activo === false ? 'Desbloquear acceso' : 'Bloquear acceso'}
+                  style={{ fontSize: '13px' }}
+                >
+                  {c.activo === false ? '✅' : '🚫'}
+                </button>
               </div>
             )}
           </div>
