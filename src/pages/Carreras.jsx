@@ -324,12 +324,18 @@ export default function Carreras() {
       return
     }
     setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: 'loading' }))
-    const { data } = await supabase
+    const { data: parts } = await supabase
       .from('participaciones')
-      .select('profiles(nombre, avatar_url)')
+      .select('user_id')
       .eq('carrera_id', carreraId)
       .eq('estado', 'Inscripto')
-    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: data?.map(p => p.profiles).filter(Boolean) || [] }))
+    const userIds = (parts || []).map(p => p.user_id)
+    if (userIds.length === 0) { setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: [] })); return }
+    const { data: perfiles } = await supabase
+      .from('profiles')
+      .select('nombre, avatar_url')
+      .in('id', userIds)
+    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: perfiles || [] }))
   }
 
   function getDistancias(c) {
