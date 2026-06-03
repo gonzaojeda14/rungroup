@@ -194,10 +194,21 @@ export default function Carreras() {
     setFotosLoading(true)
     const { data } = await supabase
       .from('fotos_carreras')
-      .select('*, uploader:profiles!fotos_carreras_user_id_fkey(nombre)')
+      .select('*')
       .eq('carrera_id', carrera.id)
       .order('created_at', { ascending: false })
-    setFotos(data || [])
+
+    const fotos = data || []
+    if (fotos.length > 0) {
+      const userIds = [...new Set(fotos.map(f => f.user_id))]
+      const { data: perfiles } = await supabase
+        .from('profiles')
+        .select('id, nombre')
+        .in('id', userIds)
+      const perfilMap = Object.fromEntries((perfiles || []).map(p => [p.id, p]))
+      fotos.forEach(f => { f.uploader = perfilMap[f.user_id] || null })
+    }
+    setFotos(fotos)
     setFotosLoading(false)
   }
 
