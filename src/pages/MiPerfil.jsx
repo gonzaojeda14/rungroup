@@ -28,6 +28,9 @@ export default function MiPerfil() {
 
   // Bugs
   const [bugs, setBugs] = useState([])
+  // Eliminar cuenta
+  const [confirmarEliminarCuenta, setConfirmarEliminarCuenta] = useState(false)
+  const [eliminandoCuenta, setEliminandoCuenta] = useState(false)
   const [bugDesc, setBugDesc] = useState('')
   const [bugFoto, setBugFoto] = useState(null)
   const [savingBug, setSavingBug] = useState(false)
@@ -69,6 +72,12 @@ export default function MiPerfil() {
     setTimeout(() => setMsgBug(''), 3000)
     setSavingBug(false)
     fetchBugs()
+  }
+
+  async function eliminarCuenta() {
+    setEliminandoCuenta(true)
+    await supabase.from('profiles').delete().eq('id', user.id)
+    await supabase.auth.signOut()
   }
 
   function toggleModo() {
@@ -354,9 +363,32 @@ export default function MiPerfil() {
         </button>
       </div>
 
-      {/* REPORTAR PROBLEMA */}
+      {/* CAMBIAR CONTRASEÑA */}
       <div className="card" style={{ marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>🐛 Reportar un problema</h3>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Cambiar contraseña</h3>
+        <form onSubmit={handleSavePwd}>
+          <div className="form-grid">
+            <div className="field">
+              <label>Nueva contraseña</label>
+              <input type="password" value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} placeholder="Mínimo 6 caracteres" required />
+            </div>
+            <div className="field">
+              <label>Confirmar contraseña</label>
+              <input type="password" value={pwd.confirmar} onChange={e => setPwd({ ...pwd, confirmar: e.target.value })} placeholder="Repetí la contraseña" required />
+            </div>
+          </div>
+          {msgPwd && <div className={msgPwd.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgPwd}</div>}
+          <div className="form-actions" style={{ marginTop: '12px' }}>
+            <button type="submit" className="btn-primary" disabled={savingPwd}>
+              {savingPwd ? 'Guardando...' : 'Cambiar contraseña'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* REPORTAR PROBLEMA CON LA APP */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>🐛 Reportar un problema con la App</h3>
         <form onSubmit={enviarBug}>
           <div className="field" style={{ marginBottom: '10px' }}>
             <label>¿Qué pasó?</label>
@@ -407,27 +439,35 @@ export default function MiPerfil() {
         )}
       </div>
 
-      {/* CAMBIAR CONTRASEÑA */}
-      <div className="card">
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Cambiar contraseña</h3>
-        <form onSubmit={handleSavePwd}>
-          <div className="form-grid">
-            <div className="field">
-              <label>Nueva contraseña</label>
-              <input type="password" value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} placeholder="Mínimo 6 caracteres" required />
-            </div>
-            <div className="field">
-              <label>Confirmar contraseña</label>
-              <input type="password" value={pwd.confirmar} onChange={e => setPwd({ ...pwd, confirmar: e.target.value })} placeholder="Repetí la contraseña" required />
+      {/* ELIMINAR CUENTA */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Eliminar cuenta</h3>
+        <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '14px' }}>
+          Se borrarán todos tus datos: perfil, participaciones y reportes. Esta acción no se puede deshacer.
+        </p>
+        {!confirmarEliminarCuenta ? (
+          <button
+            onClick={() => setConfirmarEliminarCuenta(true)}
+            style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Eliminar mi cuenta
+          </button>
+        ) : (
+          <div style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: '10px', padding: '14px' }}>
+            <p style={{ fontSize: '13px', color: '#f87171', marginBottom: '12px', fontWeight: 600 }}>
+              ¿Estás seguro? No hay vuelta atrás.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={eliminarCuenta} disabled={eliminandoCuenta}
+                style={{ background: '#f87171', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                {eliminandoCuenta ? 'Eliminando...' : 'Sí, eliminar'}
+              </button>
+              <button onClick={() => setConfirmarEliminarCuenta(false)} className="btn-ghost" style={{ fontSize: '13px' }}>
+                Cancelar
+              </button>
             </div>
           </div>
-          {msgPwd && <div className={msgPwd.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgPwd}</div>}
-          <div className="form-actions" style={{ marginTop: '12px' }}>
-            <button type="submit" className="btn-primary" disabled={savingPwd}>
-              {savingPwd ? 'Guardando...' : 'Cambiar contraseña'}
-            </button>
-          </div>
-        </form>
+        )}
       </div>
     </div>
   )
