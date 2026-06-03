@@ -39,9 +39,10 @@ export default function Carreras() {
   const [filtros, setFiltros] = useState(() => {
     try {
       const saved = localStorage.getItem('carreras_filtros')
-      return saved ? JSON.parse(saved) : { tipo: '', distancias: [], fecha: 'proximas' }
-    } catch { return { tipo: '', distancias: [], fecha: 'proximas' } }
+      return saved ? JSON.parse(saved) : { tipo: '', distancias: [], fecha: 'proximas', mes: '' }
+    } catch { return { tipo: '', distancias: [], fecha: 'proximas', mes: '' } }
   })
+  const [showFiltros, setShowFiltros] = useState(false)
 
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
@@ -325,6 +326,9 @@ export default function Carreras() {
   // Distancias únicas para el filtro
   const todasDistancias = [...new Set(carreras.flatMap(c => getDistancias(c)))]
     .sort((a, b) => parseFloat(a) - parseFloat(b))
+    .sort((a, b) => parseFloat(a) - parseFloat(b))
+
+  const todosMeses = [...new Set(carreras.filter(c => c.fecha).map(c => c.fecha.slice(0, 7)))].sort()
 
   // Aplicar filtros
   const carrerasFiltradas = carreras.filter(c => {
@@ -332,8 +336,16 @@ export default function Carreras() {
     if (filtros.distancias.length > 0 && !filtros.distancias.some(d => getDistancias(c).includes(d))) return false
     if (filtros.fecha === 'proximas' && c.fecha && c.fecha < today) return false
     if (filtros.fecha === 'pasadas' && (!c.fecha || c.fecha >= today)) return false
+    if (filtros.mes && (!c.fecha || !c.fecha.startsWith(filtros.mes))) return false
     return true
   })
+
+  const filtrosActivos = [
+    filtros.fecha !== 'proximas',
+    filtros.tipo !== '',
+    filtros.distancias.length > 0,
+    (filtros.mes || '') !== '',
+  ].filter(Boolean).length
 
   if (loading) return <PageLoader />
 
@@ -402,56 +414,113 @@ export default function Carreras() {
       )}
 
       {/* Filtros */}
-      <div className="filtros-bar">
-        <div className="filtro-group">
-          {['proximas', 'pasadas', ''].map(val => (
-            <button
-              key={val}
-              className={`filtro-btn ${filtros.fecha === val ? 'active' : ''}`}
-              onClick={() => setFiltrosGuardados(f => ({ ...f, fecha: val }))}
-            >
-              {val === 'proximas' ? 'Próximas' : val === 'pasadas' ? 'Anteriores' : 'Todas'}
-            </button>
-          ))}
-        </div>
-        <div className="filtro-group">
-          {['', 'Trail', 'Calle'].map(val => (
-            <button
-              key={val}
-              className={`filtro-btn ${filtros.tipo === val ? 'active' : ''}`}
-              onClick={() => setFiltrosGuardados(f => ({ ...f, tipo: val }))}
-            >
-              {val || 'Todo tipo'}
-            </button>
-          ))}
-        </div>
-        {todasDistancias.length > 0 && (
-          <div className="filtro-group">
-            <button
-              className={`filtro-btn ${filtros.distancias.length === 0 ? 'active' : ''}`}
-              onClick={() => setFiltrosGuardados(f => ({ ...f, distancias: [] }))}
-            >
-              Todas las distancias
-            </button>
-            {todasDistancias.map(d => {
-              const selected = filtros.distancias.includes(d)
-              return (
-                <button
-                  key={d}
-                  className="filtro-btn"
-                  style={selected ? { background: 'rgba(255,45,45,0.2)', color: '#ff2d2d', border: '1px solid rgba(255,45,45,0.4)', fontWeight: 600 } : {}}
-                  onClick={() => setFiltrosGuardados(f => ({
-                    ...f,
-                    distancias: selected ? f.distancias.filter(x => x !== d) : [...f.distancias, d]
-                  }))}
-                >
-                  {d}
-                </button>
-              )
-            })}
-          </div>
+      {/* Botón filtros */}
+      <div style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button
+          onClick={() => setShowFiltros(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            background: filtrosActivos > 0 ? 'rgba(255,45,45,0.12)' : 'var(--bg3)',
+            border: filtrosActivos > 0 ? '1px solid rgba(255,45,45,0.4)' : '1px solid var(--border)',
+            color: filtrosActivos > 0 ? 'var(--accent)' : 'var(--text2)',
+            borderRadius: '8px', padding: '7px 14px', fontSize: '13px',
+            cursor: 'pointer', fontFamily: 'inherit', fontWeight: filtrosActivos > 0 ? 600 : 400,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filtros
+          {filtrosActivos > 0 && (
+            <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '999px', fontSize: '11px', fontWeight: 700, padding: '1px 6px', marginLeft: '2px' }}>
+              {filtrosActivos}
+            </span>
+          )}
+        </button>
+        {filtrosActivos > 0 && (
+          <button
+            onClick={() => setFiltrosGuardados({ tipo: '', distancias: [], fecha: 'proximas', mes: '' })}
+            style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Limpiar
+          </button>
         )}
       </div>
+
+      {showFiltros && (
+        <>
+          <div onClick={() => setShowFiltros(false)} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)' }} />
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 70, background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', padding: '20px 16px 32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <span style={{ fontWeight: 700, fontSize: '15px' }}>Filtros</span>
+              <button onClick={() => setShowFiltros(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Período</div>
+                <div className="filtro-group">
+                  {['proximas', 'pasadas', ''].map(val => (
+                    <button key={val} className={`filtro-btn ${filtros.fecha === val ? 'active' : ''}`}
+                      onClick={() => setFiltrosGuardados(f => ({ ...f, fecha: val, mes: '' }))}>
+                      {val === 'proximas' ? 'Próximas' : val === 'pasadas' ? 'Anteriores' : 'Todas'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {todosMeses.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Mes</div>
+                  <div className="filtro-group" style={{ flexWrap: 'wrap' }}>
+                    <button className={`filtro-btn ${(filtros.mes || '') === '' ? 'active' : ''}`}
+                      onClick={() => setFiltrosGuardados(f => ({ ...f, mes: '' }))}>Todos</button>
+                    {todosMeses.map(m => {
+                      const [anio, mes] = m.split('-')
+                      const label = new Date(parseInt(anio), parseInt(mes) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
+                      return (
+                        <button key={m} className={`filtro-btn ${filtros.mes === m ? 'active' : ''}`}
+                          onClick={() => setFiltrosGuardados(f => ({ ...f, mes: m, fecha: '' }))}>
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Tipo</div>
+                <div className="filtro-group">
+                  {['', 'Trail', 'Calle'].map(val => (
+                    <button key={val} className={`filtro-btn ${filtros.tipo === val ? 'active' : ''}`}
+                      onClick={() => setFiltrosGuardados(f => ({ ...f, tipo: val }))}>
+                      {val || 'Todo tipo'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {todasDistancias.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Distancia</div>
+                  <div className="filtro-group" style={{ flexWrap: 'wrap' }}>
+                    <button className={`filtro-btn ${filtros.distancias.length === 0 ? 'active' : ''}`}
+                      onClick={() => setFiltrosGuardados(f => ({ ...f, distancias: [] }))}>Todas</button>
+                    {todasDistancias.map(d => {
+                      const selected = filtros.distancias.includes(d)
+                      return (
+                        <button key={d} className="filtro-btn"
+                          style={selected ? { background: 'rgba(255,45,45,0.2)', color: 'var(--accent)', border: '1px solid rgba(255,45,45,0.4)', fontWeight: 600 } : {}}
+                          onClick={() => setFiltrosGuardados(f => ({ ...f, distancias: selected ? f.distancias.filter(x => x !== d) : [...f.distancias, d] }))}>
+                          {d}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button className="btn-primary" style={{ width: '100%', marginTop: '20px', height: '44px' }} onClick={() => setShowFiltros(false)}>
+              Ver {carrerasFiltradas.length} carrera{carrerasFiltradas.length !== 1 ? 's' : ''}
+            </button>
+          </div>
+        </>
+      )}
 
       {carrerasFiltradas.length === 0 && (
         <div className="empty-state">

@@ -133,9 +133,10 @@ export default function MiPerfil() {
   }
 
   async function verCertificado() {
+    if (certInfo.url.startsWith('http')) { window.open(certInfo.url, '_blank'); return }
     const { data, error } = await supabase.storage
       .from('certificados')
-      .createSignedUrl(certInfo.url, 60 * 60) // válida 1 hora
+      .createSignedUrl(certInfo.url, 60 * 60)
     if (error || !data?.signedUrl) { alert('No se pudo abrir el certificado'); return }
     window.open(data.signedUrl, '_blank')
   }

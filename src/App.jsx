@@ -124,7 +124,7 @@ function Shell() {
       <main className="main-content">
         <OfertaAlert />
         <Routes>
-          <Route path="/" element={<Navigate to="/carreras" replace />} />
+          <Route path="/" element={<Navigate to="/novedades" replace />} />
           <Route path="/carreras" element={<Carreras />} />
           <Route path="/participaciones" element={<Participaciones />} />
           <Route path="/resumen" element={<Resumen />} />
@@ -229,7 +229,7 @@ function GuestOnly({ children }) {
 
   useEffect(() => {
     if (!loading && user) {
-      const t = setTimeout(() => navigate('/carreras', { replace: true }), 2000)
+      const t = setTimeout(() => navigate('/novedades', { replace: true }), 2000)
       return () => clearTimeout(t)
     }
   }, [user, loading])

@@ -89,13 +89,13 @@ export default function Register() {
     return (
       <div className="login-wrapper">
         <div className="login-card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
-          <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>¡Registro completado!</h1>
-          <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '24px' }}>
-            Ya podés ingresar a la app con tu email y contraseña.
+          <div style={{ fontSize: '40px', marginBottom: '16px' }}>🎉</div>
+          <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>¡Cuenta creada!</h1>
+          <p style={{ color: 'var(--text2)', fontSize: '14px', marginBottom: '24px' }}>
+            Ya podés ingresar con tu email y contraseña.
           </p>
-          <a href="/" className="btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '40px' }}>
-            Ir al inicio
+          <a href="/" className="btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '44px', borderRadius: '10px' }}>
+            Ingresar →
           </a>
         </div>
       </div>
