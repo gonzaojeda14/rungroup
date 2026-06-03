@@ -194,7 +194,7 @@ export default function Carreras() {
     setFotosLoading(true)
     const { data } = await supabase
       .from('fotos_carreras')
-      .select('*')
+      .select('*, uploader:profiles!fotos_carreras_user_id_fkey(nombre)')
       .eq('carrera_id', carrera.id)
       .order('created_at', { ascending: false })
     setFotos(data || [])
@@ -609,7 +609,10 @@ export default function Carreras() {
               >
                 {uploading ? `${progreso}%` : '+ Subir'}
               </button>
-              <button onClick={() => setFotosModal(null)} className="btn-ghost" style={{ height: 34, fontSize: 13 }}>✕</button>
+              <button onClick={() => setFotosModal(null)} className="btn-ghost" style={{ height: 34, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+              </button>
             </div>
           </div>
 
@@ -641,6 +644,17 @@ export default function Carreras() {
                       onClick={() => setFotoAmpliada(foto)}
                       loading="lazy"
                     />
+                    {foto.uploader?.nombre && (
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        padding: '12px 6px 4px',
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.65), transparent)',
+                        fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 500,
+                        pointerEvents: 'none',
+                      }}>
+                        {foto.uploader.nombre.split(' ')[0]}
+                      </div>
+                    )}
                     {(isAdmin || foto.user_id === user.id) && (
                       <button
                         onClick={() => setConfirmarEliminarFoto(foto)}
