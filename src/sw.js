@@ -27,7 +27,7 @@ async function mostrarNotificacion() {
     const payload = data?.[0]
     const esPlan = payload?.tipo === 'plan'
     const title = esPlan ? '¡A entrenar! 💪' : 'Nuevo aviso 📢'
-    const body = esPlan ? 'Ya está el nuevo plan semanal.' : (payload?.contenido || 'Tocá para ver el aviso.')
+    const body = esPlan ? 'Ya está el nuevo plan semanal.' : (payload?.titulo || 'Tocá para ver el aviso.')
     return self.registration.showNotification(title, {
       body,
       icon: '/icon-notif.png',
