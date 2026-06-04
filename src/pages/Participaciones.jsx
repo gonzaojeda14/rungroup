@@ -14,6 +14,29 @@ const ESTADO_COLOR = {
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
+// Convierte HH:MM:SS o MM:SS a segundos
+function tiempoASegundos(texto) {
+  const partes = texto.split(':').map(Number)
+  if (partes.some(isNaN)) return null
+  if (partes.length === 3) return partes[0] * 3600 + partes[1] * 60 + partes[2]
+  if (partes.length === 2) return partes[0] * 60 + partes[1]
+  return null
+}
+
+// Formatea segundos a MM:SS o HH:MM:SS según corresponda
+function segundosATiempo(seg) {
+  const h = Math.floor(seg / 3600)
+  const m = Math.floor((seg % 3600) / 60)
+  const s = seg % 60
+  if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+}
+
+// Valida formato MM:SS o HH:MM:SS
+function validarTiempo(texto) {
+  return /^\d{1,2}:\d{2}(:\d{2})?$/.test(texto.trim())
+}
+
 function diasRestantes(fecha) {
   if (!fecha) return null
   const hoy = new Date()
@@ -43,6 +66,9 @@ export default function Participaciones() {
   function setMesActivoGuardado(val) { setMesActivo(val); val ? localStorage.setItem('agenda_mes', val) : localStorage.removeItem('agenda_mes') }
   const [toast, setToast] = useState('')
   const [notas, setNotas] = useState({}) // { carreraId: texto }
+  const [tiempos, setTiempos] = useState({}) // { carreraId_distancia: texto }
+  const [tiemposGuardados, setTiemposGuardados] = useState({}) // { carreraId_distancia: tiempo_texto }
+  const [savingTiempo, setSavingTiempo] = useState({})
 
   useEffect(() => {
     fetchMisCarreras()
@@ -54,11 +80,15 @@ export default function Participaciones() {
   }, [])
 
   async function fetchMisCarreras() {
-    const { data: parts } = await supabase
-      .from('participaciones')
-      .select('estado, distancia_elegida, feedback, feedback_nota, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
-      .eq('user_id', user.id)
-      .neq('estado', 'Pendiente')
+    const [{ data: parts }, { data: tcs }] = await Promise.all([
+      supabase.from('participaciones')
+        .select('estado, distancia_elegida, feedback, feedback_nota, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
+        .eq('user_id', user.id)
+        .neq('estado', 'Pendiente'),
+      supabase.from('tiempos_carreras')
+        .select('carrera_id, distancia, tiempo_texto')
+        .eq('user_id', user.id)
+    ])
 
     const sorted = (parts || []).sort((a, b) => {
       if (!a.carrera?.fecha) return 1
@@ -66,7 +96,53 @@ export default function Participaciones() {
       return a.carrera.fecha.localeCompare(b.carrera.fecha)
     })
     setItems(sorted)
+
+    const tMap = {}
+    ;(tcs || []).forEach(t => { tMap[`${t.carrera_id}_${t.distancia}`] = t.tiempo_texto })
+    setTiemposGuardados(tMap)
     setLoading(false)
+  }
+
+  async function guardarTiempo(carreraId, distancia, carreraNombre, carreraTipo) {
+    const key = `${carreraId}_${distancia}`
+    const texto = tiempos[key]?.trim()
+    if (!texto || !validarTiempo(texto)) return
+
+    const seg = tiempoASegundos(texto)
+    if (!seg) return
+
+    const tiempoTexto = segundosATiempo(seg)
+    setSavingTiempo(prev => ({ ...prev, [key]: true }))
+
+    // Guardar en tiempos_carreras
+    const { data: tc } = await supabase.from('tiempos_carreras').upsert(
+      { user_id: user.id, carrera_id: carreraId, distancia, tiempo_segundos: seg, tiempo_texto: tiempoTexto },
+      { onConflict: 'user_id,carrera_id,distancia' }
+    ).select().single()
+
+    // Actualizar record personal si es mejor
+    const { data: rp } = await supabase.from('records_personales')
+      .select('tiempo_segundos').eq('user_id', user.id).eq('distancia', distancia).single()
+
+    if (!rp || seg < rp.tiempo_segundos) {
+      const tipo = carreraTipo === 'Trail' ? 'trail' : 'calle'
+      await supabase.from('records_personales').upsert({
+        user_id: user.id,
+        distancia,
+        tipo,
+        tiempo_segundos: seg,
+        tiempo_texto: tiempoTexto,
+        carrera_nombre: carreraNombre,
+        fuente: 'automatico',
+        tiempo_carrera_id: tc?.id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,distancia' })
+    }
+
+    setTiemposGuardados(prev => ({ ...prev, [key]: tiempoTexto }))
+    setSavingTiempo(prev => ({ ...prev, [key]: false }))
+    setToast('⏱ Tiempo guardado')
+    setTimeout(() => setToast(''), 2000)
   }
 
   async function handleFeedback(carreraId, valor) {
@@ -266,6 +342,54 @@ export default function Participaciones() {
                       )}
                     </div>
                   )}
+
+                  {/* Tiempo de carrera */}
+                  {pasada && p.estado === 'Inscripto' && (() => {
+                    const dist = p.distancia_elegida || p.carrera?.distancia
+                    if (!dist) return null
+                    const key = `${p.carrera.id}_${dist}`
+                    const guardado = tiemposGuardados[key]
+                    const saving = savingTiempo[key]
+                    return (
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '6px' }}>
+                          ⏱ ¿En cuánto hiciste los {dist}?
+                        </div>
+                        {guardado ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '15px', fontWeight: 700, color: '#4ade80' }}>{guardado}</span>
+                            <button
+                              onClick={() => { setTiemposGuardados(prev => { const n = {...prev}; delete n[key]; return n }) }}
+                              style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input
+                              value={tiempos[key] || ''}
+                              onChange={e => setTiempos(prev => ({ ...prev, [key]: e.target.value }))}
+                              placeholder="MM:SS o HH:MM:SS"
+                              style={{
+                                width: '140px', background: 'var(--bg3)', border: '1px solid var(--border)',
+                                borderRadius: '8px', color: 'var(--text)', padding: '6px 10px',
+                                fontSize: '14px', fontFamily: 'inherit',
+                              }}
+                            />
+                            <button
+                              className="btn-primary"
+                              style={{ height: 32, fontSize: 12, padding: '0 14px' }}
+                              disabled={saving || !validarTiempo(tiempos[key] || '')}
+                              onClick={() => guardarTiempo(p.carrera.id, dist, p.carrera.nombre, p.carrera.tipo)}
+                            >
+                              {saving ? '...' : 'Guardar'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}
