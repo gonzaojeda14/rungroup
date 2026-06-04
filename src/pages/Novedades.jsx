@@ -147,9 +147,9 @@ export default function Novedades() {
       <div className="page-header">
         <h2>Avisos</h2>
         {isAdmin && (
-          <button className="btn-accent" onClick={() => setShowForm(s => !s)}>
-            {showForm ? 'Cancelar' : '+ Publicar'}
-          </button>
+          showForm
+            ? <button className="btn-icon" onClick={() => setShowForm(false)} style={{ fontSize: '18px', color: 'var(--text2)' }}>✕</button>
+            : <button className="btn-accent" onClick={() => setShowForm(true)}>+ Publicar</button>
         )}
       </div>
 
