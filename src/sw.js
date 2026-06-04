@@ -20,7 +20,6 @@ self.addEventListener('push', event => {
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzYW54dWFhZG95dG11cWZwamRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTI4OTksImV4cCI6MjA5NTkyODg5OX0.srHQwvrVNcMwD3WJLuyfaS5sX0CHN5UPx5XxGqCdiTc'
 
   event.waitUntil(
-    new Promise(resolve => setTimeout(resolve, 1000)).then(() =>
     fetch(`${SUPABASE_URL}/rest/v1/novedades?select=titulo,contenido,tipo&order=created_at.desc&limit=1`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
     })
@@ -43,7 +42,7 @@ self.addEventListener('push', event => {
       icon: '/icon-notif.png',
       badge: '/badge-f.png',
       data: { url: '/novedades' }
-    })))
+    }))
   )
 })
 
