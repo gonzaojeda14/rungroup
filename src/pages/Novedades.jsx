@@ -25,6 +25,7 @@ export default function Novedades() {
   const [archivo, setArchivo] = useState(null)
   const [programarEn, setProgramarEn] = useState('')
   const [saving, setSaving] = useState(false)
+  const [msgError, setMsgError] = useState('')
   const [verAnteriores, setVerAnteriores] = useState(false)
   const [confirmarEliminar, setConfirmarEliminar] = useState(null) // id a eliminar
 
@@ -55,6 +56,15 @@ export default function Novedades() {
 
   async function handlePublicar(e) {
     e.preventDefault()
+    if (tipo === 'anuncio' && !contenido.trim()) {
+      setMsgError('El mensaje es obligatorio')
+      return
+    }
+    if (tipo === 'plan' && !archivo && !contenido.trim()) {
+      setMsgError('Agregá un mensaje o un archivo')
+      return
+    }
+    setMsgError('')
     setSaving(true)
 
     let archivoUrl = null
@@ -139,7 +149,7 @@ export default function Novedades() {
 
       {/* FORM */}
       {isAdmin && showForm && (
-        <form className="card form-card" onSubmit={handlePublicar}>
+        <form className="card form-card" onSubmit={handlePublicar} noValidate>
           <div className="filtro-group" style={{ marginBottom: '14px' }}>
             {[['anuncio', '📢 Anuncio'], ['plan', '📄 Plan semanal']].map(([val, label]) => (
               <button
@@ -201,6 +211,7 @@ export default function Novedades() {
             {programarEn && <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '4px' }}>Se publicará el {new Date(programarEn).toLocaleString('es-AR')}</span>}
           </div>
 
+          {msgError && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '8px' }}>{msgError}</p>}
           <div className="form-actions">
             <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={saving}>
