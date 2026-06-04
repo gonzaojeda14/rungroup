@@ -44,6 +44,7 @@ export default function Carreras() {
   })
   const [showFiltros, setShowFiltros] = useState(false)
   const [inscriptosAbiertos, setInscriptosAbiertos] = useState({}) // carreraId -> [perfiles] | 'loading'
+  const [inscriptosExpandidos, setInscriptosExpandidos] = useState({}) // carreraId -> bool
 
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
@@ -776,26 +777,40 @@ export default function Carreras() {
                           <div style={{ fontSize: '13px', color: 'var(--text2)', textAlign: 'center', padding: '4px 0' }}>Cargando...</div>
                         ) : abierto.length === 0 ? (
                           <div style={{ fontSize: '13px', color: 'var(--text2)' }}>Nadie inscripto todavía</div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {abierto.map((p, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                                <div style={{
-                                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                  background: 'rgba(255,45,45,0.15)', overflow: 'hidden',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: 10, fontWeight: 700, color: 'var(--accent)',
-                                }}>
-                                  {p.avatar_url
-                                    ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                                    : p.nombre?.[0]?.toUpperCase()
-                                  }
+                        ) : (() => {
+                          const PAGE = 8
+                          const expandido = inscriptosExpandidos[c.id]
+                          const visibles = expandido ? abierto : abierto.slice(0, PAGE)
+                          const hayMas = abierto.length > PAGE
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {visibles.map((p, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                                  <div style={{
+                                    width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                                    background: 'rgba(255,45,45,0.15)', overflow: 'hidden',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 10, fontWeight: 700, color: 'var(--accent)',
+                                  }}>
+                                    {p.avatar_url
+                                      ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                      : p.nombre?.[0]?.toUpperCase()
+                                    }
+                                  </div>
+                                  <span>{p.nombre}</span>
                                 </div>
-                                <span>{p.nombre}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                              ))}
+                              {hayMas && (
+                                <button
+                                  onClick={() => setInscriptosExpandidos(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
+                                  style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '12px', cursor: 'pointer', textAlign: 'left', padding: '2px 0', fontFamily: 'inherit' }}
+                                >
+                                  {expandido ? '▲ Ver menos' : `▼ Ver todos (${abierto.length})`}
+                                </button>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </div>
                     )}
                   </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { suscribirPush } from '../lib/push'
 import PageLoader from '../components/PageLoader'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -30,6 +31,7 @@ export default function Novedades() {
   useEffect(() => {
     fetchNovedades()
     marcarAvisosLeidos()
+    suscribirPush().catch(() => {}) // solicitar permiso de push al entrar
   }, [])
 
   async function fetchNovedades() {
@@ -74,6 +76,13 @@ export default function Novedades() {
       archivo_nombre: archivoNombre,
       publicar_en: programarEn ? new Date(programarEn).toISOString() : null,
     }])
+
+    // Disparar push a todos los suscriptores (solo si es publicación inmediata)
+    if (!programarEn) {
+      supabase.functions.invoke('send-push', {
+        body: { title: titulo || 'Nueva novedad en Flama', body: contenido || '' }
+      }).catch(() => {})
+    }
 
     setTitulo('')
     setContenido('')
