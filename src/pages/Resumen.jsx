@@ -186,4 +186,18 @@ export default function Resumen() {
                         {c.porFeedback[key].map((p, i) => (
                           <div key={i} style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: p.feedback_nota ? '2px' : '0' }}>
                             • {p.nombre || '—'}
-                            {p.feedback_nota 
+                            {p.feedback_nota && <span style={{ color: 'var(--text2)' }}> — "{p.feedback_nota}"</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
