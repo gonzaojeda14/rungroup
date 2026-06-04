@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatFecha } from '../lib/utils'
+import { suscribirPush } from '../lib/push'
 
 const thisYear = new Date().getFullYear()
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
@@ -25,6 +26,7 @@ export default function MiPerfil() {
   const [msgCert, setMsgCert] = useState('')
   const [loading, setLoading] = useState(true)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
+  const [pushStatus, setPushStatus] = useState('idle') // idle | loading | ok | error
 
   // Bugs
   const [bugs, setBugs] = useState([])
@@ -326,6 +328,31 @@ export default function MiPerfil() {
           disabled={!certFile || savingCert}
         >
           {savingCert ? 'Subiendo...' : certInfo.url ? 'Renovar certificado' : 'Subir certificado'}
+        </button>
+      </div>
+
+      {/* NOTIFICACIONES */}
+      <div className="card" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: 2 }}>Notificaciones</div>
+          <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+            {pushStatus === 'ok' ? '✓ Activadas en este dispositivo' : 'Recibí avisos en el celular'}
+          </div>
+        </div>
+        <button
+          onClick={async () => {
+            setPushStatus('loading')
+            const sub = await suscribirPush().catch(() => null)
+            setPushStatus(sub ? 'ok' : 'error')
+          }}
+          disabled={pushStatus === 'loading' || pushStatus === 'ok'}
+          style={{
+            padding: '8px 14px', borderRadius: '8px', border: 'none', cursor: pushStatus === 'ok' ? 'default' : 'pointer',
+            background: pushStatus === 'ok' ? '#4ade8022' : '#ff2d2d', color: pushStatus === 'ok' ? '#4ade80' : '#fff',
+            fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', flexShrink: 0,
+          }}
+        >
+          {pushStatus === 'loading' ? '...' : pushStatus === 'ok' ? '✓ Listo' : pushStatus === 'error' ? 'Reintentar' : 'Activar'}
         </button>
       </div>
 
