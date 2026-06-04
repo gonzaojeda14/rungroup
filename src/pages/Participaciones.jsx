@@ -163,7 +163,7 @@ export default function Participaciones() {
 
       {Object.values(porMes).map(grupo => (
         <div key={grupo.label} style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
             {grupo.label}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -222,7 +222,7 @@ export default function Participaciones() {
 
                   {pasada && p.estado === 'Inscripto' && (
                     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '8px' }}>
                         ¿Cómo estuvo la carrera?
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
@@ -276,15 +276,4 @@ export default function Participaciones() {
       {toast && (
         <div style={{
           position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-          fontSize: '13px', fontWeight: 500, zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease', whiteSpace: 'nowrap',
-        }}>
-          {toast}
-        </div>
-      )}
-    </div>
-  )
-}
+          background: '#1f1f1f', border: '1px solid rg

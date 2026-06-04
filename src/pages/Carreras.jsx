@@ -421,7 +421,7 @@ export default function Carreras() {
                 }}
                 placeholder="5, 10, 21"
               />
-              <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Separar con comas si hay varias · La K se agrega sola</span>
+              <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>Separar con comas si hay varias · La K se agrega sola</span>
             </div>
             <div className="field">
               <label>Tipo</label>
@@ -591,7 +591,7 @@ export default function Carreras() {
                   <div className="field">
                     <label>Distancia(s)</label>
                     <input value={form.distancias} onChange={e => setForm({ ...form, distancias: e.target.value })} placeholder="5K, 10K" />
-                    <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Separar con comas si hay varias</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>Separar con comas si hay varias</span>
                   </div>
                   <div className="field">
                     <label>Tipo</label>
@@ -702,7 +702,7 @@ export default function Carreras() {
                   >
                     📍 Ver punto de encuentro →
                   </a>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text2)' }}>
                     {tiempoDesdeUpdate(c.encuentro_updated_at)}
                   </span>
                 </div>
@@ -719,7 +719,7 @@ export default function Carreras() {
                     style={{
                       background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
                       padding: '3px 10px', borderRadius: '6px', marginTop: '8px',
-                      fontSize: '11px', color: '#64748b', fontFamily: 'inherit',
+                      fontSize: '11px', color: 'var(--text2)', fontFamily: 'inherit',
                       display: 'inline-block',
                     }}
                   >
@@ -753,7 +753,7 @@ export default function Carreras() {
               <div className="race-estado-section">
                 <div className="race-estado-label">
                   Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
-                  {distSeleccionada && <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
+                  {distSeleccionada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
                 </div>
                 <div className="estado-buttons">
                   {ESTADOS.map(e => (
@@ -843,7 +843,7 @@ export default function Carreras() {
                   style={{
                     marginTop: '10px', width: '100%', padding: '8px',
                     background: 'var(--bg3)', border: '1px solid var(--border)',
-                    borderRadius: '8px', color: '#94a3b8', fontSize: '13px',
+                    borderRadius: '8px', color: 'var(--text2)', fontSize: '13px',
                     cursor: 'pointer', fontFamily: 'inherit',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   }}
@@ -863,7 +863,7 @@ export default function Carreras() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: '15px' }}>{fotosModal.nombre}</div>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</div>
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               {isAdmin && fotos.length > 0 && (
@@ -899,9 +899,9 @@ export default function Carreras() {
           {/* Grid */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '2px' }}>
             {fotosLoading ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>Cargando...</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: 'var(--text2)' }}>Cargando...</div>
             ) : fotos.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '8px', color: '#64748b' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '8px', color: 'var(--text2)' }}>
                 <span style={{ fontSize: '36px' }}>📷</span>
                 <span style={{ fontSize: '14px' }}>Todavía no hay fotos</span>
                 <span style={{ fontSize: '12px' }}>¡Subí las tuyas!</span>
@@ -972,7 +972,7 @@ export default function Carreras() {
               </button>
               <button
                 onClick={() => setSeleccionadas(new Set())}
-                style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.6)', color: '#94a3b8', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
+                style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.6)', color: 'var(--text2)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
               >
                 Cancelar
               </button>
@@ -1031,26 +1031,4 @@ export default function Carreras() {
         />
       )}
 
-      {confirmarBorrarSeleccion && (
-        <ConfirmModal
-          mensaje={`¿Borrar ${seleccionadas.size} foto${seleccionadas.size !== 1 ? 's' : ''} seleccionada${seleccionadas.size !== 1 ? 's' : ''}?`}
-          onConfirm={borrarSeleccionadas}
-          onCancel={() => setConfirmarBorrarSeleccion(false)}
-        />
-      )}
-
-      {toast && !fotosModal && (
-        <div style={{
-          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-          fontSize: '13px', fontWeight: 500, zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease',
-        }}>
-          ✅ {toast}
-        </div>
-      )}
-    </div>
-  )
-}
+      {confirmarBorrarSeleccio

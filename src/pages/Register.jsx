@@ -193,7 +193,7 @@ export default function Register() {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: '#64748b' }}>
+        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: 'var(--text2)' }}>
           ¿Ya tenés cuenta? <a href="/" style={{ color: '#ff2d2d' }}>Ingresá acá</a>
         </p>
       </div>

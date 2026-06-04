@@ -229,7 +229,7 @@ export default function Ventas() {
         </button>
       </div>
 
-      <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px', marginTop: '-8px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px', marginTop: '-8px' }}>
         Espacio para transferir inscripciones a quienes quieran correr y no consiguieron lugar.
       </p>
 
@@ -241,11 +241,11 @@ export default function Ventas() {
           </div>
           <div style={{ fontWeight: 600, marginBottom: '4px' }}>{miOferta.carrera?.nombre}</div>
           {miOferta.carrera?.fecha && <span className="tag" style={{ display: 'inline-block', marginBottom: '8px' }}>📅 {formatFecha(miOferta.carrera.fecha)}</span>}
-          {miOferta.distancia && <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '4px' }}>📏 {miOferta.distancia}</div>}
+          {miOferta.distancia && <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '4px' }}>📏 {miOferta.distancia}</div>}
           {miOferta.precio && <div style={{ fontSize: '14px', margin: '6px 0' }}>💰 ${Number(miOferta.precio).toLocaleString()}</div>}
-          {miOferta.nota && <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>📝 {miOferta.nota}</div>}
-          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-            Vendedor: <strong style={{ color: '#f1f5f9' }}>{miOferta.vendedor?.nombre}</strong>
+          {miOferta.nota && <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '8px' }}>📝 {miOferta.nota}</div>}
+          <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '4px' }}>
+            Vendedor: <strong style={{ color: 'var(--text)' }}>{miOferta.vendedor?.nombre}</strong>
           </div>
           <div style={{ fontSize: '11px', color: '#fbbf24', marginBottom: '12px' }}>
             ⏱ {tiempoRestante(miOferta.oferta_expira_at)}
@@ -327,7 +327,7 @@ export default function Ventas() {
       {/* MIS PUBLICACIONES (vendedor) */}
       {misVentas.length > 0 && (
         <>
-          <h3 style={{ fontSize: '13px', color: '#94a3b8', margin: '16px 0 8px' }}>Mis publicaciones</h3>
+          <h3 style={{ fontSize: '13px', color: 'var(--text2)', margin: '16px 0 8px' }}>Mis publicaciones</h3>
           {misVentas.map(v => (
             <div key={v.id} className="card" style={{ marginBottom: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
@@ -335,7 +335,7 @@ export default function Ventas() {
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>{v.carrera?.nombre}</div>
                   {v.carrera?.fecha && <span className="tag">📅 {formatFecha(v.carrera.fecha)}</span>}
                   {v.precio && <div style={{ fontSize: '14px', marginTop: '6px' }}>💰 ${Number(v.precio).toLocaleString()}</div>}
-                  {v.nota && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>📝 {v.nota}</div>}
+                  {v.nota && <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '4px' }}>📝 {v.nota}</div>}
                   <div style={{ fontSize: '12px', marginTop: '8px' }}>
                     {v.estado === 'disponible' && <span style={{ color: '#4ade80' }}>✅ Disponible — sin interesados aún</span>}
                     {v.estado === 'ofertada' && <span style={{ color: '#fbbf24' }}>⏳ Ofrecida — esperando respuesta</span>}
@@ -364,15 +364,15 @@ export default function Ventas() {
       {/* DISPONIBLES (otros vendedores, sin lista de espera activa) */}
       {ventasOtros.length > 0 && (
         <>
-          <h3 style={{ fontSize: '13px', color: '#94a3b8', margin: '16px 0 8px' }}>Disponibles</h3>
+          <h3 style={{ fontSize: '13px', color: 'var(--text2)', margin: '16px 0 8px' }}>Disponibles</h3>
           {ventasOtros.map(v => (
             <div key={v.id} className="card" style={{ marginBottom: '8px' }}>
               <div style={{ fontWeight: 600, marginBottom: '4px' }}>{v.carrera?.nombre}</div>
               {v.carrera?.fecha && <span className="tag">📅 {formatFecha(v.carrera.fecha)}</span>}
               {v.precio && <div style={{ fontSize: '14px', marginTop: '6px' }}>💰 ${Number(v.precio).toLocaleString()}</div>}
-              {v.nota && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>📝 {v.nota}</div>}
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
-                Transfiere: <strong style={{ color: '#f1f5f9' }}>{v.vendedor?.nombre}</strong>
+              {v.nota && <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '6px' }}>📝 {v.nota}</div>}
+              <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '6px' }}>
+                Transfiere: <strong style={{ color: 'var(--text)' }}>{v.vendedor?.nombre}</strong>
               </div>
               {v.vendedor?.telefono && (
                 <a

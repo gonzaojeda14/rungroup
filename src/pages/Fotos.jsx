@@ -196,7 +196,7 @@ export default function Fotos() {
               alt=""
               style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }}
             />
-            <div style={{ marginTop: 12, color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ marginTop: 12, color: 'var(--text2)', fontSize: 13 }}>
               {fotoAmpliada.uploader?.nombre}
             </div>
             <a
@@ -217,12 +217,4 @@ export default function Fotos() {
       )}
 
       {confirmarEliminar && (
-        <ConfirmModal
-          mensaje="¿Eliminar esta foto?"
-          onConfirm={() => handleEliminar(confirmarEliminar)}
-          onCancel={() => setConfirmarEliminar(null)}
-        />
-      )}
-    </div>
-  )
-}
+    

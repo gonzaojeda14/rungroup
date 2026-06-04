@@ -152,7 +152,7 @@ export default function Resumen() {
               <StatsRow counts={c.counts} total={c.total} />
               {c.porDistancia.filter(pd => pd.total > 0).map((pd, i) => (
                 <div key={pd.distancia} style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
                     <span>📏 {pd.distancia}</span>
                     <span>{pd.total} eligieron</span>
                   </div>
@@ -165,14 +165,14 @@ export default function Resumen() {
           )}
           {c.feedbacks?.length > 0 && (
             <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px' }}>
                 Feedback post-carrera
               </div>
               <div style={{ display: 'flex', gap: '16px', marginBottom: c.porFeedback.mal.length > 0 ? '10px' : 0 }}>
                 {[['excelente','😍'],['regular','😐'],['mal','😞']].map(([val, emoji]) => (
                   c.porFeedback[val].length > 0 && (
-                    <span key={val} style={{ fontSize: '13px', color: '#94a3b8' }}>
-                      {emoji} <strong style={{ color: '#f1f5f9' }}>{c.porFeedback[val].length}</strong>
+                    <span key={val} style={{ fontSize: '13px', color: 'var(--text2)' }}>
+                      {emoji} <strong style={{ color: 'var(--text)' }}>{c.porFeedback[val].length}</strong>
                     </span>
                   )
                 ))}
@@ -184,20 +184,6 @@ export default function Resumen() {
                       <div key={key} style={{ background: color + '11', border: `1px solid ${color}33`, borderRadius: '8px', padding: '8px 12px' }}>
                         <div style={{ fontSize: '11px', color, fontWeight: 600, marginBottom: '6px' }}>{emoji} Hablar con:</div>
                         {c.porFeedback[key].map((p, i) => (
-                          <div key={i} style={{ fontSize: '12px', color: '#94a3b8', marginBottom: p.feedback_nota ? '2px' : '0' }}>
+                          <div key={i} style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: p.feedback_nota ? '2px' : '0' }}>
                             • {p.nombre || '—'}
-                            {p.feedback_nota && <span style={{ color: '#64748b' }}> — "{p.feedback_nota}"</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
+                            {p.feedback_nota 
