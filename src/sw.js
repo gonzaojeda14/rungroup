@@ -32,7 +32,6 @@ async function mostrarNotificacion() {
       body,
       icon: '/icon-notif.png',
       badge: '/badge-f.png',
-      image: '/icon-512.png',
       vibrate: [200, 100, 200],
       data: { url: '/novedades' }
     })
