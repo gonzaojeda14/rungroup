@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 export default function Register() {
+  const navigate = useNavigate()
   const params = new URLSearchParams(window.location.search)
   const [form, setForm] = useState({
     nombre: params.get('nombre') || '',
@@ -91,6 +93,13 @@ export default function Register() {
     setSaving(false)
   }
 
+  useEffect(() => {
+    if (done) {
+      const t = setTimeout(() => navigate('/'), 2500)
+      return () => clearTimeout(t)
+    }
+  }, [done])
+
   if (done) {
     return (
       <div className="login-wrapper">
@@ -98,11 +107,8 @@ export default function Register() {
           <div style={{ fontSize: '40px', marginBottom: '16px' }}>🎉</div>
           <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>¡Cuenta creada!</h1>
           <p style={{ color: 'var(--text2)', fontSize: '14px', marginBottom: '24px' }}>
-            Ya podés ingresar con tu email y contraseña.
+            En un momento te llevamos al login...
           </p>
-          <a href="/" className="btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '44px', borderRadius: '10px' }}>
-            Ingresar →
-          </a>
         </div>
       </div>
     )
