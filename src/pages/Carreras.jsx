@@ -68,7 +68,14 @@ export default function Carreras() {
   const [confirmarBorrarSeleccion, setConfirmarBorrarSeleccion] = useState(false)
   const fotoInputRef = useRef()
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => {
+    fetchAll()
+    const channel = supabase.channel('carreras-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'carreras' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones' }, fetchAll)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
 
   useEffect(() => {
     const fotosId = searchParams.get('fotos')

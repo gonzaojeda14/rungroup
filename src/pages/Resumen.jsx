@@ -40,7 +40,14 @@ export default function Resumen() {
   const [carreraFiltro, setCarreraFiltro] = useState('todas')
   const [mesFiltro, setMesFiltro] = useState('todos')
 
-  useEffect(() => { fetchResumen() }, [])
+  useEffect(() => {
+    fetchResumen()
+    const channel = supabase.channel('resumen-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'carreras' }, fetchResumen)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones' }, fetchResumen)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
 
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')

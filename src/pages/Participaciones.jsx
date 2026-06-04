@@ -44,7 +44,14 @@ export default function Participaciones() {
   const [toast, setToast] = useState('')
   const [notas, setNotas] = useState({}) // { carreraId: texto }
 
-  useEffect(() => { fetchMisCarreras() }, [])
+  useEffect(() => {
+    fetchMisCarreras()
+    const channel = supabase.channel('participaciones-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones' }, fetchMisCarreras)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'carreras' }, fetchMisCarreras)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
 
   async function fetchMisCarreras() {
     const { data: parts } = await supabase

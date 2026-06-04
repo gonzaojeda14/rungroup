@@ -31,7 +31,11 @@ export default function Novedades() {
   useEffect(() => {
     fetchNovedades()
     marcarAvisosLeidos()
-    suscribirPush().catch(() => {}) // solicitar permiso de push al entrar
+    suscribirPush().catch(() => {})
+    const channel = supabase.channel('novedades-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'novedades' }, fetchNovedades)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
   }, [])
 
   async function fetchNovedades() {

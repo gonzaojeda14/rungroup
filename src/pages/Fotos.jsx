@@ -36,6 +36,10 @@ export default function Fotos() {
   useEffect(() => {
     if (!carreraId) return
     fetchFotos()
+    const channel = supabase.channel('fotos-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fotos_carreras' }, fetchFotos)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
   }, [carreraId])
 
   async function fetchFotos() {
