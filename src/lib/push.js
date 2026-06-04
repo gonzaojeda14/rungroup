@@ -12,6 +12,10 @@ function urlBase64ToUint8Array(base64String) {
 export async function suscribirPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null
 
+  // Solo suscribir desde la PWA instalada, no desde el navegador
+  const esPWA = window.matchMedia('(display-mode: standalone)').matches
+  if (!esPWA) return null
+
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return null
 
