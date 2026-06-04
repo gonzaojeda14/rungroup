@@ -836,28 +836,13 @@ export default function Carreras() {
                 )
               })()}
 
-              {/* Botón fotos solo en carreras pasadas */}
-              {c.fecha && c.fecha < today && (
-                <button
-                  onClick={() => abrirFotos(c)}
-                  style={{
-                    marginTop: '10px', width: '100%', padding: '8px',
-                    background: 'var(--bg3)', border: '1px solid var(--border)',
-                    borderRadius: '8px', color: 'var(--text2)', fontSize: '13px',
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                  }}
-                >
-                  📷 Ver fotos
-                </button>
-              )}
             </div>
           )
         })}
       </div>
 
-      {/* Modal fotos */}
-      {fotosModal && (
+      {/* Modal fotos — movido a Historial */}
+      {fotosModal && false && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>

@@ -1,4 +1,5 @@
 import PageLoader from '../components/PageLoader'
+import FotosModal from '../components/FotosModal'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -69,6 +70,7 @@ export default function Participaciones() {
   const [tiempos, setTiempos] = useState({}) // { carreraId_distancia: texto }
   const [tiemposGuardados, setTiemposGuardados] = useState({}) // { carreraId_distancia: tiempo_texto }
   const [savingTiempo, setSavingTiempo] = useState({})
+  const [fotosCarrera, setFotosCarrera] = useState(null)
 
   useEffect(() => {
     fetchMisCarreras()
@@ -342,6 +344,16 @@ export default function Participaciones() {
                     </div>
                   )}
 
+                  {/* Fotos */}
+                  {pasada && (
+                    <button
+                      onClick={() => setFotosCarrera(p.carrera)}
+                      style={{ marginTop: '10px', width: '100%', padding: '8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      📷 Fotos de la carrera
+                    </button>
+                  )}
+
                   {/* Tiempo de carrera */}
                   {pasada && p.estado === 'Inscripto' && (() => {
                     const dist = p.distancia_elegida || p.carrera?.distancia
@@ -395,6 +407,14 @@ export default function Participaciones() {
           </div>
         </div>
       ))}
+
+      {fotosCarrera && (
+        <FotosModal
+          carrera={fotosCarrera}
+          onClose={() => setFotosCarrera(null)}
+          onToast={msg => { setToast(msg); setTimeout(() => setToast(''), 2500) }}
+        />
+      )}
 
       {toast && (
         <div style={{
