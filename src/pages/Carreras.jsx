@@ -648,8 +648,11 @@ export default function Carreras() {
                           title="Tocar para copiar"
                           onClick={() => {
                             navigator.clipboard.writeText(c.codigo)
-                            setToast(`Código "${c.codigo}" copiado`)
-                            setTimeout(() => setToast(''), 2500)
+                            const esAndroid = /Android/i.test(navigator.userAgent)
+                            if (!esAndroid) {
+                              setToast(`Código "${c.codigo}" copiado`)
+                              setTimeout(() => setToast(''), 2500)
+                            }
                           }}
                         >
                           🎟 {c.codigo}
