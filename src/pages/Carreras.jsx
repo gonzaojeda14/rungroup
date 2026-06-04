@@ -408,8 +408,20 @@ export default function Carreras() {
             </div>
             <div className="field">
               <label>Distancia(s)</label>
-              <input value={form.distancias} onChange={e => setForm({ ...form, distancias: e.target.value })} placeholder="5K, 10K" />
-              <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Separar con comas si hay varias</span>
+              <input
+                value={form.distancias}
+                onChange={e => setForm({ ...form, distancias: e.target.value })}
+                onBlur={e => {
+                  const valor = e.target.value.split(',').map(d => {
+                    const t = d.trim()
+                    if (!t) return ''
+                    return /k$/i.test(t) ? t.toUpperCase() : `${t}K`
+                  }).filter(Boolean).join(', ')
+                  setForm(f => ({ ...f, distancias: valor }))
+                }}
+                placeholder="5, 10, 21"
+              />
+              <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Separar con comas si hay varias · La K se agrega sola</span>
             </div>
             <div className="field">
               <label>Tipo</label>
@@ -718,7 +730,9 @@ export default function Carreras() {
 
               {multiDist && (
                 <div className="dist-selector" style={estado === 'No voy' ? { opacity: 0.35, pointerEvents: 'none' } : {}}>
-                  <span style={{ fontSize: '12px', color: 'var(--text2)', marginRight: '0.5rem' }}>¿En qué distancia corrés?</span>
+                  <span style={{ fontSize: '12px', color: estado === 'Inscripto' && !distSeleccionada ? '#f97316' : 'var(--text2)', marginRight: '0.5rem', fontWeight: estado === 'Inscripto' && !distSeleccionada ? 600 : 400 }}>
+                    {estado === 'Inscripto' && !distSeleccionada ? '⚠️ ¿A qué distancia vas?' : '¿En qué distancia corrés?'}
+                  </span>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {dists.map(d => (
                       <button
@@ -741,22 +755,18 @@ export default function Carreras() {
                   Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
                   {distSeleccionada && <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
                 </div>
-                {multiDist && !distSeleccionada && estado !== 'No voy' ? (
-                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Elegí una distancia para marcar tu estado</p>
-                ) : (
-                  <div className="estado-buttons">
-                    {ESTADOS.map(e => (
-                      <button
-                        key={e}
-                        className={`estado-btn ${estado === e ? 'active' : ''}`}
-                        style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
-                        onClick={() => updateEstado(c.id, e)}
-                      >
-                        {e}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="estado-buttons">
+                  {ESTADOS.map(e => (
+                    <button
+                      key={e}
+                      className={`estado-btn ${estado === e ? 'active' : ''}`}
+                      style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
+                      onClick={() => updateEstado(c.id, e)}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Quiénes van */}
