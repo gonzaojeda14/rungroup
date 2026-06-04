@@ -197,7 +197,7 @@ input, select {
 input::placeholder { color: var(--text2); }
 input:focus, select:focus { outline: none; border-color: rgba(255,45,45,0.4); }
 select option { background: var(--bg2); }
-.form-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 /* BUTTONS */
 .btn-primary {
