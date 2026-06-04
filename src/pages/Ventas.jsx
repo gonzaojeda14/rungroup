@@ -134,6 +134,7 @@ export default function Ventas() {
 
   async function handlePublicar(e) {
     e.preventDefault()
+    if (!form.carrera_id) { setError('Tenés que elegir una carrera'); return }
     setSaving(true)
     setError('')
     const carrera = carreras.find(c => c.id === form.carrera_id)
@@ -280,7 +281,7 @@ export default function Ventas() {
 
       {/* FORM */}
       {showForm && (
-        <form className="card form-card" onSubmit={handlePublicar}>
+        <form className="card form-card" onSubmit={handlePublicar} noValidate>
           <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Transferir inscripción</h3>
           <div className="form-grid">
             <div className="field full">
@@ -318,7 +319,7 @@ export default function Ventas() {
           {error && <div className="error-msg" style={{ marginTop: '8px' }}>{error}</div>}
           <div className="form-actions">
             <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
-            <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Publicando...' : 'Publicar'}</button>
+            <button type="submit" className="btn-primary" disabled={saving} style={{ height: '40px', padding: '0 20px', fontSize: '14px' }}>{saving ? 'Publicando...' : 'Publicar'}</button>
           </div>
         </form>
       )}
