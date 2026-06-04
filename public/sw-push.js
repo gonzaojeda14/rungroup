@@ -1,6 +1,14 @@
 self.addEventListener('push', event => {
   if (!event.data) return
-  const { title, body, url } = event.data.json()
+  let title = 'Flama Run', body = '', url = '/novedades'
+  try {
+    const data = event.data.json()
+    title = data.title || title
+    body = data.body || body
+    url = data.url || url
+  } catch {
+    title = event.data.text() || title
+  }
   event.waitUntil(
     self.registration.showNotification(title, {
       body: body || '',
