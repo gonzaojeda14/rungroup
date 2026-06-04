@@ -8,9 +8,9 @@ precacheAndRoute(self.__WB_MANIFEST)
 clientsClaim()
 self.skipWaiting()
 
-// Cache Supabase requests (excepto notif_payload)
+// Cache Supabase requests
 registerRoute(
-  ({ url }) => url.hostname.includes('supabase.co') && !url.pathname.includes('notif_payload'),
+  ({ url }) => url.hostname.includes('supabase.co'),
   new NetworkFirst({ cacheName: 'supabase-cache', networkTimeoutSeconds: 10 })
 )
 
