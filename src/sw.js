@@ -23,7 +23,7 @@ self.addEventListener('push', event => {
     self.registration.showNotification(title, {
       body,
       icon: '/icon-notif.png',
-      badge: '/icon-notif.png',
+      badge: '/badge-flama.png',
       image: '/icon-512.png',
       vibrate: [200, 100, 200],
       data: { url: data.url || '/novedades' }
