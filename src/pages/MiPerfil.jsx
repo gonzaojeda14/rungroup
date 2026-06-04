@@ -42,16 +42,13 @@ export default function MiPerfil() {
   useEffect(() => {
     fetchProfile()
     fetchBugs()
-    // Verificar si ya hay suscripción activa en este dispositivo
+    // Verificar si ya hay suscripción push activa en este dispositivo
     if ('serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        const swPush = regs.find(r => r.active?.scriptURL?.includes('sw-push'))
-        if (swPush) {
-          swPush.pushManager.getSubscription().then(sub => {
-            if (sub) setPushStatus('ok')
-          })
-        }
-      })
+      navigator.serviceWorker.ready.then(reg => {
+        reg.pushManager.getSubscription().then(sub => {
+          if (sub) setPushStatus('ok')
+        })
+      }).catch(() => {})
     }
   }, [])
 
