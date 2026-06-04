@@ -36,9 +36,8 @@ async function mostrarNotificacion() {
       vibrate: [200, 100, 200],
       data: { url: '/novedades' }
     })
-  } catch(e) {
-    console.error('SW push error:', e?.message, e)
-    await self.registration.showNotification(`Flama Run (err: ${e?.message?.slice(0,30)})`, {
+  } catch {
+    await self.registration.showNotification('Flama Run', {
       body: 'Tocá para ver la novedad.',
       icon: '/icon-notif.png',
       badge: '/badge-f.png',
