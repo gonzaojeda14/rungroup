@@ -622,7 +622,15 @@ export default function Carreras() {
                   <div className="race-meta">
                     {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
                     {dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
-                    {c.lugar && <span className="tag">📍 {c.lugar}</span>}
+                    {c.lugar && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.lugar)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="tag"
+                        style={{ textDecoration: 'none' }}
+                        onClick={e => e.stopPropagation()}
+                      >📍 {c.lugar}</a>
+                    )}
                     {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
                     {c.codigo && (() => {
                       const esCupon = /^\S+$/.test(c.codigo.trim())
