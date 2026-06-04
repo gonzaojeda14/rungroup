@@ -39,7 +39,21 @@ export default function MiPerfil() {
   const [msgBug, setMsgBug] = useState('')
   const bugFotoRef = useRef()
 
-  useEffect(() => { fetchProfile(); fetchBugs() }, [])
+  useEffect(() => {
+    fetchProfile()
+    fetchBugs()
+    // Verificar si ya hay suscripción activa en este dispositivo
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        const swPush = regs.find(r => r.active?.scriptURL?.includes('sw-push'))
+        if (swPush) {
+          swPush.pushManager.getSubscription().then(sub => {
+            if (sub) setPushStatus('ok')
+          })
+        }
+      })
+    }
+  }, [])
 
   async function fetchBugs() {
     // Borrar los resueltos con más de 24h
@@ -342,8 +356,13 @@ export default function MiPerfil() {
         <button
           onClick={async () => {
             setPushStatus('loading')
-            const sub = await suscribirPush().catch(() => null)
-            setPushStatus(sub ? 'ok' : 'error')
+            try {
+              const sub = await suscribirPush()
+              setPushStatus(sub ? 'ok' : 'error')
+            } catch (e) {
+              console.error('Push error:', e)
+              setPushStatus('error')
+            }
           }}
           disabled={pushStatus === 'loading' || pushStatus === 'ok'}
           style={{
