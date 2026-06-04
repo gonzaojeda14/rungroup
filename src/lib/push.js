@@ -15,9 +15,8 @@ export async function suscribirPush() {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return null
 
-  // Registrar el SW de push (separado del SW de PWA)
-  const reg = await navigator.serviceWorker.register('/sw-push.js', { scope: '/' })
-  await navigator.serviceWorker.ready
+  // Usar el SW de Vite PWA (no uno separado)
+  const reg = await navigator.serviceWorker.ready
 
   const existing = await reg.pushManager.getSubscription()
   if (existing) {
