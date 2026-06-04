@@ -767,8 +767,8 @@ export default function Carreras() {
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       }}
                     >
-                      <span>👟 {total !== null ? `${total} inscripto${total !== 1 ? 's' : ''}` : 'Ver quiénes van'}</span>
-                      <span style={{ fontSize: '11px' }}>{abierto ? '▲ Ocultar' : '▼ Ver quiénes van'}</span>
+                      <span>👟 {abierto && total !== null ? `${total} inscripto${total !== 1 ? 's' : ''}` : 'Ver quiénes van'}</span>
+                      <span style={{ fontSize: '11px' }}>{abierto ? '▲ Ocultar' : '▼'}</span>
                     </button>
                     {abierto && (
                       <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '8px 12px' }}>
