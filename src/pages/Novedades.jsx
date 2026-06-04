@@ -100,7 +100,7 @@ export default function Novedades() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ title: titulo || 'Nueva novedad en Flama', body: contenido || '' }),
+        body: JSON.stringify({ title: titulo || '', body: contenido || '', tipo }),
       }).then(r => r.text()).then(t => console.log('Push result:', t))
         .catch(e => console.error('Push error:', e))
     }
