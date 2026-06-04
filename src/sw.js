@@ -19,15 +19,14 @@ const SUPABASE_URL = 'https://dsanxuaadoytmuqfpjda.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzYW54dWFhZG95dG11cWZwamRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTI4OTksImV4cCI6MjA5NTkyODg5OX0.srHQwvrVNcMwD3WJLuyfaS5sX0CHN5UPx5XxGqCdiTc'
 
 async function mostrarNotificacion() {
-  await new Promise(r => setTimeout(r, 1500))
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/novedades?select=titulo,contenido&order=created_at.desc&limit=1`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/notif_payload?id=eq.1&select=titulo,contenido`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
     })
     const data = await res.json()
-    const novedad = data?.[0]
-    const title = novedad?.titulo ? `Flama Run: ${novedad.titulo}` : 'Flama Run'
-    const body = novedad?.contenido || 'Tocá para ver la novedad.'
+    const payload = data?.[0]
+    const title = payload?.titulo ? `Flama Run: ${payload.titulo}` : 'Flama Run'
+    const body = payload?.contenido || 'Tocá para ver la novedad.'
     await self.registration.showNotification(title, {
       body,
       icon: '/icon-notif.png',
@@ -37,8 +36,7 @@ async function mostrarNotificacion() {
       data: { url: '/novedades' }
     })
   } catch(e) {
-    console.error('SW push error:', e?.message, e)
-    await self.registration.showNotification(`Flama Run (err: ${e?.message?.slice(0,30)})`, {
+    await self.registration.showNotification('Flama Run', {
       body: 'Tocá para ver la novedad.',
       icon: '/icon-notif.png',
       badge: '/badge-f.png',
