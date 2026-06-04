@@ -120,18 +120,24 @@ export default function Novedades() {
     fetchNovedades()
   }
 
-  async function abrirArchivo(url) {
-    const win = window.open('', '_blank')
-    const { data, error } = await supabase.storage
-      .from('planes')
-      .createSignedUrl(url, 60 * 60)
-    if (error || !data?.signedUrl) { win?.close(); alert('No se pudo abrir el archivo'); return }
-    win.location.href = data.signedUrl
-  }
+  const [planesUrls, setPlanesUrls] = useState({}) // { archivo_url: signedUrl }
 
   const planes = itemsVisibles.filter(i => i.tipo === 'plan')
   const planesRecientes = planes.slice(0, 4)
   const planesAnteriores = planes.slice(4)
+
+  useEffect(() => {
+    const conArchivo = planes.filter(p => p.archivo_url)
+    if (!conArchivo.length) return
+    Promise.all(conArchivo.map(async p => {
+      const { data } = await supabase.storage.from('planes').createSignedUrl(p.archivo_url, 60 * 60)
+      return [p.archivo_url, data?.signedUrl]
+    })).then(results => {
+      const map = {}
+      results.forEach(([key, val]) => { if (val) map[key] = val })
+      setPlanesUrls(map)
+    })
+  }, [items])
   const anuncios = itemsVisibles.filter(i => i.tipo === 'anuncio')
 
   if (loading) return <PageLoader />
@@ -239,9 +245,11 @@ export default function Novedades() {
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                   {p.archivo_url && (
-                    <button onClick={() => abrirArchivo(p.archivo_url)} className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px' }}>
-                      Abrir →
-                    </button>
+                    {planesUrls[p.archivo_url] && (
+                      <a href={planesUrls[p.archivo_url]} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px', display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+                        Abrir →
+                      </a>
+                    )}
                   )}
                   {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>✕</button>}
                 </div>

@@ -199,15 +199,14 @@ export default function MiPerfil() {
     setSavingCert(false)
   }
 
-  async function verCertificado() {
-    if (certInfo.url.startsWith('http')) { window.open(certInfo.url, '_blank'); return }
-    const win = window.open('', '_blank')
-    const { data, error } = await supabase.storage
-      .from('certificados')
-      .createSignedUrl(certInfo.url, 60 * 60)
-    if (error || !data?.signedUrl) { win?.close(); alert('No se pudo abrir el certificado'); return }
-    win.location.href = data.signedUrl
-  }
+  const [certSignedUrl, setCertSignedUrl] = useState(null)
+
+  useEffect(() => {
+    if (!certInfo.url) return
+    if (certInfo.url.startsWith('http')) { setCertSignedUrl(certInfo.url); return }
+    supabase.storage.from('certificados').createSignedUrl(certInfo.url, 60 * 60)
+      .then(({ data }) => { if (data?.signedUrl) setCertSignedUrl(data.signedUrl) })
+  }, [certInfo.url])
 
   const certAnio = certInfo.fecha ? new Date(certInfo.fecha).getFullYear() : null
   const certVencido = certAnio !== null && certAnio < thisYear
@@ -308,9 +307,11 @@ export default function MiPerfil() {
             <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
               Subido el {formatFecha(certInfo.fecha)} · Válido hasta el 31/12/{certAnio}
             </div>
-            <button onClick={verCertificado} className="race-link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}>
-              Ver certificado →
-            </button>
+            {certSignedUrl && (
+              <a href={certSignedUrl} target="_blank" rel="noopener noreferrer" className="race-link">
+                Ver certificado →
+              </a>
+            )}
           </div>
         )}
 
