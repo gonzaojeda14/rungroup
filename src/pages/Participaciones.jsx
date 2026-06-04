@@ -251,7 +251,6 @@ export default function Participaciones() {
               return (
                 <div key={i} className="card" style={{
                   borderLeft: `3px solid ${ESTADO_COLOR[p.estado] || '#475569'}`,
-                  opacity: pasada ? 0.5 : 1,
                 }}>
                   {/* Alerta menos de 1 semana */}
                   {urgente && p.estado === 'Inscripto' && (
