@@ -752,7 +752,7 @@ export default function Carreras() {
               {/* Quiénes van */}
               {(() => {
                 const abierto = inscriptosAbiertos[c.id]
-                const total = Array.isArray(abierto) ? abierto.length : participaciones.filter(p => p.carrera_id === c.id && p.estado === 'Inscripto').length
+                const total = Array.isArray(abierto) ? abierto.length : null
                 return (
                   <div style={{ marginTop: '10px' }}>
                     <button
@@ -767,7 +767,7 @@ export default function Carreras() {
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       }}
                     >
-                      <span>👟 {total} inscripto{total !== 1 ? 's' : ''}</span>
+                      <span>👟 {total !== null ? `${total} inscripto${total !== 1 ? 's' : ''}` : 'Ver quiénes van'}</span>
                       <span style={{ fontSize: '11px' }}>{abierto ? '▲ Ocultar' : '▼ Ver quiénes van'}</span>
                     </button>
                     {abierto && (
