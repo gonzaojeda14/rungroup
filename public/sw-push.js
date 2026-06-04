@@ -1,4 +1,5 @@
 self.addEventListener('push', event => {
+  console.log('SW push recibido, data:', event.data?.text())
   if (!event.data) return
   let title = 'Flama Run', body = '', url = '/novedades'
   try {

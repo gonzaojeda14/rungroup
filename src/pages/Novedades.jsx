@@ -79,9 +79,15 @@ export default function Novedades() {
 
     // Disparar push a todos los suscriptores (solo si es publicación inmediata)
     if (!programarEn) {
-      supabase.functions.invoke('send-push', {
-        body: { title: titulo || 'Nueva novedad en Flama', body: contenido || '' }
-      }).then(r => console.log('Push result:', JSON.stringify(r)))
+      const { data: { session } } = await supabase.auth.getSession()
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ title: titulo || 'Nueva novedad en Flama', body: contenido || '' }),
+      }).then(r => r.text()).then(t => console.log('Push result:', t))
         .catch(e => console.error('Push error:', e))
     }
 
