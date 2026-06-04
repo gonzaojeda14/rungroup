@@ -244,12 +244,10 @@ export default function Novedades() {
                   <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{tiempoAtras(p.created_at)}</div>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  {p.archivo_url && (
-                    {planesUrls[p.archivo_url] && (
-                      <a href={planesUrls[p.archivo_url]} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px', display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-                        Abrir →
-                      </a>
-                    )}
+                  {p.archivo_url && planesUrls[p.archivo_url] && (
+                    <a href={planesUrls[p.archivo_url]} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px', display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+                      Abrir →
+                    </a>
                   )}
                   {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>✕</button>}
                 </div>
