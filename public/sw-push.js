@@ -1,15 +1,7 @@
 self.addEventListener('push', event => {
-  console.log('SW push recibido, data:', event.data?.text())
-  if (!event.data) return
-  let title = 'Flama Run', body = '', url = '/novedades'
-  try {
-    const data = event.data.json()
-    title = data.title || title
-    body = data.body || body
-    url = data.url || url
-  } catch {
-    title = event.data.text() || title
-  }
+  const title = 'Flama Run'
+  const body = 'Hay una nueva novedad. Tocá para ver.'
+  const url = '/novedades'
   event.waitUntil(
     self.registration.showNotification(title, {
       body: body || '',
