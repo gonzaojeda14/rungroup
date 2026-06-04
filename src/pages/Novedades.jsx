@@ -81,7 +81,8 @@ export default function Novedades() {
     if (!programarEn) {
       supabase.functions.invoke('send-push', {
         body: { title: titulo || 'Nueva novedad en Flama', body: contenido || '' }
-      }).catch(() => {})
+      }).then(r => console.log('Push result:', JSON.stringify(r)))
+        .catch(e => console.error('Push error:', e))
     }
 
     setTitulo('')
