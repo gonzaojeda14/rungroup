@@ -72,7 +72,6 @@ export default function Carreras() {
     fetchAll()
     const channel = supabase.channel('carreras-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'carreras' }, fetchAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones' }, fetchAll)
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [])
