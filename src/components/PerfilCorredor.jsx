@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import RecordsPersonales from './RecordsPersonales'
+import { formatTelefonoWA } from '../lib/utils'
 
 const thisYear = new Date().getFullYear()
 
@@ -103,7 +104,7 @@ export default function PerfilCorredor({ corredor, onClose }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px' }}>
                 <span style={{ color: 'var(--text2)' }}>Teléfono</span>
                 <a
-                  href={`https://wa.me/${extra.telefono.replace(/\D/g, '')}`}
+                  href={`https://wa.me/${formatTelefonoWA(extra.telefono)}`}
                   target="_blank" rel="noopener noreferrer"
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ade80', fontWeight: 500, textDecoration: 'none' }}
                 >

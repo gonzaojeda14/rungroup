@@ -2,7 +2,7 @@ import PageLoader from '../components/PageLoader'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFecha } from '../lib/utils'
+import { formatFecha, formatTelefonoWA } from '../lib/utils'
 
 function calcularHorasLimite(fechaCarrera) {
   if (!fechaCarrera) return 24
@@ -255,7 +255,7 @@ export default function Ventas() {
           {miOferta.estado === 'ofertada' && (
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <a
-                href={`https://wa.me/${(miOferta.vendedor?.telefono || '').replace(/\D/g, '')}`}
+                href={`https://wa.me/${formatTelefonoWA(miOferta.vendedor?.telefono || '')}`}
                 target="_blank" rel="noopener noreferrer"
                 className="btn-primary"
                 style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', height: '40px', padding: '0 16px', fontSize: '14px' }}
@@ -377,7 +377,7 @@ export default function Ventas() {
               </div>
               {v.vendedor?.telefono && (
                 <a
-                  href={`https://wa.me/${v.vendedor.telefono.replace(/\D/g, '')}`}
+                  href={`https://wa.me/${formatTelefonoWA(v.vendedor.telefono)}`}
                   target="_blank" rel="noopener noreferrer"
                   className="race-link"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}

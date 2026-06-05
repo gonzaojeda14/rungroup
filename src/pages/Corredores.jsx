@@ -128,7 +128,7 @@ export default function Corredores() {
 
       <div className="cards-list">
         {corredores.filter(c => !busqueda || c.nombre?.toLowerCase().includes(busqueda.toLowerCase())).map(c => (
-          <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default' }} onClick={() => c.role !== 'admin' && setPerfilAbierto(c)}>
+          <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' }} onClick={() => c.role !== 'admin' && setPerfilAbierto(c)}>
             <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0 }}>
               {c.avatar_url
                 ? <img src={c.avatar_url} alt={c.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
