@@ -140,6 +140,8 @@ export default function Participaciones() {
     const { data: rp } = await supabase.from('records_personales')
       .select('tiempo_segundos').eq('user_id', user.id).eq('distancia', distancia).single()
 
+    const esPR = rp && seg < rp.tiempo_segundos
+
     if (!rp || seg < rp.tiempo_segundos) {
       const tipo = carreraTipo === 'Trail' ? 'trail' : 'calle'
       await supabase.from('records_personales').upsert({
@@ -157,8 +159,8 @@ export default function Participaciones() {
 
     setTiemposGuardados(prev => ({ ...prev, [key]: tiempoTexto }))
     setSavingTiempo(prev => ({ ...prev, [key]: false }))
-    setToast('⏱ Tiempo guardado')
-    setTimeout(() => setToast(''), 2000)
+    setToast(esPR ? '🏅 ¡Felicitaciones! Tenés un nuevo PR' : '⏱ Tiempo guardado')
+    setTimeout(() => setToast(''), esPR ? 3500 : 2000)
   }
 
   async function handleFeedback(carreraId, valor) {
