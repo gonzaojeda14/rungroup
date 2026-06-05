@@ -199,13 +199,17 @@ export default function RecordsPersonales({ userId }) {
   }
 
   async function toggleTrail(carreraNombre) {
+    // Optimistic update
     if (records[carreraNombre]) {
+      setRecords(prev => { const next = { ...prev }; delete next[carreraNombre]; return next })
       const { error } = await supabase.from('records_personales')
         .delete()
         .eq('user_id', uid)
         .eq('distancia', carreraNombre)
-      if (error) console.error('Error al desmarcar trail:', error)
+      if (error) { console.error('Error al desmarcar trail:', error); fetchRecords() }
     } else {
+      const fakeRecord = { distancia: carreraNombre, tipo: 'trail' }
+      setRecords(prev => ({ ...prev, [carreraNombre]: fakeRecord }))
       const { error } = await supabase.from('records_personales').upsert({
         user_id: uid,
         distancia: carreraNombre,
@@ -215,9 +219,8 @@ export default function RecordsPersonales({ userId }) {
         fuente: 'manual',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,distancia' })
-      if (error) console.error('Error al marcar trail:', error)
+      if (error) { console.error('Error al marcar trail:', error); fetchRecords() }
     }
-    await fetchRecords()
   }
 
   async function guardarCustomCalle() {
@@ -301,7 +304,7 @@ export default function RecordsPersonales({ userId }) {
                     width: 28, height: 28, borderRadius: '50%', border: corrida ? 'none' : '2px solid var(--border)',
                     background: corrida ? '#4ade80' : 'transparent', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    transition: 'all 0.15s',
+                    transition: 'all 0.15s', outline: 'none',
                   }}
                 >
                   {corrida && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
