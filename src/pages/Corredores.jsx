@@ -127,7 +127,12 @@ export default function Corredores() {
       </div>
 
       <div className="cards-list">
-        {corredores.filter(c => !busqueda || c.nombre?.toLowerCase().includes(busqueda.toLowerCase())).map(c => (
+        {corredores.filter(c => {
+            if (!busqueda) return true
+            const palabras = busqueda.toLowerCase().split(/\s+/).filter(Boolean)
+            const nombre = c.nombre?.toLowerCase() || ''
+            return palabras.every(p => nombre.includes(p))
+          }).map(c => (
           <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' }} onClick={() => c.role !== 'admin' && setPerfilAbierto(c)}>
             <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0 }}>
               {c.avatar_url
