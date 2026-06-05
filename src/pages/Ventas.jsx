@@ -1,4 +1,5 @@
 import PageLoader from '../components/PageLoader'
+import ConfirmModal from '../components/ConfirmModal'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -47,8 +48,9 @@ export default function Ventas() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [editandoVenta, setEditandoVenta] = useState(null) // id de la venta en edición
+  const [editandoVenta, setEditandoVenta] = useState(null)
   const [editForm, setEditForm] = useState({ precio: '', nota: '', distancia: '' })
+  const [confirmarCancelar, setConfirmarCancelar] = useState(null) // id a cancelar
 
   const avanzarCola = useCallback(async (venta, rechazadoId) => {
     const yaRechazados = [...(venta.rechazados || []), rechazadoId].filter(Boolean)
@@ -230,8 +232,8 @@ export default function Ventas() {
   }
 
   async function handleCancelarVenta(ventaId) {
-    if (!confirm('¿Cancelar la publicación de tu inscripción?')) return
     await supabase.from('ventas_inscripciones').update({ estado: 'cancelada' }).eq('id', ventaId)
+    setConfirmarCancelar(null)
     fetchAll()
   }
 
@@ -383,7 +385,7 @@ export default function Ventas() {
                   >
                     {editandoVenta === v.id ? 'Cancelar' : 'Editar'}
                   </button>
-                  <button className="btn-icon danger" onClick={() => handleCancelarVenta(v.id)} title="Cancelar publicación">✕</button>
+                  <button className="btn-icon danger" onClick={() => setConfirmarCancelar(v.id)} title="Cancelar publicación">✕</button>
                 </div>
               </div>
 
@@ -451,6 +453,14 @@ export default function Ventas() {
 
       {misVentas.length === 0 && ventasOtros.length === 0 && !miOferta && (
         <div className="empty-state">No hay inscripciones disponibles para transferir</div>
+      )}
+
+      {confirmarCancelar && (
+        <ConfirmModal
+          mensaje="¿Cancelar la publicación de tu inscripción?"
+          onConfirm={() => handleCancelarVenta(confirmarCancelar)}
+          onCancel={() => setConfirmarCancelar(null)}
+        />
       )}
     </div>
   )

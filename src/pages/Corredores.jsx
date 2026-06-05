@@ -1,5 +1,6 @@
 import PageLoader from '../components/PageLoader'
 import PerfilCorredor from '../components/PerfilCorredor'
+import ConfirmModal from '../components/ConfirmModal'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -15,6 +16,7 @@ export default function Corredores() {
   const [bugs, setBugs] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [perfilAbierto, setPerfilAbierto] = useState(null)
+  const [confirmarBloquear, setConfirmarBloquear] = useState(null) // corredor a bloquear
 
   useEffect(() => { fetchCorredores(); fetchBugs() }, [])
 
@@ -43,10 +45,10 @@ export default function Corredores() {
   }
 
   async function handleBloquear(corredor) {
-    if (!confirm(`¿Bloquear el email de ${corredor.nombre}? No podrá volver a registrarse con ${corredor.email}.`)) return
     const { error } = await supabase.from('emails_bloqueados').insert([{ email: corredor.email }])
     if (error) { setMsg('Error al bloquear: ' + error.message); return }
     setMsg(`🚫 ${corredor.email} bloqueado`)
+    setConfirmarBloquear(null)
   }
 
   async function handleToggleAcceso(corredor) {

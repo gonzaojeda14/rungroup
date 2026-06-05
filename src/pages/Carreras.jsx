@@ -115,6 +115,7 @@ export default function Carreras() {
   const [progreso, setProgreso] = useState(0)
   const [fotoAmpliada, setFotoAmpliada] = useState(null)
   const [confirmarEliminarFoto, setConfirmarEliminarFoto] = useState(null)
+  const [confirmarEliminarCarrera, setConfirmarEliminarCarrera] = useState(null)
   const [confirmarBorrarTodas, setConfirmarBorrarTodas] = useState(false)
   const [seleccionadas, setSeleccionadas] = useState(new Set())
   const [confirmarBorrarSeleccion, setConfirmarBorrarSeleccion] = useState(false)
@@ -201,8 +202,8 @@ export default function Carreras() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('¿Eliminar esta carrera?')) return
     await supabase.from('carreras').delete().eq('id', id)
+    setConfirmarEliminarCarrera(null)
     fetchAll()
   }
 
@@ -732,7 +733,7 @@ export default function Carreras() {
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button className="btn-icon" onClick={() => toggleDestacada(c)} title={c.destacada ? 'Quitar destacada' : 'Marcar como destacada'} style={c.destacada ? { color: '#eab308', borderColor: 'rgba(234,179,8,0.4)' } : {}}>⭐</button>
                     <button className="btn-icon" onClick={() => handleEdit(c)} title="Editar">✏️</button>
-                    <button className="btn-icon danger" onClick={() => handleDelete(c.id)} title="Eliminar">✕</button>
+                    <button className="btn-icon danger" onClick={() => setConfirmarEliminarCarrera(c.id)} title="Eliminar">✕</button>
                   </div>
                 )}
               </div>
@@ -1057,6 +1058,14 @@ export default function Carreras() {
           mensaje="¿Eliminar esta foto?"
           onConfirm={() => eliminarFoto(confirmarEliminarFoto)}
           onCancel={() => setConfirmarEliminarFoto(null)}
+        />
+      )}
+
+      {confirmarEliminarCarrera && (
+        <ConfirmModal
+          mensaje="¿Eliminar esta carrera?"
+          onConfirm={() => handleDelete(confirmarEliminarCarrera)}
+          onCancel={() => setConfirmarEliminarCarrera(null)}
         />
       )}
 

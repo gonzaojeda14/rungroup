@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import ConfirmModal from './ConfirmModal'
 
 function formatFechaDMY(fecha) {
   if (!fecha) return ''
@@ -47,7 +48,7 @@ function autoformatK(valor) {
   return limpio
 }
 
-function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando, form, setForm, setEditando, msg, saving, validarTiempo, autoformatTiempo, guardarRecord, eliminarRecord }) {
+function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando, form, setForm, setEditando, msg, saving, validarTiempo, autoformatTiempo, guardarRecord, setConfirmarEliminar }) {
   if (!esPropio) {
     return (
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -76,7 +77,7 @@ function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando
               </button>
               {rec && (
                 <button
-                  onClick={() => eliminarRecord(distancia)}
+                  onClick={() => setConfirmarEliminar(distancia)}
                   style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
                   title="Eliminar record"
                 >✕</button>
@@ -143,6 +144,7 @@ export default function RecordsPersonales({ userId }) {
   // Para trail: { carreraNombre: { distancia: '', tiempo: '', fecha: '' } }
   const [trailForms, setTrailForms] = useState({})
   const [trailEditando, setTrailEditando] = useState(null)
+  const [confirmarEliminar, setConfirmarEliminar] = useState(null) // distancia a eliminar
 
   useEffect(() => { fetchRecords() }, [uid])
 
@@ -192,11 +194,11 @@ export default function RecordsPersonales({ userId }) {
   }
 
   async function eliminarRecord(distancia) {
-    if (!confirm(`¿Eliminar el record de ${distancia}?`)) return
     await supabase.from('records_personales')
       .delete()
       .eq('user_id', uid)
       .eq('distancia', distancia)
+    setConfirmarEliminar(null)
     await fetchRecords()
   }
 
@@ -275,7 +277,7 @@ export default function RecordsPersonales({ userId }) {
             validarTiempo={validarTiempo}
             autoformatTiempo={autoformatTiempo}
             guardarRecord={guardarRecord}
-            eliminarRecord={eliminarRecord}
+            setConfirmarEliminar={setConfirmarEliminar}
           />
         ))}
 
@@ -309,7 +311,6 @@ export default function RecordsPersonales({ userId }) {
       <div>
         <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>🏔 Trail</div>
         {CARRERAS_TRAIL.map(carrera => {
-          // Encontrar records de esta carrera
           const recsDeEstaCarrera = trailKeys.filter(k => k.startsWith(carrera + ' '))
           const esteTrailEditando = trailEditando === carrera
           const tf = trailForms[carrera] || {}
@@ -329,7 +330,7 @@ export default function RecordsPersonales({ userId }) {
                       {r.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{formatFechaDMY(r.fecha)}</span>}
                       {r.fuente === 'automatico' && <span style={{ fontSize: '10px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '4px', padding: '1px 5px' }}>auto</span>}
                       {esPropio && (
-                        <button onClick={() => eliminarRecord(k)} style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }} title="Eliminar">✕</button>
+                        <button onClick={() => setConfirmarEliminar(k)} style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }} title="Eliminar">✕</button>
                       )}
                     </div>
                   </div>
@@ -392,6 +393,14 @@ export default function RecordsPersonales({ userId }) {
           )
         })}
       </div>
+
+      {confirmarEliminar && (
+        <ConfirmModal
+          mensaje={`¿Eliminar el record de ${confirmarEliminar}?`}
+          onConfirm={() => eliminarRecord(confirmarEliminar)}
+          onCancel={() => setConfirmarEliminar(null)}
+        />
+      )}
     </div>
   )
 }
