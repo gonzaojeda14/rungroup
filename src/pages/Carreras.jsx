@@ -36,10 +36,8 @@ function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
         {label}
         {info && (
           <span
-            onMouseEnter={e => { e.stopPropagation(); setVisible(true) }}
-            onMouseLeave={e => { e.stopPropagation(); setVisible(false) }}
             onClick={e => { e.stopPropagation(); setVisible(v => !v) }}
-            style={{ marginLeft: '4px', opacity: 0.6, fontSize: '10px', cursor: 'help' }}
+            style={{ marginLeft: '4px', opacity: 0.6, fontSize: '10px', cursor: 'pointer' }}
           >ⓘ</span>
         )}
       </button>
