@@ -11,6 +11,7 @@ import Corredores from './pages/Corredores'
 import MiPerfil from './pages/MiPerfil'
 import Ventas from './pages/Ventas'
 import Novedades from './pages/Novedades'
+import ResetPassword from './pages/ResetPassword'
 
 function OfertaAlert() {
   const { user } = useAuth()
@@ -282,6 +283,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/registro" element={<GuestOnly><Register /></GuestOnly>} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Shell />} />
         </Routes>
       </BrowserRouter>
