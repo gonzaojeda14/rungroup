@@ -3,7 +3,7 @@ import RecordsPersonales from '../components/RecordsPersonales'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFecha } from '../lib/utils'
+import { formatFecha, validarTelefono } from '../lib/utils'
 import { suscribirPush } from '../lib/push'
 
 const thisYear = new Date().getFullYear()
@@ -145,6 +145,10 @@ export default function MiPerfil() {
 
   async function handleSaveDatos(e) {
     e.preventDefault()
+    if (form.telefono && !validarTelefono(form.telefono)) {
+      setMsg('El teléfono parece inválido. Ingresá entre 8 y 15 dígitos.')
+      return
+    }
     setSaving(true)
     setMsg('')
     const { error } = await supabase.from('profiles').update({

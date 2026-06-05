@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { validarTelefono } from '../lib/utils'
 import PasswordInput from '../components/PasswordInput'
 
 export default function Register() {
@@ -38,6 +39,10 @@ export default function Register() {
     }
     if (!form.telefono.trim()) {
       setError('El teléfono es obligatorio')
+      return
+    }
+    if (!validarTelefono(form.telefono)) {
+      setError('El teléfono parece inválido. Ingresá entre 8 y 15 dígitos.')
       return
     }
     if (form.password.length < 6) {

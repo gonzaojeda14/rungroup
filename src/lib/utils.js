@@ -17,6 +17,13 @@ export function formatFechaHora(fecha, hora) {
   return hora ? `${formatFecha(fecha)} ${formatHora(hora)}hs` : formatFecha(fecha)
 }
 
+// Valida que un teléfono tenga entre 8 y 15 dígitos
+export function validarTelefono(tel) {
+  if (!tel) return false
+  const digits = tel.replace(/\D/g, '')
+  return digits.length >= 8 && digits.length <= 15
+}
+
 // Formatea teléfono para WhatsApp con código de país Argentina (+54)
 export function formatTelefonoWA(tel) {
   if (!tel) return ''
