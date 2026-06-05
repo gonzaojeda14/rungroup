@@ -17,8 +17,7 @@ function segundosATiempo(seg) {
   const h = Math.floor(seg / 3600)
   const m = Math.floor((seg % 3600) / 60)
   const s = seg % 60
-  if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
 }
 
 function validarTiempo(texto) {
@@ -170,13 +169,14 @@ export default function RecordsPersonales({ userId }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {rec && <span style={{ fontSize: '14px', fontWeight: 700, color: '#4ade80' }}>{rec.tiempo_texto}</span>}
             {rec?.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{rec.fecha}</span>}
-            {rec?.fuente === 'automatico' && <span style={{ fontSize: '10px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '4px', padding: '1px 5px' }}>auto</span>}
-            <button
-              onClick={() => { setEditando(esteEditando ? null : distancia); setForm({ tiempo: rec?.tiempo_texto || '', fecha: rec?.fecha || '' }); setMsg('') }}
-              style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
-            >
-              {rec ? 'Editar' : '+ Agregar'}
-            </button>
+            {!esteEditando && (
+              <button
+                onClick={() => { setEditando(distancia); setForm({ tiempo: rec?.tiempo_texto || '', fecha: rec?.fecha || '' }); setMsg('') }}
+                style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+              >
+                {rec ? 'Editar' : '+ Agregar'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -187,7 +187,7 @@ export default function RecordsPersonales({ userId }) {
               <input
                 value={form.tiempo}
                 onChange={e => setForm(f => ({ ...f, tiempo: autoformatTiempo(e.target.value) }))}
-                placeholder="MM:SS"
+                placeholder="HH:MM:SS"
                 inputMode="numeric"
                 style={{ width: '120px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', fontSize: '14px', fontFamily: 'inherit' }}
               />
@@ -205,6 +205,13 @@ export default function RecordsPersonales({ userId }) {
               >
                 {saving ? '...' : 'Guardar'}
               </button>
+              <button
+                onClick={() => { setEditando(null); setMsg('') }}
+                className="btn-ghost"
+                style={{ height: 34, fontSize: 12, padding: '0 12px' }}
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         )}
@@ -215,6 +222,11 @@ export default function RecordsPersonales({ userId }) {
   // Registros trail del usuario (para mostrar los ya cargados)
   const trailKeys = Object.keys(records).filter(k => records[k].tipo === 'trail')
 
+  // Todas las distancias de calle ordenadas de menor a mayor
+  const customCalle2 = Object.keys(records).filter(k => records[k].tipo === 'calle' && !DISTANCIAS_CALLE.includes(k))
+  const todasDistanciasCalle = [...new Set([...DISTANCIAS_CALLE, ...customCalle2])]
+    .sort((a, b) => parseFloat(a) - parseFloat(b))
+
   return (
     <div className="card" style={{ marginBottom: '12px' }}>
       <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>🏅 Records personales</h3>
@@ -222,13 +234,7 @@ export default function RecordsPersonales({ userId }) {
       {/* CALLE */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>🏃 Calle</div>
-        {DISTANCIAS_CALLE.map(d => <RecordRow key={d} distancia={d} tipo="calle" />)}
-
-        {/* Distancias custom calle ya cargadas */}
-        {Object.keys(records)
-          .filter(k => records[k].tipo === 'calle' && !DISTANCIAS_CALLE.includes(k))
-          .map(d => <RecordRow key={d} distancia={d} tipo="calle" />)
-        }
+        {todasDistanciasCalle.map(d => <RecordRow key={d} distancia={d} tipo="calle" />)}
 
         {esPropio && (
           showCustomCalle ? (
@@ -306,7 +312,7 @@ export default function RecordsPersonales({ userId }) {
                       <input
                         value={tf.tiempo || ''}
                         onChange={e => setTrailForms(prev => ({ ...prev, [carrera]: { ...tf, tiempo: autoformatTiempo(e.target.value) } }))}
-                        placeholder="MM:SS"
+                        placeholder="HH:MM:SS"
                         inputMode="numeric"
                         style={{ width: '110px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', fontSize: '13px', fontFamily: 'inherit' }}
                       />
@@ -324,7 +330,7 @@ export default function RecordsPersonales({ userId }) {
                       >
                         {saving ? '...' : 'Guardar'}
                       </button>
-                      <button onClick={() => { setTrailEditando(null); setMsg('') }} style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: '13px' }}>✕</button>
+                      <button onClick={() => { setTrailEditando(null); setMsg('') }} className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px' }}>Cancelar</button>
                     </div>
                   </div>
                 ) : (
