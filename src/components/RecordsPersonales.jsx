@@ -10,7 +10,7 @@ function formatFechaDMY(fecha) {
 }
 
 const DISTANCIAS_CALLE = ['3K', '5K', '8K', '10K', '15K', '21K', '25K', '30K', '42K']
-const CARRERAS_TRAIL = ['Patagonia Run', 'El Cruce', 'La Etapa', 'UTACCH', 'Champanqui']
+const CARRERAS_TRAIL = ['Patagonia Run', 'El Cruce', 'La Etapa', 'UTACCH', 'Champanqui', 'Tandil']
 
 function tiempoASegundos(texto) {
   const partes = texto.split(':').map(Number)
@@ -141,9 +141,6 @@ export default function RecordsPersonales({ userId }) {
   const [customCalle, setCustomCalle] = useState('')
   const [showCustomCalle, setShowCustomCalle] = useState(false)
 
-  // Para trail: { carreraNombre: { distancia: '', tiempo: '', fecha: '' } }
-  const [trailForms, setTrailForms] = useState({})
-  const [trailEditando, setTrailEditando] = useState(null)
   const [confirmarEliminar, setConfirmarEliminar] = useState(null) // distancia a eliminar
 
   useEffect(() => { fetchRecords() }, [uid])
@@ -187,7 +184,6 @@ export default function RecordsPersonales({ userId }) {
 
     await fetchRecords()
     setEditando(null)
-    setTrailEditando(null)
     setForm({ tiempo: '', fecha: '' })
     setMsg('')
     setSaving(false)
@@ -202,40 +198,24 @@ export default function RecordsPersonales({ userId }) {
     await fetchRecords()
   }
 
-  async function guardarTrail(carreraNombre) {
-    const tf = trailForms[carreraNombre] || {}
-    if (!tf.distancia) { setMsg('Ingresá la distancia'); return }
-    if (!validarTiempo(tf.tiempo || '')) { setMsg('Formato de tiempo inválido'); return }
-
-    const distK = tf.distancia.endsWith('K') ? tf.distancia : `${tf.distancia}K`
-    const distancia = `${carreraNombre} ${distK}`
-    const seg = tiempoASegundos(tf.tiempo)
-    const tiempoTexto = segundosATiempo(seg)
-
-    const existente = records[distancia]
-    if (existente && seg >= existente.tiempo_segundos) {
-      setMsg('Ya tenés un mejor tiempo registrado')
-      return
+  async function toggleTrail(carreraNombre) {
+    if (records[carreraNombre]) {
+      // Ya la corrió → desmarcar
+      await supabase.from('records_personales')
+        .delete()
+        .eq('user_id', uid)
+        .eq('distancia', carreraNombre)
+    } else {
+      // No la corrió → marcar
+      await supabase.from('records_personales').upsert({
+        user_id: uid,
+        distancia: carreraNombre,
+        tipo: 'trail',
+        fuente: 'manual',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,distancia' })
     }
-
-    setSaving(true)
-    await supabase.from('records_personales').upsert({
-      user_id: uid,
-      distancia,
-      tipo: 'trail',
-      tiempo_segundos: seg,
-      tiempo_texto: tiempoTexto,
-      carrera_nombre: carreraNombre,
-      fecha: tf.fecha || null,
-      fuente: 'manual',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,distancia' })
-
     await fetchRecords()
-    setTrailEditando(null)
-    setTrailForms(prev => ({ ...prev, [carreraNombre]: {} }))
-    setMsg('')
-    setSaving(false)
   }
 
   async function guardarCustomCalle() {
@@ -245,9 +225,6 @@ export default function RecordsPersonales({ userId }) {
     setShowCustomCalle(false)
     setCustomCalle('')
   }
-
-  // Registros trail del usuario (para mostrar los ya cargados)
-  const trailKeys = Object.keys(records).filter(k => records[k].tipo === 'trail')
 
   // Todas las distancias de calle ordenadas de menor a mayor
   const customCalle2 = Object.keys(records).filter(k => records[k].tipo === 'calle' && !DISTANCIAS_CALLE.includes(k))
@@ -311,83 +288,24 @@ export default function RecordsPersonales({ userId }) {
       <div>
         <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>🏔 Trail</div>
         {CARRERAS_TRAIL.map(carrera => {
-          const recsDeEstaCarrera = trailKeys.filter(k => k.startsWith(carrera + ' '))
-          const esteTrailEditando = trailEditando === carrera
-          const tf = trailForms[carrera] || {}
-
+          const corrida = !!records[carrera]
           return (
-            <div key={carrera} style={{ borderBottom: '1px solid var(--border)', padding: '8px 0' }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: recsDeEstaCarrera.length > 0 ? '6px' : '0' }}>{carrera}</div>
-
-              {recsDeEstaCarrera.map(k => {
-                const r = records[k]
-                const dist = k.replace(carrera + ' ', '')
-                return (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', color: 'var(--text2)' }}>{dist}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#4ade80' }}>{r.tiempo_texto}</span>
-                      {r.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{formatFechaDMY(r.fecha)}</span>}
-                      {r.fuente === 'automatico' && <span style={{ fontSize: '10px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '4px', padding: '1px 5px' }}>auto</span>}
-                      {esPropio && (
-                        <button onClick={() => setConfirmarEliminar(k)} style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }} title="Eliminar">✕</button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-
-              {esPropio && (
-                esteTrailEditando ? (
-                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px', paddingLeft: '8px' }}>
-                    {msg && <p style={{ fontSize: '12px', color: '#f87171', margin: 0 }}>{msg}</p>}
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <input
-                          value={tf.distancia || ''}
-                          onChange={e => setTrailForms(prev => ({ ...prev, [carrera]: { ...tf, distancia: autoformatK(e.target.value) } }))}
-                          onBlur={() => {
-                            if (tf.distancia && !tf.distancia.endsWith('K'))
-                              setTrailForms(prev => ({ ...prev, [carrera]: { ...tf, distancia: tf.distancia + 'K' } }))
-                          }}
-                          placeholder="Dist"
-                          inputMode="numeric"
-                          style={{ width: '60px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 8px', fontSize: '13px', fontFamily: 'inherit' }}
-                        />
-                        <span style={{ fontSize: '12px', color: 'var(--text2)' }}>K</span>
-                      </div>
-                      <input
-                        value={tf.tiempo || ''}
-                        onChange={e => setTrailForms(prev => ({ ...prev, [carrera]: { ...tf, tiempo: autoformatTiempo(e.target.value) } }))}
-                        placeholder="HH:MM:SS"
-                        inputMode="numeric"
-                        style={{ width: '110px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', fontSize: '13px', fontFamily: 'inherit' }}
-                      />
-                      <input
-                        type="date"
-                        value={tf.fecha || ''}
-                        onChange={e => setTrailForms(prev => ({ ...prev, [carrera]: { ...tf, fecha: e.target.value } }))}
-                        style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 8px', fontSize: '12px', fontFamily: 'inherit' }}
-                      />
-                      <button
-                        className="btn-primary"
-                        style={{ height: 32, fontSize: 12, padding: '0 12px' }}
-                        disabled={saving || !tf.distancia || !validarTiempo(tf.tiempo || '')}
-                        onClick={() => guardarTrail(carrera)}
-                      >
-                        {saving ? '...' : 'Guardar'}
-                      </button>
-                      <button onClick={() => { setTrailEditando(null); setMsg('') }} className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px' }}>Cancelar</button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setTrailEditando(carrera); setMsg('') }}
-                    style={{ fontSize: '12px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 0 8px' }}
-                  >
-                    + Agregar tiempo
-                  </button>
-                )
+            <div key={carrera} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', padding: '10px 0' }}>
+              <span style={{ fontSize: '14px' }}>{carrera}</span>
+              {esPropio ? (
+                <button
+                  onClick={() => toggleTrail(carrera)}
+                  style={{
+                    width: 28, height: 28, borderRadius: '50%', border: corrida ? 'none' : '2px solid var(--border)',
+                    background: corrida ? '#4ade80' : 'transparent', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {corrida && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </button>
+              ) : (
+                <span style={{ fontSize: '18px' }}>{corrida ? '✓' : '—'}</span>
               )}
             </div>
           )
