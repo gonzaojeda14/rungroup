@@ -9,14 +9,46 @@ import { formatFechaHora } from '../lib/utils'
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
+function InfoTooltip({ texto }) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <button
+        onMouseEnter={() => setVisible(true)}
+        onMouseLeave={() => setVisible(false)}
+        onClick={e => { e.stopPropagation(); setVisible(v => !v) }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', color: 'var(--text2)', fontSize: '11px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
+      >
+        ⓘ
+      </button>
+      {visible && (
+        <span style={{
+          position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)',
+          background: '#1e293b', color: '#f1f5f9', fontSize: '12px', lineHeight: 1.4,
+          padding: '8px 10px', borderRadius: '8px', whiteSpace: 'normal', width: '200px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)', zIndex: 50, pointerEvents: 'none',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}>
+          {texto}
+        </span>
+      )}
+    </span>
+  )
+}
+
 const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
-const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera']
+const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera', 'Stand Flama']
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
   'No voy': '#f87171',
   'Tal vez': '#fbbf24',
   'Lista de espera': '#60a5fa',
+  'Stand Flama': '#ff2d2d',
   'Pendiente': '#64748b',
+}
+const ESTADO_INFO = {
+  'Stand Flama': 'No corro, pero voy a alentar al grupo y tomar unos mates 🧉',
+  'Lista de espera': 'Serás notificado automáticamente. Se prioriza según el orden en el que te anotaste.',
 }
 const TIPO_COLOR = {
   'Trail': '#fb923c',
@@ -756,16 +788,21 @@ export default function Carreras() {
                   {distSeleccionada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
                 </div>
                 <div className="estado-buttons">
-                  {ESTADOS.map(e => (
-                    <button
-                      key={e}
-                      className={`estado-btn ${estado === e ? 'active' : ''}`}
-                      style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
-                      onClick={() => updateEstado(c.id, e)}
-                    >
-                      {e}
-                    </button>
-                  ))}
+                  {ESTADOS.map(e => {
+                    const info = ESTADO_INFO[e]
+                    return (
+                      <div key={e} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <button
+                          className={`estado-btn ${estado === e ? 'active' : ''}`}
+                          style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
+                          onClick={() => updateEstado(c.id, e)}
+                        >
+                          {e}
+                        </button>
+                        {info && <InfoTooltip texto={info} />}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 

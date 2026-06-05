@@ -229,9 +229,10 @@ export default function Ventas() {
         </button>
       </div>
 
-      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px', marginTop: '-8px' }}>
-        Espacio para transferir inscripciones a quienes quieran correr y no consiguieron lugar.
-      </p>
+      <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px', marginTop: '-8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <p style={{ margin: 0 }}>🔁 <strong>Para quien transfiere:</strong> Publicá tu lugar si no podés correr. El primer interesado de la lista de espera se contactará con vos por WhatsApp.</p>
+        <p style={{ margin: 0 }}>⏳ <strong>Para quien espera:</strong> Se notificará a las personas de la lista de espera según el orden en el que se anotaron.</p>
+      </div>
 
       {/* ALERTA: oferta activa para mí como comprador */}
       {miOferta && (
