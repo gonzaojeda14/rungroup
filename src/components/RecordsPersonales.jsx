@@ -200,14 +200,13 @@ export default function RecordsPersonales({ userId }) {
 
   async function toggleTrail(carreraNombre) {
     if (records[carreraNombre]) {
-      // Ya la corrió → desmarcar
-      await supabase.from('records_personales')
+      const { error } = await supabase.from('records_personales')
         .delete()
         .eq('user_id', uid)
         .eq('distancia', carreraNombre)
+      if (error) console.error('Error al desmarcar trail:', error)
     } else {
-      // No la corrió → marcar
-      await supabase.from('records_personales').upsert({
+      const { error } = await supabase.from('records_personales').upsert({
         user_id: uid,
         distancia: carreraNombre,
         tipo: 'trail',
@@ -216,6 +215,7 @@ export default function RecordsPersonales({ userId }) {
         fuente: 'manual',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,distancia' })
+      if (error) console.error('Error al marcar trail:', error)
     }
     await fetchRecords()
   }
