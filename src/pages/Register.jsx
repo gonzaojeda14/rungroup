@@ -7,14 +7,20 @@ import PasswordInput from '../components/PasswordInput'
 export default function Register() {
   const navigate = useNavigate()
   const params = new URLSearchParams(window.location.search)
+
+  // Si viene con ?code=, lo persistimos para cuando abran la PWA después
+  const codeFromUrl = params.get('code')
+  if (codeFromUrl) localStorage.setItem('invite_code', codeFromUrl)
+  const savedCode = localStorage.getItem('invite_code') || ''
+
   const [form, setForm] = useState({
-    nombre: params.get('nombre') || '',
+    nombre: '',
     fechaNacimiento: '',
     telefono: '',
-    email: params.get('email') || '',
+    email: '',
     password: '',
     confirmPassword: '',
-    codigo: params.get('code') || '',
+    codigo: codeFromUrl || savedCode,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -95,6 +101,7 @@ export default function Register() {
     // 4. Cerrar sesión para que ingresen manualmente
     await supabase.auth.signOut()
 
+    localStorage.removeItem('invite_code')
     setDone(true)
     setSaving(false)
   }
