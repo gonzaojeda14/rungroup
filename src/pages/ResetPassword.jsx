@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PasswordInput from '../components/PasswordInput'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -72,8 +73,7 @@ export default function ResetPassword() {
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Nueva contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -83,8 +83,7 @@ export default function ResetPassword() {
           </div>
           <div className="field">
             <label>Repetir contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
               placeholder="••••••••"

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PasswordInput from '../components/PasswordInput'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -173,21 +174,21 @@ export default function Register() {
           </div>
           <div className="field" style={{ marginBottom: '12px' }}>
             <label>Contraseña *</label>
-            <input
-              type="password"
+            <PasswordInput
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               placeholder="Mínimo 6 caracteres"
+              autoComplete="new-password"
               required
             />
           </div>
           <div className="field" style={{ marginBottom: '12px' }}>
             <label>Confirmar contraseña *</label>
-            <input
-              type="password"
+            <PasswordInput
               value={form.confirmPassword}
               onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
               placeholder="Repetí la contraseña"
+              autoComplete="new-password"
               required
             />
           </div>
