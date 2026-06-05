@@ -1,4 +1,5 @@
 import PageLoader from '../components/PageLoader'
+import RecordsPersonales from '../components/RecordsPersonales'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -397,6 +398,9 @@ export default function MiPerfil() {
           </span>
         </button>
       </div>
+
+      {/* RECORDS PERSONALES */}
+      <RecordsPersonales />
 
       {/* CAMBIAR CONTRASEÑA */}
       <div className="card" style={{ marginBottom: '12px' }}>
