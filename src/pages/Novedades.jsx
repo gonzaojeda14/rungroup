@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { suscribirPush } from '../lib/push'
+import { formatTelefonoWA } from '../lib/utils'
 import PageLoader from '../components/PageLoader'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -25,6 +26,8 @@ export default function Novedades() {
   const [archivo, setArchivo] = useState(null)
   const [imagenesAnuncio, setImagenesAnuncio] = useState([]) // array de File
   const [imagenesPreview, setImagenesPreview] = useState([]) // array de URLs
+  const [contactoHabilitado, setContactoHabilitado] = useState(false)
+  const [contactoLabel, setContactoLabel] = useState('')
   const [programarEn, setProgramarEn] = useState('')
   const [saving, setSaving] = useState(false)
   const [msgError, setMsgError] = useState('')
@@ -44,7 +47,7 @@ export default function Novedades() {
   async function fetchNovedades() {
     const { data } = await supabase
       .from('novedades')
-      .select('*')
+      .select('*, autor:profiles!autor_id(nombre, telefono)')
       .order('publicar_en', { ascending: false, nullsFirst: true })
     setItems(data || [])
 
@@ -123,6 +126,9 @@ export default function Novedades() {
       imagen_url: imagenesUrls[0] || null,
       imagenes_urls: imagenesUrls.length > 0 ? imagenesUrls : null,
       publicar_en: programarEn ? new Date(programarEn).toISOString() : null,
+      contacto_habilitado: contactoHabilitado,
+      contacto_label: contactoHabilitado && contactoLabel ? contactoLabel : null,
+      autor_id: user.id,
     }])
 
     // Disparar push a todos los suscriptores (solo si es publicación inmediata)
@@ -144,6 +150,8 @@ export default function Novedades() {
     setArchivo(null)
     setImagenesAnuncio([])
     setImagenesPreview([])
+    setContactoHabilitado(false)
+    setContactoLabel('')
     setProgramarEn('')
     setShowForm(false)
     setSaving(false)
@@ -267,6 +275,28 @@ export default function Novedades() {
             </>
           )}
 
+          {tipo === 'anuncio' && (
+            <div style={{ marginBottom: '14px' }}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '10px', cursor: 'pointer' }}
+                onClick={() => setContactoHabilitado(v => !v)}
+              >
+                <span style={{ fontSize: '13px' }}>Agregar botón de contacto directo</span>
+                <div style={{ width: 36, height: 20, borderRadius: 10, background: contactoHabilitado ? 'var(--accent)' : 'var(--border)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', top: 2, left: contactoHabilitado ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                </div>
+              </div>
+              {contactoHabilitado && (
+                <input
+                  value={contactoLabel}
+                  onChange={e => setContactoLabel(e.target.value)}
+                  placeholder='Ej: "Reservar buzo" o "Hablar con Santi"'
+                  style={{ marginTop: '8px', width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', padding: '8px 12px', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              )}
+            </div>
+          )}
+
           <div className="field" style={{ marginBottom: '14px' }}>
             <label>Programar para más tarde (opcional)</label>
             <input
@@ -375,6 +405,17 @@ export default function Novedades() {
                     onClick={() => window.open(url, '_blank')}
                   />
                 ))}
+                {a.contacto_habilitado && a.autor?.telefono && (
+                  <a
+                    href={`https://wa.me/${formatTelefonoWA(a.autor.telefono)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '12px', padding: '10px 16px', background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '10px', color: '#4ade80', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M16 2C8.28 2 2 8.28 2 16c0 2.44.65 4.73 1.79 6.72L2 30l7.47-1.76A13.93 13.93 0 0 0 16 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm0 25.5c-2.2 0-4.27-.6-6.04-1.64l-.43-.26-4.43 1.04 1.07-4.3-.28-.45A11.45 11.45 0 0 1 4.5 16C4.5 9.6 9.6 4.5 16 4.5S27.5 9.6 27.5 16 22.4 27.5 16 27.5zm6.27-8.57c-.34-.17-2.02-1-2.34-1.11-.32-.11-.55-.17-.78.17-.23.34-.9 1.11-1.1 1.34-.2.23-.4.26-.74.09-.34-.17-1.44-.53-2.74-1.69-1.01-.9-1.7-2.01-1.9-2.35-.2-.34-.02-.52.15-.69.15-.15.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.09-.17-.78-1.88-1.07-2.57-.28-.67-.57-.58-.78-.59h-.67c-.23 0-.6.09-.91.43-.32.34-1.2 1.17-1.2 2.86s1.23 3.32 1.4 3.55c.17.23 2.42 3.7 5.87 5.19.82.35 1.46.56 1.96.72.82.26 1.57.22 2.16.13.66-.1 2.02-.82 2.31-1.62.28-.8.28-1.48.2-1.62-.09-.14-.32-.23-.66-.4z"/></svg>
+                    {a.contacto_label || 'Contactar'}
+                  </a>
+                )}
               </div>
             ))}
           </div>
