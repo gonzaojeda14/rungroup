@@ -90,22 +90,6 @@ export default function Corredores() {
         <h2>Corredores ({corredores.length})</h2>
       </div>
 
-      <div style={{ marginBottom: '12px', position: 'relative' }}>
-        <input
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          placeholder="Buscar por nombre..."
-          style={{
-            width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)',
-            borderRadius: '10px', color: 'var(--text)', padding: '10px 36px 10px 12px',
-            fontSize: '14px', fontFamily: 'inherit',
-          }}
-        />
-        {busqueda && (
-          <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>✕</button>
-        )}
-      </div>
-
       <form className="card form-card" onSubmit={generarLink}>
         <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>Invitar corredor/a</h3>
         <div className="form-grid">
@@ -125,6 +109,22 @@ export default function Corredores() {
           </button>
         </div>
       </form>
+
+      <div style={{ marginBottom: '12px', position: 'relative' }}>
+        <input
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre..."
+          style={{
+            width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)',
+            borderRadius: '10px', color: 'var(--text)', padding: '10px 36px 10px 12px',
+            fontSize: '14px', fontFamily: 'inherit',
+          }}
+        />
+        {busqueda && (
+          <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>✕</button>
+        )}
+      </div>
 
       <div className="cards-list">
         {corredores.filter(c => !busqueda || c.nombre?.toLowerCase().includes(busqueda.toLowerCase())).map(c => (
