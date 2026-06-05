@@ -211,7 +211,7 @@ export default function RecordsPersonales({ userId }) {
         distancia: carreraNombre,
         tipo: 'trail',
         tiempo_segundos: 0,
-        tiempo_texto: null,
+        tiempo_texto: '',
         fuente: 'manual',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,distancia' })
