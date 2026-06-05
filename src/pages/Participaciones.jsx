@@ -396,7 +396,7 @@ export default function Participaciones() {
                             <input
                               value={tiempos[key] || ''}
                               onChange={e => setTiempos(prev => ({ ...prev, [key]: autoformatTiempo(e.target.value) }))}
-                              placeholder="MM:SS"
+                              placeholder="HH:MM:SS"
                               inputMode="numeric"
                               style={{
                                 width: '140px', background: 'var(--bg3)', border: '1px solid var(--border)',
