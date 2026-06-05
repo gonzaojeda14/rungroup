@@ -141,16 +141,9 @@ export default function Corredores() {
             </div>
             {c.role === 'admin' && <span className="badge green">Admin</span>}
             {c.role !== 'admin' && (
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {c.activo === false && <span style={{ fontSize: '11px', color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '2px 7px' }}>Bloqueado</span>}
-                <button
-                  className="btn-icon"
-                  onClick={() => handleToggleAcceso(c)}
-                  title={c.activo === false ? 'Desbloquear acceso' : 'Bloquear acceso'}
-                  style={{ fontSize: '13px' }}
-                >
-                  {c.activo === false ? '✅' : '🚫'}
-                </button>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text2)', flexShrink: 0 }}><path d="M9 18l6-6-6-6"/></svg>
               </div>
             )}
           </div>
