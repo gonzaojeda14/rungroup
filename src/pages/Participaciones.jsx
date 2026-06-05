@@ -41,12 +41,10 @@ function validarTiempo(texto) {
 // Autoformatea mientras el usuario tipea
 // Si ya tiene ":" lo deja escribir libre, si son solo números inserta : automáticamente
 function autoformatTiempo(valor) {
-  if (valor.includes(':')) {
-    // Modo manual: solo limpia caracteres inválidos
-    return valor.replace(/[^\d:]/g, '').slice(0, 8)
-  }
-  // Modo automático: solo dígitos
-  const nums = valor.replace(/\D/g, '').slice(0, 6)
+  let nums = valor.replace(/\D/g, '')
+  if (nums.length >= 3 && parseInt(nums[2]) > 5) nums = nums.slice(0, 2)
+  if (nums.length >= 5 && parseInt(nums[4]) > 5) nums = nums.slice(0, 4)
+  nums = nums.slice(0, 6)
   if (nums.length <= 2) return nums
   if (nums.length <= 4) return `${nums.slice(0,2)}:${nums.slice(2)}`
   return `${nums.slice(0,2)}:${nums.slice(2,4)}:${nums.slice(4)}`

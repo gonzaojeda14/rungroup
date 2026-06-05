@@ -25,8 +25,12 @@ function validarTiempo(texto) {
 }
 
 function autoformatTiempo(valor) {
-  if (valor.includes(':')) return valor.replace(/[^\d:]/g, '').slice(0, 8)
-  const nums = valor.replace(/\D/g, '').slice(0, 6)
+  // Siempre trabajar con dígitos puros para evitar bugs con el modo manual
+  let nums = valor.replace(/\D/g, '')
+  // Bloquear dígito inválido en posición de decenas de minutos (pos 2) y segundos (pos 4)
+  if (nums.length >= 3 && parseInt(nums[2]) > 5) nums = nums.slice(0, 2)
+  if (nums.length >= 5 && parseInt(nums[4]) > 5) nums = nums.slice(0, 4)
+  nums = nums.slice(0, 6)
   if (nums.length <= 2) return nums
   if (nums.length <= 4) return `${nums.slice(0,2)}:${nums.slice(2)}`
   return `${nums.slice(0,2)}:${nums.slice(2,4)}:${nums.slice(4)}`
@@ -252,7 +256,7 @@ export default function RecordsPersonales({ userId }) {
               />
               <span style={{ fontSize: '13px', color: 'var(--text2)' }}>K</span>
               <button className="btn-primary" style={{ height: 32, fontSize: 12, padding: '0 12px' }} onClick={guardarCustomCalle}>OK</button>
-              <button onClick={() => { setShowCustomCalle(false); setCustomCalle('') }} style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: '13px' }}>✕</button>
+              <button onClick={() => { setShowCustomCalle(false); setCustomCalle('') }} style={{ height: 32, fontSize: 12, padding: '0 12px', background: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
             </div>
           ) : (
             <button onClick={() => setShowCustomCalle(true)} style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>

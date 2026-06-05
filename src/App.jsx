@@ -52,6 +52,7 @@ function Shell() {
   const { user, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signOut, profile } = useAuth()
   const [adminMenu, setAdminMenu] = useState(false)
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
+  const [ventasDisponibles, setVentasDisponibles] = useState(0)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
 
   useEffect(() => {
@@ -75,6 +76,19 @@ function Shell() {
     }
     checkAvisos()
   }, [user, profile?.avisos_leido_hasta])
+
+  useEffect(() => {
+    if (!user) return
+    async function checkVentas() {
+      const { count } = await supabase
+        .from('ventas_inscripciones')
+        .select('id', { count: 'exact', head: true })
+        .eq('estado', 'disponible')
+        .neq('vendedor_id', user.id)
+      setVentasDisponibles(count || 0)
+    }
+    checkVentas()
+  }, [user])
 
   if (loading) return (
     <div className="splash">
@@ -199,7 +213,22 @@ function Shell() {
           <span>Historial</span>
         </NavLink>
         <NavLink to="/ventas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            {ventasDisponibles > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -6,
+                minWidth: 16, height: 16, padding: '0 4px',
+                background: '#ff2d2d', borderRadius: '999px',
+                border: '1.5px solid var(--bg2)',
+                fontSize: 10, fontWeight: 700, color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                lineHeight: 1,
+              }}>
+                {ventasDisponibles > 99 ? '99+' : ventasDisponibles}
+              </span>
+            )}
+          </div>
           <span>Inscripciones</span>
         </NavLink>
         <NavLink to="/perfil" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
