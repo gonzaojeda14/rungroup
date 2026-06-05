@@ -23,8 +23,8 @@ export default function Novedades() {
   const [titulo, setTitulo] = useState('')
   const [contenido, setContenido] = useState('')
   const [archivo, setArchivo] = useState(null)
-  const [imagenAnuncio, setImagenAnuncio] = useState(null)
-  const [imagenPreview, setImagenPreview] = useState(null)
+  const [imagenesAnuncio, setImagenesAnuncio] = useState([]) // array de File
+  const [imagenesPreview, setImagenesPreview] = useState([]) // array de URLs
   const [programarEn, setProgramarEn] = useState('')
   const [saving, setSaving] = useState(false)
   const [msgError, setMsgError] = useState('')
@@ -84,19 +84,22 @@ export default function Novedades() {
 
     let archivoUrl = null
     let archivoNombre = null
-    let imagenUrl = null
+    let imagenesUrls = []
 
-    // Subir imagen del anuncio a Cloudinary
-    if (imagenAnuncio) {
+    // Subir imágenes del anuncio a Cloudinary
+    if (imagenesAnuncio.length > 0) {
       const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
       const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-      const fd = new FormData()
-      fd.append('file', imagenAnuncio)
-      fd.append('upload_preset', PRESET)
-      fd.append('folder', 'flamarun/anuncios')
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
-      const data = await res.json()
-      if (data.secure_url) imagenUrl = data.secure_url
+      imagenesUrls = await Promise.all(imagenesAnuncio.map(async img => {
+        const fd = new FormData()
+        fd.append('file', img)
+        fd.append('upload_preset', PRESET)
+        fd.append('folder', 'flamarun/anuncios')
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
+        const data = await res.json()
+        return data.secure_url || null
+      }))
+      imagenesUrls = imagenesUrls.filter(Boolean)
     }
 
     if (archivo) {
@@ -117,7 +120,8 @@ export default function Novedades() {
       contenido: contenido || null,
       archivo_url: archivoUrl,
       archivo_nombre: archivoNombre,
-      imagen_url: imagenUrl,
+      imagen_url: imagenesUrls[0] || null,
+      imagenes_urls: imagenesUrls.length > 0 ? imagenesUrls : null,
       publicar_en: programarEn ? new Date(programarEn).toISOString() : null,
     }])
 
@@ -138,8 +142,8 @@ export default function Novedades() {
     setTitulo('')
     setContenido('')
     setArchivo(null)
-    setImagenAnuncio(null)
-    setImagenPreview(null)
+    setImagenesAnuncio([])
+    setImagenesPreview([])
     setProgramarEn('')
     setShowForm(false)
     setSaving(false)
@@ -207,32 +211,40 @@ export default function Novedades() {
                 />
               </div>
               <div className="field" style={{ marginBottom: '10px' }}>
-                <label>Imagen (opcional)</label>
-                {imagenPreview ? (
-                  <div style={{ position: 'relative', display: 'inline-block' }}>
-                    <img src={imagenPreview} alt="" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '10px' }} />
-                    <button
-                      type="button"
-                      onClick={() => { setImagenAnuncio(null); setImagenPreview(null) }}
-                      style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >✕</button>
+                <label>Imágenes (opcional)</label>
+                {imagenesPreview.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    {imagenesPreview.map((url, i) => (
+                      <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
+                        <img src={url} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImagenesAnuncio(prev => prev.filter((_, j) => j !== i))
+                            setImagenesPreview(prev => prev.filter((_, j) => j !== i))
+                          }}
+                          style={{ position: 'absolute', top: 2, right: 2, width: 20, height: 20, borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >✕</button>
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 12px', background: 'var(--bg3)', border: '1px dashed var(--border)', borderRadius: '10px', fontSize: '13px', color: 'var(--text2)' }}>
-                    📷 Adjuntar imagen
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={e => {
-                        const f = e.target.files[0]
-                        if (!f) return
-                        setImagenAnuncio(f)
-                        setImagenPreview(URL.createObjectURL(f))
-                      }}
-                    />
-                  </label>
                 )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 12px', background: 'var(--bg3)', border: '1px dashed var(--border)', borderRadius: '10px', fontSize: '13px', color: 'var(--text2)' }}>
+                  📷 Agregar imagen{imagenesPreview.length > 0 ? ' más' : ''}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      const files = Array.from(e.target.files)
+                      if (!files.length) return
+                      setImagenesAnuncio(prev => [...prev, ...files])
+                      setImagenesPreview(prev => [...prev, ...files.map(f => URL.createObjectURL(f))])
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
               </div>
             </>
           )}
@@ -354,14 +366,15 @@ export default function Novedades() {
                     {a.contenido}
                   </div>
                 )}
-                {a.imagen_url && (
+                {(a.imagenes_urls?.length > 0 ? a.imagenes_urls : a.imagen_url ? [a.imagen_url] : []).map((url, i) => (
                   <img
-                    src={a.imagen_url}
+                    key={i}
+                    src={url}
                     alt=""
-                    style={{ width: '100%', borderRadius: '10px', marginTop: a.contenido ? '10px' : '0', objectFit: 'cover', maxHeight: '300px', cursor: 'pointer' }}
-                    onClick={() => window.open(a.imagen_url, '_blank')}
+                    style={{ width: '100%', borderRadius: '10px', marginTop: '10px', objectFit: 'cover', maxHeight: '300px', cursor: 'pointer' }}
+                    onClick={() => window.open(url, '_blank')}
                   />
-                )}
+                ))}
               </div>
             ))}
           </div>
