@@ -117,7 +117,7 @@ export default function Participaciones() {
     setLoading(false)
   }
 
-  async function guardarTiempo(carreraId, distancia, carreraNombre, carreraTipo) {
+  async function guardarTiempo(carreraId, distancia, carreraNombre, carreraTipo, carreraFecha) {
     const key = `${carreraId}_${distancia}`
     const texto = tiempos[key]?.trim()
     if (!texto || !validarTiempo(texto)) return
@@ -149,6 +149,7 @@ export default function Participaciones() {
         tiempo_segundos: seg,
         tiempo_texto: tiempoTexto,
         carrera_nombre: carreraNombre,
+        fecha: carreraFecha || null,
         fuente: 'automatico',
         tiempo_carrera_id: tc?.id,
         updated_at: new Date().toISOString(),
@@ -407,7 +408,7 @@ export default function Participaciones() {
                               className="btn-primary"
                               style={{ height: 32, fontSize: 12, padding: '0 14px' }}
                               disabled={saving || !validarTiempo(tiempos[key] || '')}
-                              onClick={() => guardarTiempo(p.carrera.id, dist, p.carrera.nombre, p.carrera.tipo)}
+                              onClick={() => guardarTiempo(p.carrera.id, dist, p.carrera.nombre, p.carrera.tipo, p.carrera.fecha)}
                             >
                               {saving ? '...' : 'Guardar'}
                             </button>

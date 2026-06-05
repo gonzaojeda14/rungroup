@@ -47,6 +47,8 @@ export default function Ventas() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [editandoVenta, setEditandoVenta] = useState(null) // id de la venta en edición
+  const [editForm, setEditForm] = useState({ precio: '', nota: '', distancia: '' })
 
   const avanzarCola = useCallback(async (venta, rechazadoId) => {
     const yaRechazados = [...(venta.rechazados || []), rechazadoId].filter(Boolean)
@@ -209,6 +211,24 @@ export default function Ventas() {
     fetchAll()
   }
 
+  function abrirEdicion(v) {
+    setEditandoVenta(v.id)
+    setEditForm({ precio: v.precio || '', nota: v.nota || '', distancia: v.distancia || '' })
+  }
+
+  async function handleGuardarEdicion(v) {
+    setSaving(true)
+    // Solo actualiza campos editables, sin tocar estado/cola/ofertado_a
+    await supabase.from('ventas_inscripciones').update({
+      precio: parseFloat(editForm.precio) || null,
+      nota: editForm.nota || null,
+      distancia: editForm.distancia || null,
+    }).eq('id', v.id)
+    setEditandoVenta(null)
+    setSaving(false)
+    fetchAll()
+  }
+
   async function handleCancelarVenta(ventaId) {
     if (!confirm('¿Cancelar la publicación de tu inscripción?')) return
     await supabase.from('ventas_inscripciones').update({ estado: 'cancelada' }).eq('id', ventaId)
@@ -355,8 +375,47 @@ export default function Ventas() {
                     )}
                   </div>
                 </div>
-                <button className="btn-icon danger" onClick={() => handleCancelarVenta(v.id)} title="Cancelar publicación">✕</button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    className="btn-ghost"
+                    style={{ height: 30, fontSize: 11, padding: '0 10px' }}
+                    onClick={() => editandoVenta === v.id ? setEditandoVenta(null) : abrirEdicion(v)}
+                  >
+                    {editandoVenta === v.id ? 'Cancelar' : 'Editar'}
+                  </button>
+                  <button className="btn-icon danger" onClick={() => handleCancelarVenta(v.id)} title="Cancelar publicación">✕</button>
+                </div>
               </div>
+
+              {editandoVenta === v.id && (
+                <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(() => {
+                    const carreraSeleccionada = carreras.find(c => c.id === v.carrera_id)
+                    const dists = carreraSeleccionada?.distancias?.length > 1 ? carreraSeleccionada.distancias : null
+                    if (!dists) return null
+                    return (
+                      <div>
+                        <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Distancia</label>
+                        <select value={editForm.distancia} onChange={e => setEditForm(f => ({ ...f, distancia: e.target.value }))} style={{ fontSize: '13px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', width: '100%' }}>
+                          <option value="">— Sin especificar —</option>
+                          {dists.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+                    )
+                  })()}
+                  <div>
+                    <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Precio ($)</label>
+                    <input type="number" min="0" value={editForm.precio} onChange={e => setEditForm(f => ({ ...f, precio: e.target.value }))} placeholder="Lo que pagaste" style={{ fontSize: '13px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Detalle</label>
+                    <input value={editForm.nota} onChange={e => setEditForm(f => ({ ...f, nota: e.target.value }))} placeholder="Con remera talle M, sin kit, etc." style={{ fontSize: '13px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                  </div>
+                  <button className="btn-primary" style={{ height: 34, fontSize: 13, padding: '0 16px', alignSelf: 'flex-end' }} disabled={saving} onClick={() => handleGuardarEdicion(v)}>
+                    {saving ? '...' : 'Guardar cambios'}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </>

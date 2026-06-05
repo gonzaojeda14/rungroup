@@ -41,6 +41,75 @@ function autoformatK(valor) {
   return limpio
 }
 
+function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando, form, setForm, setEditando, msg, saving, validarTiempo, autoformatTiempo, guardarRecord }) {
+  if (!esPropio) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+        <span style={{ fontSize: '14px' }}>{distancia}</span>
+        <span style={{ fontSize: '14px', fontWeight: 600, color: rec ? '#4ade80' : 'var(--text2)' }}>
+          {rec ? rec.tiempo_texto : '—'}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border)', padding: '8px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '14px' }}>{distancia}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {rec && <span style={{ fontSize: '14px', fontWeight: 700, color: '#4ade80' }}>{rec.tiempo_texto}</span>}
+          {rec?.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{rec.fecha}</span>}
+          {!esteEditando && (
+            <button
+              onClick={() => { setEditando(distancia); setForm({ tiempo: rec?.tiempo_texto || '', fecha: rec?.fecha || '' }) }}
+              style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+            >
+              {rec ? 'Editar' : '+ Agregar'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {esteEditando && (
+        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {msg && <p style={{ fontSize: '12px', color: '#f87171', margin: 0 }}>{msg}</p>}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <input
+              value={form.tiempo}
+              onChange={e => setForm(f => ({ ...f, tiempo: autoformatTiempo(e.target.value) }))}
+              placeholder="HH:MM:SS"
+              inputMode="numeric"
+              style={{ width: '120px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', fontSize: '14px', fontFamily: 'inherit' }}
+            />
+            <input
+              type="date"
+              value={form.fecha}
+              onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))}
+              style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', fontSize: '13px', fontFamily: 'inherit' }}
+            />
+            <button
+              className="btn-primary"
+              style={{ height: 34, fontSize: 12, padding: '0 14px' }}
+              disabled={saving || !validarTiempo(form.tiempo)}
+              onClick={() => guardarRecord(distancia, tipo, carreraNombre)}
+            >
+              {saving ? '...' : 'Guardar'}
+            </button>
+            <button
+              onClick={() => setEditando(null)}
+              className="btn-ghost"
+              style={{ height: 34, fontSize: 12, padding: '0 12px' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function RecordsPersonales({ userId }) {
   const { user } = useAuth()
   const uid = userId || user.id
@@ -79,9 +148,9 @@ export default function RecordsPersonales({ userId }) {
     const tiempoTexto = segundosATiempo(seg)
     setSaving(true)
 
-    // Solo actualizar si es mejor que el existente (o no existe)
+    // Bloquear solo si el tiempo nuevo es peor que el existente
     const existente = records[distancia]
-    if (existente && seg >= existente.tiempo_segundos) {
+    if (existente && seg > existente.tiempo_segundos) {
       setMsg('Ya tenés un mejor tiempo registrado')
       setSaving(false)
       return
@@ -151,78 +220,6 @@ export default function RecordsPersonales({ userId }) {
     setCustomCalle('')
   }
 
-  function RecordRow({ distancia, tipo, carreraNombre }) {
-    const rec = records[distancia]
-    const esteEditando = editando === distancia
-
-    if (!esPropio) {
-      return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '14px' }}>{distancia}</span>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: rec ? '#4ade80' : 'var(--text2)' }}>
-            {rec ? rec.tiempo_texto : '—'}
-          </span>
-        </div>
-      )
-    }
-
-    return (
-      <div style={{ borderBottom: '1px solid var(--border)', padding: '8px 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '14px' }}>{distancia}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {rec && <span style={{ fontSize: '14px', fontWeight: 700, color: '#4ade80' }}>{rec.tiempo_texto}</span>}
-            {rec?.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{rec.fecha}</span>}
-            {!esteEditando && (
-              <button
-                onClick={() => { setEditando(distancia); setForm({ tiempo: rec?.tiempo_texto || '', fecha: rec?.fecha || '' }); setMsg('') }}
-                style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
-              >
-                {rec ? 'Editar' : '+ Agregar'}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {esteEditando && (
-          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {msg && <p style={{ fontSize: '12px', color: '#f87171', margin: 0 }}>{msg}</p>}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <input
-                value={form.tiempo}
-                onChange={e => setForm(f => ({ ...f, tiempo: autoformatTiempo(e.target.value) }))}
-                placeholder="HH:MM:SS"
-                inputMode="numeric"
-                style={{ width: '120px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', fontSize: '14px', fontFamily: 'inherit' }}
-              />
-              <input
-                type="date"
-                value={form.fecha}
-                onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))}
-                style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '6px 10px', fontSize: '13px', fontFamily: 'inherit' }}
-              />
-              <button
-                className="btn-primary"
-                style={{ height: 34, fontSize: 12, padding: '0 14px' }}
-                disabled={saving || !validarTiempo(form.tiempo)}
-                onClick={() => guardarRecord(distancia, tipo, carreraNombre)}
-              >
-                {saving ? '...' : 'Guardar'}
-              </button>
-              <button
-                onClick={() => { setEditando(null); setMsg('') }}
-                className="btn-ghost"
-                style={{ height: 34, fontSize: 12, padding: '0 12px' }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   // Registros trail del usuario (para mostrar los ya cargados)
   const trailKeys = Object.keys(records).filter(k => records[k].tipo === 'trail')
 
@@ -238,7 +235,24 @@ export default function RecordsPersonales({ userId }) {
       {/* CALLE */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>🏃 Calle</div>
-        {todasDistanciasCalle.map(d => <RecordRow key={d} distancia={d} tipo="calle" />)}
+        {todasDistanciasCalle.map(d => (
+          <RecordRow
+            key={d}
+            distancia={d}
+            tipo="calle"
+            esPropio={esPropio}
+            rec={records[d]}
+            esteEditando={editando === d}
+            form={form}
+            setForm={setForm}
+            setEditando={setEditando}
+            msg={msg}
+            saving={saving}
+            validarTiempo={validarTiempo}
+            autoformatTiempo={autoformatTiempo}
+            guardarRecord={guardarRecord}
+          />
+        ))}
 
         {esPropio && (
           showCustomCalle ? (
