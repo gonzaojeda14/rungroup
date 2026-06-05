@@ -1,4 +1,5 @@
 import PageLoader from '../components/PageLoader'
+import PerfilCorredor from '../components/PerfilCorredor'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -12,6 +13,8 @@ export default function Corredores() {
   const [msg, setMsg] = useState('')
 
   const [bugs, setBugs] = useState([])
+  const [busqueda, setBusqueda] = useState('')
+  const [perfilAbierto, setPerfilAbierto] = useState(null)
 
   useEffect(() => { fetchCorredores(); fetchBugs() }, [])
 
@@ -87,6 +90,22 @@ export default function Corredores() {
         <h2>Corredores ({corredores.length})</h2>
       </div>
 
+      <div style={{ marginBottom: '12px', position: 'relative' }}>
+        <input
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre..."
+          style={{
+            width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)',
+            borderRadius: '10px', color: 'var(--text)', padding: '10px 36px 10px 12px',
+            fontSize: '14px', fontFamily: 'inherit',
+          }}
+        />
+        {busqueda && (
+          <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>✕</button>
+        )}
+      </div>
+
       <form className="card form-card" onSubmit={generarLink}>
         <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>Invitar corredor/a</h3>
         <div className="form-grid">
@@ -108,8 +127,8 @@ export default function Corredores() {
       </form>
 
       <div className="cards-list">
-        {corredores.map(c => (
-          <div key={c.id} className="card runner-card">
+        {corredores.filter(c => !busqueda || c.nombre?.toLowerCase().includes(busqueda.toLowerCase())).map(c => (
+          <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default' }} onClick={() => c.role !== 'admin' && setPerfilAbierto(c)}>
             <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0 }}>
               {c.avatar_url
                 ? <img src={c.avatar_url} alt={c.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -137,6 +156,10 @@ export default function Corredores() {
           </div>
         ))}
       </div>
+
+      {perfilAbierto && (
+        <PerfilCorredor corredor={perfilAbierto} onClose={() => setPerfilAbierto(null)} />
+      )}
 
       {/* BUGS */}
       {bugs.length > 0 && (
