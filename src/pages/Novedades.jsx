@@ -45,6 +45,19 @@ export default function Novedades() {
       .select('*')
       .order('publicar_en', { ascending: false, nullsFirst: true })
     setItems(data || [])
+
+    // Generar URLs firmadas para planes con archivo
+    const conArchivo = (data || []).filter(i => i.tipo === 'plan' && i.archivo_url)
+    if (conArchivo.length) {
+      const results = await Promise.all(conArchivo.map(async p => {
+        const { data: sd } = await supabase.storage.from('planes').createSignedUrl(p.archivo_url, 60 * 60)
+        return [p.archivo_url, sd?.signedUrl]
+      }))
+      const map = {}
+      results.forEach(([key, val]) => { if (val) map[key] = val })
+      setPlanesUrls(map)
+    }
+
     setLoading(false)
   }
 
@@ -126,18 +139,6 @@ export default function Novedades() {
   const planesRecientes = planes.slice(0, 4)
   const planesAnteriores = planes.slice(4)
 
-  useEffect(() => {
-    const conArchivo = planes.filter(p => p.archivo_url)
-    if (!conArchivo.length) return
-    Promise.all(conArchivo.map(async p => {
-      const { data } = await supabase.storage.from('planes').createSignedUrl(p.archivo_url, 60 * 60)
-      return [p.archivo_url, data?.signedUrl]
-    })).then(results => {
-      const map = {}
-      results.forEach(([key, val]) => { if (val) map[key] = val })
-      setPlanesUrls(map)
-    })
-  }, [items])
   const anuncios = itemsVisibles.filter(i => i.tipo === 'anuncio')
 
   if (loading) return <PageLoader />

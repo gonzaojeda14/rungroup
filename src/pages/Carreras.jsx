@@ -9,27 +9,49 @@ import { formatFechaHora } from '../lib/utils'
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
-function InfoTooltip({ texto }) {
+function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
   const [visible, setVisible] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!visible) return
+    function handleOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setVisible(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('touchstart', handleOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('touchstart', handleOutside)
+    }
+  }, [visible])
+
   return (
-    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+    <span ref={ref} style={{ position: 'relative', display: 'inline-flex' }}>
       <button
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
-        onClick={e => { e.stopPropagation(); setVisible(v => !v) }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', color: 'var(--text2)', fontSize: '11px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
+        className={`estado-btn ${activo ? 'active' : ''}`}
+        style={activo ? { borderColor: color, color, background: color + '22' } : {}}
+        onClick={onClick}
       >
-        ⓘ
+        {label}
+        {info && (
+          <span
+            onMouseEnter={e => { e.stopPropagation(); setVisible(true) }}
+            onMouseLeave={e => { e.stopPropagation(); setVisible(false) }}
+            onClick={e => { e.stopPropagation(); setVisible(v => !v) }}
+            style={{ marginLeft: '4px', opacity: 0.6, fontSize: '10px', cursor: 'help' }}
+          >ⓘ</span>
+        )}
       </button>
-      {visible && (
+      {info && visible && (
         <span style={{
-          position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)',
-          background: '#1e293b', color: '#f1f5f9', fontSize: '12px', lineHeight: 1.4,
-          padding: '8px 10px', borderRadius: '8px', whiteSpace: 'normal', width: '200px',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)', zIndex: 50, pointerEvents: 'none',
-          border: '1px solid rgba(255,255,255,0.08)',
+          position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)',
+          background: '#1e293b', color: '#f1f5f9', fontSize: '12px', lineHeight: 1.5,
+          padding: '8px 10px', borderRadius: '8px', width: '210px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)', zIndex: 100,
+          border: '1px solid rgba(255,255,255,0.08)', pointerEvents: 'none',
         }}>
-          {texto}
+          {info}
         </span>
       )}
     </span>
@@ -788,21 +810,16 @@ export default function Carreras() {
                   {distSeleccionada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
                 </div>
                 <div className="estado-buttons">
-                  {ESTADOS.map(e => {
-                    const info = ESTADO_INFO[e]
-                    return (
-                      <div key={e} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                        <button
-                          className={`estado-btn ${estado === e ? 'active' : ''}`}
-                          style={estado === e ? { borderColor: ESTADO_COLOR[e], color: ESTADO_COLOR[e], background: ESTADO_COLOR[e] + '22' } : {}}
-                          onClick={() => updateEstado(c.id, e)}
-                        >
-                          {e}
-                        </button>
-                        {info && <InfoTooltip texto={info} />}
-                      </div>
-                    )
-                  })}
+                  {ESTADOS.map(e => (
+                    <EstadoBtnConInfo
+                      key={e}
+                      label={e}
+                      info={ESTADO_INFO[e]}
+                      activo={estado === e}
+                      color={ESTADO_COLOR[e]}
+                      onClick={() => updateEstado(c.id, e)}
+                    />
+                  ))}
                 </div>
               </div>
 
