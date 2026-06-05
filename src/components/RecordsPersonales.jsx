@@ -10,7 +10,7 @@ function formatFechaDMY(fecha) {
 }
 
 const DISTANCIAS_CALLE = ['3K', '5K', '8K', '10K', '15K', '21K', '25K', '30K', '42K']
-const CARRERAS_TRAIL = ['Patagonia Run', 'El Cruce', 'La Etapa', 'UTACCH', 'Champanqui', 'Tandil']
+const CARRERAS_TRAIL = ['Champanqui', 'El Cruce', 'La Etapa', 'Patagonia Run', 'Tandil', 'UTACCH']
 
 function tiempoASegundos(texto) {
   const partes = texto.split(':').map(Number)
@@ -211,6 +211,8 @@ export default function RecordsPersonales({ userId }) {
         user_id: uid,
         distancia: carreraNombre,
         tipo: 'trail',
+        tiempo_segundos: 0,
+        tiempo_texto: null,
         fuente: 'manual',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,distancia' })
