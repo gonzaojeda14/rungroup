@@ -81,6 +81,7 @@ export default function Participaciones() {
   const [notas, setNotas] = useState({}) // { carreraId: texto }
   const [tiempos, setTiempos] = useState({}) // { carreraId_distancia: texto }
   const [tiemposGuardados, setTiemposGuardados] = useState({}) // { carreraId_distancia: tiempo_texto }
+  const [editandoTiempo, setEditandoTiempo] = useState({}) // { key: true } cuando está en modo edición
   const [savingTiempo, setSavingTiempo] = useState({})
   const [fotosCarrera, setFotosCarrera] = useState(null)
 
@@ -157,6 +158,8 @@ export default function Participaciones() {
     }
 
     setTiemposGuardados(prev => ({ ...prev, [key]: tiempoTexto }))
+    setEditandoTiempo(prev => { const n = {...prev}; delete n[key]; return n })
+    setTiempos(prev => { const n = {...prev}; delete n[key]; return n })
     setSavingTiempo(prev => ({ ...prev, [key]: false }))
     setToast(esPR ? '🏅 ¡Felicitaciones! Tenés un nuevo PR' : '⏱ Tiempo guardado')
     setTimeout(() => setToast(''), esPR ? 3500 : 2000)
@@ -381,18 +384,18 @@ export default function Participaciones() {
                         <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '6px' }}>
                           ⏱ ¿En cuánto hiciste los {dist}?
                         </div>
-                        {guardado ? (
+                        {guardado && !editandoTiempo[key] ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '15px', fontWeight: 700, color: '#4ade80' }}>{guardado}</span>
                             <button
-                              onClick={() => { setTiemposGuardados(prev => { const n = {...prev}; delete n[key]; return n }) }}
+                              onClick={() => setEditandoTiempo(prev => ({ ...prev, [key]: true }))}
                               style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                             >
                               Editar
                             </button>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                             <input
                               value={tiempos[key] || ''}
                               onChange={e => setTiempos(prev => ({ ...prev, [key]: autoformatTiempo(e.target.value) }))}
@@ -412,6 +415,18 @@ export default function Participaciones() {
                             >
                               {saving ? '...' : 'Guardar'}
                             </button>
+                            {guardado && (
+                              <button
+                                className="btn-ghost"
+                                style={{ height: 32, fontSize: 12, padding: '0 12px' }}
+                                onClick={() => {
+                                  setEditandoTiempo(prev => { const n = {...prev}; delete n[key]; return n })
+                                  setTiempos(prev => { const n = {...prev}; delete n[key]; return n })
+                                }}
+                              >
+                                Cancelar
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
