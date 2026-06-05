@@ -43,7 +43,7 @@ function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
       </button>
       {info && visible && (
         <span style={{
-          position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
           background: '#1e293b', color: '#f1f5f9', fontSize: '12px', lineHeight: 1.5,
           padding: '8px 10px', borderRadius: '8px', width: '210px',
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)', zIndex: 100,
