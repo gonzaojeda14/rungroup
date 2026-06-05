@@ -38,6 +38,20 @@ function validarTiempo(texto) {
   return /^\d{1,2}:\d{2}(:\d{2})?$/.test(texto.trim())
 }
 
+// Autoformatea mientras el usuario tipea
+// Si ya tiene ":" lo deja escribir libre, si son solo números inserta : automáticamente
+function autoformatTiempo(valor) {
+  if (valor.includes(':')) {
+    // Modo manual: solo limpia caracteres inválidos
+    return valor.replace(/[^\d:]/g, '').slice(0, 8)
+  }
+  // Modo automático: solo dígitos
+  const nums = valor.replace(/\D/g, '').slice(0, 6)
+  if (nums.length <= 2) return nums
+  if (nums.length <= 4) return `${nums.slice(0,2)}:${nums.slice(2)}`
+  return `${nums.slice(0,2)}:${nums.slice(2,4)}:${nums.slice(4)}`
+}
+
 function diasRestantes(fecha) {
   if (!fecha) return null
   const hoy = new Date()
@@ -380,8 +394,9 @@ export default function Participaciones() {
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <input
                               value={tiempos[key] || ''}
-                              onChange={e => setTiempos(prev => ({ ...prev, [key]: e.target.value }))}
-                              placeholder="MM:SS o HH:MM:SS"
+                              onChange={e => setTiempos(prev => ({ ...prev, [key]: autoformatTiempo(e.target.value) }))}
+                              placeholder="MM:SS"
+                              inputMode="numeric"
                               style={{
                                 width: '140px', background: 'var(--bg3)', border: '1px solid var(--border)',
                                 borderRadius: '8px', color: 'var(--text)', padding: '6px 10px',
