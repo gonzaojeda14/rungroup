@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
+function formatFechaDMY(fecha) {
+  if (!fecha) return ''
+  const [y, m, d] = fecha.split('-')
+  return `${d}/${m}/${y}`
+}
+
 const DISTANCIAS_CALLE = ['3K', '5K', '8K', '10K', '15K', '21K', '25K', '30K', '42K']
 const CARRERAS_TRAIL = ['Patagonia Run', 'El Cruce', 'La Etapa', 'UTACCH', 'Champanqui']
 
@@ -41,7 +47,7 @@ function autoformatK(valor) {
   return limpio
 }
 
-function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando, form, setForm, setEditando, msg, saving, validarTiempo, autoformatTiempo, guardarRecord }) {
+function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando, form, setForm, setEditando, msg, saving, validarTiempo, autoformatTiempo, guardarRecord, eliminarRecord }) {
   if (!esPropio) {
     return (
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -59,14 +65,23 @@ function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando
         <span style={{ fontSize: '14px' }}>{distancia}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {rec && <span style={{ fontSize: '14px', fontWeight: 700, color: '#4ade80' }}>{rec.tiempo_texto}</span>}
-          {rec?.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{rec.fecha}</span>}
+          {rec?.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{formatFechaDMY(rec.fecha)}</span>}
           {!esteEditando && (
-            <button
-              onClick={() => { setEditando(distancia); setForm({ tiempo: rec?.tiempo_texto || '', fecha: rec?.fecha || '' }) }}
-              style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
-            >
-              {rec ? 'Editar' : '+ Agregar'}
-            </button>
+            <>
+              <button
+                onClick={() => { setEditando(distancia); setForm({ tiempo: rec?.tiempo_texto || '', fecha: rec?.fecha || '' }) }}
+                style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+              >
+                {rec ? 'Editar' : '+ Agregar'}
+              </button>
+              {rec && (
+                <button
+                  onClick={() => eliminarRecord(distancia)}
+                  style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+                  title="Eliminar record"
+                >✕</button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -176,6 +191,15 @@ export default function RecordsPersonales({ userId }) {
     setSaving(false)
   }
 
+  async function eliminarRecord(distancia) {
+    if (!confirm(`¿Eliminar el record de ${distancia}?`)) return
+    await supabase.from('records_personales')
+      .delete()
+      .eq('user_id', uid)
+      .eq('distancia', distancia)
+    await fetchRecords()
+  }
+
   async function guardarTrail(carreraNombre) {
     const tf = trailForms[carreraNombre] || {}
     if (!tf.distancia) { setMsg('Ingresá la distancia'); return }
@@ -251,6 +275,7 @@ export default function RecordsPersonales({ userId }) {
             validarTiempo={validarTiempo}
             autoformatTiempo={autoformatTiempo}
             guardarRecord={guardarRecord}
+            eliminarRecord={eliminarRecord}
           />
         ))}
 
@@ -301,8 +326,11 @@ export default function RecordsPersonales({ userId }) {
                     <span style={{ fontSize: '13px', color: 'var(--text2)' }}>{dist}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: '#4ade80' }}>{r.tiempo_texto}</span>
-                      {r.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{r.fecha}</span>}
+                      {r.fecha && <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{formatFechaDMY(r.fecha)}</span>}
                       {r.fuente === 'automatico' && <span style={{ fontSize: '10px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '4px', padding: '1px 5px' }}>auto</span>}
+                      {esPropio && (
+                        <button onClick={() => eliminarRecord(k)} style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }} title="Eliminar">✕</button>
+                      )}
                     </div>
                   </div>
                 )

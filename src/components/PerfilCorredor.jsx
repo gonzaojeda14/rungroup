@@ -24,6 +24,7 @@ export default function PerfilCorredor({ corredor, onClose }) {
   const [participaciones, setParticipaciones] = useState([])
   const [certUrl, setCertUrl] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [extra, setExtra] = useState({})
 
   const hoy = new Date().toISOString().split('T')[0]
 
@@ -45,6 +46,7 @@ export default function PerfilCorredor({ corredor, onClose }) {
         .single()
     ])
     setParticipaciones(parts || [])
+    setExtra(cert || {})
 
     if (cert?.certificado_url) {
       if (cert.certificado_url.startsWith('http')) {
@@ -55,14 +57,8 @@ export default function PerfilCorredor({ corredor, onClose }) {
       }
     }
 
-    // Enriquecer el corredor con datos del perfil
-    if (cert) {
-      corredor._extra = cert
-    }
     setLoading(false)
   }
-
-  const extra = corredor._extra || {}
   const edad = calcularEdad(extra.fecha_nacimiento)
   const certAnio = extra.certificado_fecha ? new Date(extra.certificado_fecha).getFullYear() : null
   const certVigente = certAnio === thisYear
@@ -90,7 +86,13 @@ export default function PerfilCorredor({ corredor, onClose }) {
         }
       </div>
 
-      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {loading && (
+        <div style={{ padding: '32px 16px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text2)', fontSize: '13px' }}>
+          Cargando...
+        </div>
+      )}
+
+      {!loading && <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
         {/* DATOS DE CONTACTO */}
         <div className="card">
@@ -179,7 +181,7 @@ export default function PerfilCorredor({ corredor, onClose }) {
         {/* RECORDS PERSONALES */}
         <RecordsPersonales userId={corredor.id} />
 
-      </div>
+      </div>}
     </div>
   )
 }
