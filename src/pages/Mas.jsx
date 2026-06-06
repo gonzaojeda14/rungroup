@@ -466,9 +466,6 @@ function FlamaPoints() {
                     </button>
                   ) : null}
                 </div>
-                {!c.dorsal && accion?.tipo === 'nuevo' && accion.carrera.id === c.id && (
-                  <div style={{ marginTop: '8px', fontSize: '11px', color: '#fbbf24' }}>No habías cargado tu dorsal al anotarte — confirmalo en el formulario.</div>
-                )}
                 {accion?.tipo === 'nuevo' && accion.carrera.id === c.id && <Formulario />}
               </div>
             ))}
@@ -556,7 +553,17 @@ function formatFechaCorta(fecha) {
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function Mas({ ventasDisponibles = 0 }) {
-  const [tab, setTab] = useState('Alianzas')
+  // Recordamos la última pestaña elegida (en sessionStorage) para que, al
+  // navegar a otra sección y volver a "Más", no se reinicie en "Alianzas".
+  const [tab, setTab] = useState(() => {
+    const guardada = sessionStorage.getItem('mas_tab')
+    return TABS.includes(guardada) ? guardada : 'Alianzas'
+  })
+
+  function cambiarTab(t) {
+    setTab(t)
+    sessionStorage.setItem('mas_tab', t)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
@@ -565,7 +572,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
         {TABS.map(t => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => cambiarTab(t)}
             style={{
               flex: 1, padding: '12px 4px', border: 'none', background: 'none', cursor: 'pointer',
               fontSize: '13px', fontWeight: tab === t ? 700 : 400,
