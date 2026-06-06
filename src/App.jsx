@@ -147,7 +147,7 @@ function Shell() {
           <Route path="/corredores" element={<Corredores />} />
           <Route path="/perfil" element={<MiPerfil />} />
           <Route path="/ventas" element={<Ventas />} />
-          <Route path="/mas" element={<Mas />} />
+          <Route path="/mas" element={<Mas ventasDisponibles={ventasDisponibles} />} />
           <Route path="/novedades" element={<Novedades />} />
         </Routes>
       </main>

@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Ventas from './Ventas'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../lib/auth'
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -152,19 +150,8 @@ function Alianzas() {
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
-export default function Mas() {
-  const { user } = useAuth()
+export default function Mas({ ventasDisponibles = 0 }) {
   const [tab, setTab] = useState('Alianzas')
-  const [ventasDisponibles, setVentasDisponibles] = useState(0)
-
-  useEffect(() => {
-    if (!user) return
-    supabase.from('ventas_inscripciones')
-      .select('id', { count: 'exact', head: true })
-      .eq('estado', 'disponible')
-      .neq('vendedor_id', user.id)
-      .then(({ count }) => setVentasDisponibles(count || 0))
-  }, [user])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>

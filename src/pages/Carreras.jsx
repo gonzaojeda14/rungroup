@@ -99,8 +99,8 @@ export default function Carreras() {
   const [filtros, setFiltros] = useState(() => {
     try {
       const saved = localStorage.getItem('carreras_filtros')
-      return saved ? JSON.parse(saved) : { tipo: '', distancias: [], fecha: 'proximas', mes: '' }
-    } catch { return { tipo: '', distancias: [], fecha: 'proximas', mes: '' } }
+      return saved ? JSON.parse(saved) : { tipo: '', distancias: [], fecha: 'proximas', meses: [] }
+    } catch { return { tipo: '', distancias: [], fecha: 'proximas', meses: [] } }
   })
   const [showFiltros, setShowFiltros] = useState(false)
   const [inscriptosAbiertos, setInscriptosAbiertos] = useState({}) // carreraId -> [perfiles] | 'loading'
@@ -428,7 +428,7 @@ export default function Carreras() {
     if (filtros.distancias.length > 0 && !filtros.distancias.some(d => getDistancias(c).includes(d))) return false
     if (filtros.fecha === 'proximas' && c.fecha && c.fecha < today) return false
     if (filtros.fecha === 'pasadas' && (!c.fecha || c.fecha >= today)) return false
-    if (filtros.mes && (!c.fecha || !c.fecha.startsWith(filtros.mes))) return false
+    if (filtros.meses?.length > 0 && (!c.fecha || !filtros.meses.some(m => c.fecha.startsWith(m)))) return false
     return true
   })
 
@@ -436,7 +436,7 @@ export default function Carreras() {
     filtros.fecha !== 'proximas',
     filtros.tipo !== '',
     filtros.distancias.length > 0,
-    (filtros.mes || '') !== '',
+    (filtros.meses?.length || 0) > 0,
   ].filter(Boolean).length
 
   if (loading) return <PageLoader />
@@ -559,7 +559,7 @@ export default function Carreras() {
         </button>
         {filtrosActivos > 0 && (
           <button
-            onClick={() => setFiltrosGuardados({ tipo: '', distancias: [], fecha: 'proximas', mes: '' })}
+            onClick={() => setFiltrosGuardados({ tipo: '', distancias: [], fecha: 'proximas', meses: [] })}
             style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             Limpiar
@@ -581,7 +581,7 @@ export default function Carreras() {
                 <div className="filtro-group">
                   {['proximas', 'pasadas', ''].map(val => (
                     <button key={val} className={`filtro-btn ${filtros.fecha === val ? 'active' : ''}`}
-                      onClick={() => setFiltrosGuardados(f => ({ ...f, fecha: val, mes: '' }))}>
+                      onClick={() => setFiltrosGuardados(f => ({ ...f, fecha: val, meses: [] }))}>
                       {val === 'proximas' ? 'Próximas' : val === 'pasadas' ? 'Anteriores' : 'Todas'}
                     </button>
                   ))}
@@ -591,14 +591,16 @@ export default function Carreras() {
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Mes</div>
                   <div className="filtro-group" style={{ flexWrap: 'wrap' }}>
-                    <button className={`filtro-btn ${(filtros.mes || '') === '' ? 'active' : ''}`}
-                      onClick={() => setFiltrosGuardados(f => ({ ...f, mes: '' }))}>Todos</button>
                     {todosMeses.map(m => {
                       const [anio, mes] = m.split('-')
                       const label = new Date(parseInt(anio), parseInt(mes) - 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
+                      const activo = filtros.meses?.includes(m)
                       return (
-                        <button key={m} className={`filtro-btn ${filtros.mes === m ? 'active' : ''}`}
-                          onClick={() => setFiltrosGuardados(f => ({ ...f, mes: m, fecha: '' }))}>
+                        <button key={m} className={`filtro-btn ${activo ? 'active' : ''}`}
+                          onClick={() => setFiltrosGuardados(f => {
+                            const meses = f.meses || []
+                            return { ...f, meses: activo ? meses.filter(x => x !== m) : [...meses, m], fecha: '' }
+                          })}>
                           {label}
                         </button>
                       )

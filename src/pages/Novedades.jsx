@@ -423,7 +423,7 @@ export default function Novedades() {
       )}
 
       {items.length === 0 && (
-        <div className="empty-state">No hay novedades todavía</div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", gap: "16px" }}><img src="/logo-flama.png" alt="Flama Run" style={{ height: 64, width: "auto", opacity: 0.12 }} /><p style={{ color: "var(--text2)", fontSize: "14px", textAlign: "center", margin: 0 }}>Todo tranquilo por acá.<br />Las novedades aparecerán aquí.</p></div>
       )}
 
       {confirmarEliminar && (
