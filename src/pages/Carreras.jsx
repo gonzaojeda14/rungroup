@@ -518,7 +518,7 @@ export default function Carreras() {
                 }}>
                   {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
-                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Club de Corredores</span>
+                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
               </label>
             </div>
             <div className="field full">
@@ -696,7 +696,7 @@ export default function Carreras() {
                       <div style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0, background: form.running_team ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
                         {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                       </div>
-                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Club de Corredores</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
                     </label>
                   </div>
                   <div className="field full">
@@ -747,7 +747,7 @@ export default function Carreras() {
                         style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         onClick={() => setModalRunningTeam(true)}
                       >
-                        🏃 Club de Corredores <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
+                        🏃 Descuento Club de Corredores <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
                       </span>
                     )}
                     {!c.running_team && c.codigo && (() => {
@@ -780,7 +780,7 @@ export default function Carreras() {
                   <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setModalRunningTeam(false)}>
                     <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '24px', maxWidth: '400px', width: '100%' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h3 style={{ margin: 0, fontSize: '15px' }}>🏃 Cómo asociar Running Team</h3>
+                        <h3 style={{ margin: 0, fontSize: '15px' }}>🏃 Descuento Club de Corredores</h3>
                         <button onClick={() => setModalRunningTeam(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
                       </div>
                       <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '12px' }}>
