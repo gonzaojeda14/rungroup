@@ -3,36 +3,30 @@ import Ventas from './Ventas'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
-// ─── DATOS ───────────────────────────────────────────────────────────────────
-
-const BENEFICIOS = [
-  { empresa: 'La Panera Rosa', lugar: 'Olivos', emoji: '🥐', descuento: '20% en todo el menú', instruccion: 'Presentar la app de Flama' },
-  { empresa: 'La Pianca', emoji: '🍽', descuento: '15% en todo el menú', instruccion: 'Presentar la app de Flama' },
-  { empresa: 'ANation', emoji: '👟', categoria: 'Calzado / Indumentaria', descuento: '15% en todos los productos', codigo: 'FLAMA', instruccion: 'Código válido en web' },
-  { empresa: 'Fitnesas', emoji: '🏋️', categoria: 'Productos deportivos', descuento: '10% en todos los productos', codigo: 'FLAMA2025', instruccion: 'Válido en local y web' },
-  { empresa: 'Pantro Indumentaria', emoji: '👕', categoria: 'Indumentaria', descuento: '35% en efectivo', instruccion: 'Por ser alumno de Flama' },
-  { empresa: 'NC Body Therapy', emoji: '💆', categoria: 'Masajes', descuento: '10% en masajes y reflexología' },
-  { empresa: 'Olmos Ortopedia', emoji: '🦶', categoria: 'Plantillas deportivas', descuento: '15% a 25% en plantillas deportivas' },
-  { empresa: 'Fuel Store Arg', emoji: '⚡', categoria: 'Suplementos', descuento: 'Descuento en suplementos deportivos', codigo: 'FLAMA', instruccion: 'Pastillas de sal, geles, proteína y más' },
-  { empresa: 'Brina Makeup Beauty Studio', emoji: '✨', descuento: '10% en todos los tratamientos faciales y corporales', codigo: 'FLAMA' },
-]
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 const WP_MSG = encodeURIComponent('Hola! Te escribo de parte de Flama Training')
 const wp = (num) => `https://wa.me/${num.replace(/\D/g, '')}?text=${WP_MSG}`
 const ig = (user) => `https://instagram.com/${user.replace('@', '')}`
 
-const PROFESIONALES = [
-  { nombre: 'Eugenia Gancedo', categoria: 'Nutrición', ig: ig('@eg.nutriciondeportiva'), wp: wp('+5491164860148') },
-  { nombre: 'Diego Dobler', categoria: 'Kinesiología', ig: null, wp: wp('+5491163081610') },
-  { nombre: 'NC Body Therapy', categoria: 'Masajes', ig: ig('@nc.bodytherapy'), wp: wp('+5491166874129') },
-]
+// ─── DATOS ───────────────────────────────────────────────────────────────────
 
-const MARCAS = [
-  { nombre: 'Fuel Store Arg', categoria: 'Suplementos', web: 'https://www.fuelstorearg.com', ig: ig('@fuelstorearg'), wp: wp('+5491126816998') },
-  { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', web: 'https://www.pantrotienda.com.ar', ig: ig('@pantrotienda'), wp: wp('+5491125039851') },
-  { nombre: 'A Nation', categoria: 'Calzado', web: null, ig: null, wp: null },
-  { nombre: 'Fitnesas', categoria: 'Productos deportivos', web: null, ig: null, wp: null },
-  { nombre: 'Olmos Ortopedia', categoria: 'Plantillas deportivas', web: null, ig: ig('@ortopediaolmos'), wp: wp('+5491126280043') },
+const ALIANZAS = [
+  // Profesionales
+  { nombre: 'Eugenia Gancedo', categoria: 'Nutrición', emoji: '🥗', wp: wp('+5491164860148'), ig: ig('@eg.nutriciondeportiva'), web: null, descuento: null, codigo: null, ubicacion: null },
+  { nombre: 'Diego Dobler', categoria: 'Kinesiología', emoji: '🦴', wp: wp('+5491163081610'), ig: null, web: null, descuento: null, codigo: null, ubicacion: null },
+  { nombre: 'NC Body Therapy', categoria: 'Masajes', emoji: '💆', wp: wp('+5491166874129'), ig: ig('@nc.bodytherapy'), web: null, descuento: '10% en masajes y reflexología', codigo: null, ubicacion: null },
+  // Marcas
+  { nombre: 'Fuel Store Arg', categoria: 'Suplementos', emoji: '⚡', wp: wp('+5491126816998'), ig: ig('@fuelstorearg'), web: 'https://www.fuelstorearg.com', descuento: 'Descuento en suplementos', codigo: 'FLAMA', ubicacion: null },
+  { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', emoji: '👕', wp: wp('+5491125039851'), ig: ig('@pantrotienda'), web: 'https://www.pantrotienda.com.ar', descuento: '35% en efectivo', codigo: null, ubicacion: null },
+  { nombre: 'A Nation', categoria: 'Calzado', emoji: '👟', wp: null, ig: ig('@anationoficial'), web: 'https://www.anation.com.ar', descuento: '15% en todos los productos', codigo: 'FLAMA', ubicacion: null },
+  { nombre: 'Fitnesas', categoria: 'Productos deportivos', emoji: '🏋️', wp: wp('+5491168599619'), ig: ig('@fitnesas.ar'), web: 'https://www.fitnesas.com.ar', descuento: '10% en local y web', codigo: 'FLAMA2025', ubicacion: null },
+  { nombre: 'Olmos Ortopedia', categoria: 'Plantillas deportivas', emoji: '🦶', wp: wp('+5491126280043'), ig: ig('@ortopediaolmos'), web: null, descuento: '15% a 25% en plantillas', codigo: null, ubicacion: null },
+  // Gastronomía
+  { nombre: 'La Panera Rosa', categoria: 'Gastronomía', emoji: '🥐', wp: null, ig: null, web: null, descuento: '20% en todo el menú', codigo: null, ubicacion: 'Arenales 511, Vicente López' },
+  { nombre: 'La Pianca', categoria: 'Gastronomía', emoji: '🍽', wp: null, ig: null, web: null, descuento: '15% en todo el menú', codigo: null, ubicacion: 'Tapiales 1136, Vicente López' },
+  // Próximamente
+  { nombre: 'Brina Makeup Beauty Studio', categoria: 'Belleza', emoji: '✨', wp: null, ig: null, web: null, descuento: '10% en tratamientos', codigo: 'FLAMA', ubicacion: null },
 ]
 
 // ─── ICONOS ──────────────────────────────────────────────────────────────────
@@ -55,38 +49,92 @@ const WebIcon = () => (
   </svg>
 )
 
-// ─── TABS ────────────────────────────────────────────────────────────────────
+const MapIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+  </svg>
+)
 
-const TABS = ['Partners', 'Beneficios', 'Inscripciones']
+// ─── TABS ─────────────────────────────────────────────────────────────────────
 
-// ─── SECCIONES ───────────────────────────────────────────────────────────────
+const TABS = ['Alianzas', 'Inscripciones']
 
-function Beneficios() {
+// ─── SECCIÓN ALIANZAS ─────────────────────────────────────────────────────────
+
+function Alianzas() {
+  const [copiado, setCopiado] = useState(null)
+
+  function copiarCodigo(codigo, nombre) {
+    navigator.clipboard.writeText(codigo)
+    const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+    if (!esMobile) {
+      setCopiado(nombre)
+      setTimeout(() => setCopiado(null), 2000)
+    }
+  }
+
   return (
     <div className="page">
-      <div className="page-header"><h2>Beneficios</h2></div>
+      <div className="page-header"><h2>Alianzas</h2></div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {BENEFICIOS.map((b, i) => (
+        {ALIANZAS.map((a, i) => (
           <div key={i} className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-              <span style={{ fontSize: '22px' }}>{b.emoji}</span>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '14px' }}>{b.empresa}</div>
-                {b.categoria && <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{b.categoria}</div>}
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '22px' }}>{a.emoji}</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '14px' }}>{a.nombre}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{a.categoria}</div>
+                </div>
+              </div>
+              {/* Links */}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {a.wp && (
+                  <a href={a.wp} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', display: 'flex' }}>
+                    <WpIcon />
+                  </a>
+                )}
+                {a.ig && (
+                  <a href={a.ig} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}>
+                    <IgIcon />
+                  </a>
+                )}
+                {a.web && (
+                  <a href={a.web} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}>
+                    <WebIcon />
+                  </a>
+                )}
               </div>
             </div>
-            <div style={{ fontSize: '14px', color: '#4ade80', fontWeight: 600, marginBottom: b.instruccion || b.codigo ? '6px' : 0 }}>
-              {b.descuento}
-            </div>
-            {b.instruccion && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{b.instruccion}</div>}
-            {b.codigo && (
-              <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,45,45,0.1)', border: '1px solid rgba(255,45,45,0.2)', borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}
-                onClick={() => {
-                  navigator.clipboard.writeText(b.codigo)
-                  // El toast nativo de móvil es suficiente
-                }}>
-                🎟 {b.codigo}
+
+            {/* Descuento */}
+            {a.descuento && (
+              <div style={{ marginTop: '8px', fontSize: '13px', color: '#4ade80', fontWeight: 600 }}>
+                {a.descuento}
               </div>
+            )}
+
+            {/* Cupón */}
+            {a.codigo && (
+              <div
+                style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,45,45,0.1)', border: '1px solid rgba(255,45,45,0.2)', borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}
+                onClick={() => copiarCodigo(a.codigo, a.nombre)}
+              >
+                🎟 {a.codigo}
+                {copiado === a.nombre && <span style={{ fontSize: '11px', color: '#4ade80', fontWeight: 400 }}>✓ copiado</span>}
+              </div>
+            )}
+
+            {/* Ubicación */}
+            {a.ubicacion && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.ubicacion)}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text2)', textDecoration: 'none' }}
+              >
+                <MapIcon /> {a.ubicacion}
+              </a>
             )}
           </div>
         ))}
@@ -95,56 +143,11 @@ function Beneficios() {
   )
 }
 
-function Partners() {
-  return (
-    <div className="page">
-      <div className="page-header"><h2>Partners</h2></div>
-
-      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-        Profesionales
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-        {PROFESIONALES.map((p, i) => (
-          <div key={i} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '14px' }}>{p.nombre}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{p.categoria}</div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {p.ig && <a href={p.ig} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}><IgIcon /></a>}
-              {p.wp && <a href={`https://wa.me/${p.wp}`} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', display: 'flex' }}><WpIcon /></a>}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-        Marcas
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {MARCAS.map((m, i) => (
-          <div key={i} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '14px' }}>{m.nombre}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{m.categoria}</div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {m.web && <a href={m.web} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}><WebIcon /></a>}
-              {m.ig && <a href={m.ig} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}><IgIcon /></a>}
-              {m.wp && <a href={`https://wa.me/${m.wp}`} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', display: 'flex' }}><WpIcon /></a>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ─── COMPONENTE PRINCIPAL ────────────────────────────────────────────────────
+// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function Mas() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('Partners')
+  const [tab, setTab] = useState('Alianzas')
   const [ventasDisponibles, setVentasDisponibles] = useState(0)
 
   useEffect(() => {
@@ -190,9 +193,8 @@ export default function Mas() {
 
       {/* Contenido */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
+        {tab === 'Alianzas' && <Alianzas />}
         {tab === 'Inscripciones' && <Ventas />}
-        {tab === 'Beneficios' && <Beneficios />}
-        {tab === 'Partners' && <Partners />}
       </div>
     </div>
   )
