@@ -501,23 +501,25 @@ export default function Carreras() {
             </div>
             <div className="field">
               <label>Código de descuento</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <input
-                  value={form.codigo}
-                  onChange={e => setForm({ ...form, codigo: e.target.value })}
-                  placeholder="FLAMA20"
-                  disabled={form.running_team}
-                  style={{ opacity: form.running_team ? 0.4 : 1 }}
-                />
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text2)', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={form.running_team || false}
-                    onChange={e => setForm({ ...form, running_team: e.target.checked, codigo: '' })}
-                  />
-                  Asociar Running Team (Club de Corredores)
-                </label>
-              </div>
+              <input
+                value={form.codigo}
+                onChange={e => setForm({ ...form, codigo: e.target.value })}
+                placeholder="FLAMA20"
+                disabled={form.running_team}
+                style={{ opacity: form.running_team ? 0.4 : 1 }}
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                onClick={() => setForm({ ...form, running_team: !form.running_team, codigo: '' })}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
+                  background: form.running_team ? 'var(--accent)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
+                }}>
+                  {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Club de Corredores</span>
+              </label>
             </div>
             <div className="field full">
               <label>Link de inscripción</label>
@@ -687,7 +689,15 @@ export default function Carreras() {
                   </div>
                   <div className="field">
                     <label>Código de descuento</label>
-                    <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="FLAMA20" />
+                    <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="FLAMA20" disabled={form.running_team} style={{ opacity: form.running_team ? 0.4 : 1 }} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                      onClick={() => setForm({ ...form, running_team: !form.running_team, codigo: '' })}
+                    >
+                      <div style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0, background: form.running_team ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+                        {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Club de Corredores</span>
+                    </label>
                   </div>
                   <div className="field full">
                     <label>Link de inscripción</label>
@@ -737,7 +747,7 @@ export default function Carreras() {
                         style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         onClick={() => setModalRunningTeam(true)}
                       >
-                        🏃 Asociar Running Team <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
+                        🏃 Club de Corredores <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
                       </span>
                     )}
                     {!c.running_team && c.codigo && (() => {
