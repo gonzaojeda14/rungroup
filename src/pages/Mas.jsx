@@ -522,7 +522,7 @@ function FlamaPoints({ onPendientesChange }) {
                       fontSize: '11px', fontWeight: 700, padding: '4px 9px', borderRadius: '20px',
                       background: info.bg, color: info.color,
                     }}>
-                      {info.icon} {e.estado === 'validado' ? `+${e.puntos}` : info.label}
+                      {info.icon} {e.estado === 'validado' ? `Aprobado +${e.puntos}` : info.label}
                     </span>
                   </div>
 
