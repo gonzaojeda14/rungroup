@@ -266,7 +266,7 @@ function RevisionAdmin() {
 
 // ─── SECCIÓN FLAMA POINTS ─────────────────────────────────────────────────────
 
-function FlamaPoints() {
+function FlamaPoints({ onPendientesChange }) {
   const { user, isAdmin } = useAuth()
   const [loading, setLoading] = useState(true)
   const [pendientes, setPendientes] = useState([])  // carreras completadas, sin ningún envío todavía
@@ -310,6 +310,7 @@ function FlamaPoints() {
     setPendientes(elegibles)
     setEnvios(env || [])
     setLoading(false)
+    onPendientesChange?.(elegibles.length)
   }
 
   // Genera (y limpia) una vista previa local de la foto elegida — así el corredor
@@ -580,6 +581,9 @@ export default function Mas({ ventasDisponibles = 0 }) {
     const guardada = sessionStorage.getItem('mas_tab')
     return TABS.includes(guardada) ? guardada : 'Alianzas'
   })
+  // Carreras completadas a las que todavía no le mandaste la prueba de dorsal —
+  // se muestra como notificación (igual que "Inscripciones") para que no se te pase.
+  const [flamaPendientes, setFlamaPendientes] = useState(0)
 
   function cambiarTab(t) {
     setTab(t)
@@ -614,6 +618,17 @@ export default function Mas({ ventasDisponibles = 0 }) {
                 {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
               </span>
             )}
+            {t === 'Flama Points' && flamaPendientes > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                marginLeft: '4px', verticalAlign: 'middle',
+                minWidth: 14, height: 14, padding: '0 3px',
+                background: '#ff2d2d', borderRadius: '999px',
+                fontSize: 9, fontWeight: 700, color: '#fff',
+              }}>
+                {flamaPendientes > 9 ? '9+' : flamaPendientes}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -621,7 +636,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       {/* Contenido */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'Alianzas' && <Alianzas />}
-        {tab === 'Flama Points' && <FlamaPoints />}
+        {tab === 'Flama Points' && <FlamaPoints onPendientesChange={setFlamaPendientes} />}
         {tab === 'Inscripciones' && <Ventas />}
       </div>
     </div>
