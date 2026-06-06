@@ -253,12 +253,23 @@ export default function MiPerfil() {
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>{form.nombre || 'Sin nombre'}</div>
           <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>{user.email}</div>
-          {avatarFile && (
-            <button className="btn-primary" style={{ height: 32, fontSize: 13, padding: '0 14px' }} onClick={handleSubirAvatar} disabled={savingAvatar}>
-              {savingAvatar ? 'Subiendo...' : 'Guardar foto'}
-            </button>
+          {avatarFile ? (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button className="btn-primary" style={{ height: 32, fontSize: 13, padding: '0 14px' }} onClick={handleSubirAvatar} disabled={savingAvatar}>
+                {savingAvatar ? 'Subiendo...' : 'Guardar foto'}
+              </button>
+              <button className="btn-ghost" style={{ height: 32, fontSize: 13, padding: '0 12px' }} onClick={() => {
+                setAvatarFile(null)
+                // Restaurar la foto original
+                supabase.from('profiles').select('avatar_url').eq('id', user.id).single()
+                  .then(({ data }) => setAvatarUrl(data?.avatar_url || null))
+              }} disabled={savingAvatar}>
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <span style={{ fontSize: 12, color: '#64748b' }}>Tocá la foto para cambiarla</span>
           )}
-          {!avatarFile && <span style={{ fontSize: 12, color: '#64748b' }}>Tocá la foto para cambiarla</span>}
         </div>
       </div>
 
@@ -413,7 +424,7 @@ export default function MiPerfil() {
           <div className="form-grid">
             <div className="field">
               <label>Nueva contraseña</label>
-              <input type="password" value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} placeholder="Mínimo 6 caracteres" required />
+              <input type="password" value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} placeholder="Mínimo 8 caracteres, con letras y números" required />
             </div>
             <div className="field">
               <label>Confirmar contraseña</label>

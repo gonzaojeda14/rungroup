@@ -148,8 +148,20 @@ export default function Corredores() {
             </div>
             {c.role === 'admin' && <span className="badge green">Admin</span>}
             {c.role !== 'admin' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {c.activo === false && <span style={{ fontSize: '11px', color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '2px 7px' }}>Bloqueado</span>}
+                {isAdmin && (
+                  <button
+                    onClick={e => { e.stopPropagation(); handleToggleAcceso(c) }}
+                    style={{
+                      fontSize: '11px', padding: '2px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                      background: c.activo === false ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)',
+                      color: c.activo === false ? '#4ade80' : '#f87171',
+                    }}
+                  >
+                    {c.activo === false ? 'Desbloquear' : 'Bloquear'}
+                  </button>
+                )}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text2)', flexShrink: 0 }}><path d="M9 18l6-6-6-6"/></svg>
               </div>
             )}

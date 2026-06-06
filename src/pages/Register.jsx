@@ -189,7 +189,7 @@ export default function Register() {
             <PasswordInput
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres, con letras y números"
               autoComplete="new-password"
               required
             />

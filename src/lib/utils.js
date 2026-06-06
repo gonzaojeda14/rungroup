@@ -29,10 +29,10 @@ export function formatTelefonoWA(tel) {
   if (!tel) return ''
   let nums = tel.replace(/\D/g, '')
   if (!nums) return ''
-  // Ya tiene código de país
-  if (nums.startsWith('54')) return nums
+  // Ya tiene código de país (11+ dígitos = internacional)
+  if (nums.length >= 11) return nums
   // Quitar 0 inicial (ej: 011...)
   if (nums.startsWith('0')) nums = nums.slice(1)
-  // Agregar +54 y 9 para WhatsApp
+  // Agregar 549 para Argentina
   return '549' + nums
 }
