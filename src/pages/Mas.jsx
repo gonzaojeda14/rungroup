@@ -275,6 +275,7 @@ function FlamaPoints() {
   const [accion, setAccion] = useState(null)
   const [dorsal, setDorsal] = useState('')
   const [archivo, setArchivo] = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(null)
   const [subiendo, setSubiendo] = useState(false)
   const [toast, setToast] = useState('')
   const inputRef = useRef(null)
@@ -310,6 +311,15 @@ function FlamaPoints() {
     setEnvios(env || [])
     setLoading(false)
   }
+
+  // Genera (y limpia) una vista previa local de la foto elegida — así el corredor
+  // puede confirmar que subió la imagen correcta antes de enviar (no se puede cancelar después)
+  useEffect(() => {
+    if (!archivo) { setFotoPreview(null); return }
+    const url = URL.createObjectURL(archivo)
+    setFotoPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [archivo])
 
   function iniciarNuevo(carrera) {
     setAccion({ tipo: 'nuevo', carrera })
@@ -397,8 +407,11 @@ function FlamaPoints() {
 
   if (loading) return <div className="empty-state">Cargando...</div>
 
-  // Formulario de carga (compartido entre "solicitar por primera vez" y "reintentar")
-  const Formulario = () => (
+  // Formulario de carga (compartido entre "solicitar por primera vez" y "reintentar").
+  // OJO: esto es JSX directo, NO un componente función — si fuera `const Formulario = () => (...)`,
+  // cada tecleo en el input recrearía la función y React desmontaría/remontaría el <input>,
+  // sacándote del campo después de cada carácter (y reseteando el selector de archivo).
+  const formulario = (
     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <div className="field" style={{ margin: 0 }}>
         <label>Número de dorsal</label>
@@ -409,6 +422,12 @@ function FlamaPoints() {
         <input ref={inputRef} type="file" accept="image/*" capture="environment"
           onChange={e => setArchivo(e.target.files?.[0] || null)}
           style={{ fontSize: '12px', color: 'var(--text2)' }} />
+        {archivo && fotoPreview && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+            <img src={fotoPreview} alt="Vista previa de la foto" style={{ width: 64, height: 64, borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border)' }} />
+            <span style={{ fontSize: '12px', color: 'var(--text2)' }}>✅ Foto cargada: {archivo.name}</span>
+          </div>
+        )}
       </div>
       <button className="btn-accent" disabled={!archivo || !dorsal.trim() || subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
         {subiendo ? 'Enviando...' : 'Enviar solicitud'}
@@ -466,7 +485,7 @@ function FlamaPoints() {
                     </button>
                   ) : null}
                 </div>
-                {accion?.tipo === 'nuevo' && accion.carrera.id === c.id && <Formulario />}
+                {accion?.tipo === 'nuevo' && accion.carrera.id === c.id && formulario}
               </div>
             ))}
           </div>
@@ -515,7 +534,7 @@ function FlamaPoints() {
                             🔁 Volver a subir foto
                           </button>
                         </>
-                      ) : <Formulario />}
+                      ) : formulario}
                     </div>
                   )}
 
