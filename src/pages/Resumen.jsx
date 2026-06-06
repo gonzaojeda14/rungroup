@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/utils'
 
-const ESTADOS = ['Inscripto', 'Tal vez', 'Lista de espera', 'No voy', 'Pendiente']
+const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera', 'Pendiente']
 const COLORS = { 'Inscripto': '#4ade80', 'Tal vez': '#fbbf24', 'Lista de espera': '#60a5fa', 'No voy': '#f87171', 'Pendiente': '#94a3b8' }
 const TIPO_COLOR = { 'Trail': '#fb923c', 'Calle': '#60a5fa' }
 
@@ -103,10 +103,14 @@ export default function Resumen() {
         {carreras.length > 1 && (
           <select
             value={carreraFiltro}
-            onChange={e => setCarreraFiltro(e.target.value)}
-            style={{ height: 34, fontSize: 13, padding: '0 10px', borderRadius: 8, maxWidth: 180 }}
+            onChange={e => { setCarreraFiltro(e.target.value); setMesFiltro('todos') }}
+            style={{
+              height: 34, fontSize: 13, padding: '0 10px', borderRadius: 8, maxWidth: 180,
+              background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
+              fontFamily: 'inherit', cursor: 'pointer',
+            }}
           >
-            <option value="todas">Todas</option>
+            <option value="todas">Todas las carreras</option>
             {carreras.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         )}
@@ -131,7 +135,7 @@ export default function Resumen() {
 
       {carreras.length === 0 && <div className="empty-state">No hay datos todavía</div>}
       {carreras.filter(c => {
-        if (carreraFiltro !== 'todas' && c.id !== carreraFiltro) return false
+        if (carreraFiltro !== 'todas') return c.id === carreraFiltro
         if (mesFiltro !== 'todos' && (!c.fecha || !c.fecha.startsWith(mesFiltro))) return false
         return true
       }).map(c => (
@@ -149,6 +153,7 @@ export default function Resumen() {
 
           {c.multiDist ? (
             <>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px' }}>General</div>
               <StatsRow counts={c.counts} total={c.total} />
               {c.porDistancia.filter(pd => pd.total > 0).map((pd, i) => (
                 <div key={pd.distancia} style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
