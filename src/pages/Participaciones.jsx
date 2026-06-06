@@ -3,7 +3,7 @@ import FotosModal from '../components/FotosModal'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFechaHora } from '../lib/utils'
+import { formatFechaHora, agregarAlCalendario } from '../lib/utils'
 
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
@@ -174,10 +174,13 @@ export default function Participaciones() {
     setItems(prev => prev.map(p =>
       p.carrera?.id === carreraId ? { ...p, feedback: valor, feedback_nota: nota } : p
     ))
-    if (valor === 'excelente') {
-      setToast('¡Vamos por más! 🔥')
-      setTimeout(() => setToast(''), 2500)
+    const mensajes = {
+      excelente: '¡Vamos por más! 🔥',
+      regular: '¡Gracias por el feedback! 👊',
+      mal: 'Lamentamos eso. ¡La próxima será mejor! 💪',
     }
+    setToast(mensajes[valor] || '')
+    setTimeout(() => setToast(''), 2500)
   }
 
   async function handleNota(carreraId, texto) {
@@ -186,6 +189,8 @@ export default function Participaciones() {
       .update({ feedback_nota: texto })
       .eq('carrera_id', carreraId)
       .eq('user_id', user.id)
+    setToast('✅ Nota guardada')
+    setTimeout(() => setToast(''), 2000)
   }
 
   const hoy = new Date().toISOString().split('T')[0]
@@ -309,11 +314,21 @@ export default function Participaciones() {
                     </div>
                   </div>
 
-                  {p.carrera?.link && !pasada && (
-                    <a href={p.carrera.link} target="_blank" rel="noopener noreferrer" className="race-link" style={{ marginTop: '8px', display: 'inline-block' }}>
-                      Ver inscripción →
-                    </a>
-                  )}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                    {p.carrera?.link && !pasada && (
+                      <a href={p.carrera.link} target="_blank" rel="noopener noreferrer" className="race-link" style={{ display: 'inline-block' }}>
+                        Inscribirme →
+                      </a>
+                    )}
+                    {p.carrera?.fecha && !pasada && p.estado === 'Inscripto' && (
+                      <button
+                        onClick={() => agregarAlCalendario(p.carrera.nombre, p.carrera.fecha, p.carrera.hora, p.carrera.lugar)}
+                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '12px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        📅 Agregar al calendario
+                      </button>
+                    )}
+                  </div>
 
                   {pasada && p.estado === 'Inscripto' && (
                     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>

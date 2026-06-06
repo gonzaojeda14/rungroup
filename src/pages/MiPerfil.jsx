@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatFecha, validarTelefono } from '../lib/utils'
+import PasswordInput from '../components/PasswordInput'
 import { suscribirPush } from '../lib/push'
 
 const thisYear = new Date().getFullYear()
@@ -424,11 +425,11 @@ export default function MiPerfil() {
           <div className="form-grid">
             <div className="field">
               <label>Nueva contraseña</label>
-              <input type="password" value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} placeholder="Mínimo 8 caracteres, con letras y números" required />
+              <PasswordInput value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} placeholder="Mínimo 8 caracteres, con letras y números" autoComplete="new-password" required />
             </div>
             <div className="field">
               <label>Confirmar contraseña</label>
-              <input type="password" value={pwd.confirmar} onChange={e => setPwd({ ...pwd, confirmar: e.target.value })} placeholder="Repetí la contraseña" required />
+              <PasswordInput value={pwd.confirmar} onChange={e => setPwd({ ...pwd, confirmar: e.target.value })} placeholder="Repetí la contraseña" autoComplete="new-password" required />
             </div>
           </div>
           {msgPwd && <div className={msgPwd.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgPwd}</div>}

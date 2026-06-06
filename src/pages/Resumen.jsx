@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/utils'
 
-const ESTADOS = ['Inscripto', 'No voy', 'Quizás', 'Lista de espera', 'Pendiente']
+const ESTADOS = ['Inscripto', 'Quizás', 'No voy', 'Lista de espera', 'Pendiente']
 const COLORS = { 'Inscripto': '#4ade80', 'Quizás': '#fbbf24', 'Lista de espera': '#60a5fa', 'No voy': '#f87171', 'Pendiente': '#94a3b8' }
 const TIPO_COLOR = { 'Trail': '#fb923c', 'Calle': '#60a5fa' }
 

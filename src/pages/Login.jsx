@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput'
 
 export default function Login() {
   const { signIn } = useAuth()
@@ -124,8 +125,7 @@ export default function Login() {
           </div>
           <div className="field">
             <label>Contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"

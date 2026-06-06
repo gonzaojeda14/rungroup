@@ -135,34 +135,36 @@ export default function Corredores() {
             const nombre = c.nombre?.toLowerCase() || ''
             return palabras.every(p => nombre.includes(p))
           }).map(c => (
-          <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' }} onClick={() => c.role !== 'admin' && setPerfilAbierto(c)}>
-            <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0 }}>
-              {c.avatar_url
-                ? <img src={c.avatar_url} alt={c.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                : <span style={{ fontSize: 14, fontWeight: 600 }}>{(c.nombre || '?')[0].toUpperCase()}</span>
-              }
-            </div>
-            <div style={{ flex: 1 }}>
-              <div className="runner-name">{c.nombre}</div>
-              <div className="runner-email">{c.email}</div>
-            </div>
-            {c.role === 'admin' && <span className="badge green">Admin</span>}
-            {c.role !== 'admin' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {c.activo === false && <span style={{ fontSize: '11px', color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '2px 7px' }}>Bloqueado</span>}
-                {isAdmin && (
-                  <button
-                    onClick={e => { e.stopPropagation(); handleToggleAcceso(c) }}
-                    style={{
-                      fontSize: '11px', padding: '2px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                      background: c.activo === false ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)',
-                      color: c.activo === false ? '#4ade80' : '#f87171',
-                    }}
-                  >
-                    {c.activo === false ? 'Desbloquear' : 'Bloquear'}
-                  </button>
-                )}
+          <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent', flexDirection: 'column', alignItems: 'stretch', gap: 0 }} onClick={() => c.role !== 'admin' && setPerfilAbierto(c)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0, flexShrink: 0 }}>
+                {c.avatar_url
+                  ? <img src={c.avatar_url} alt={c.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  : <span style={{ fontSize: 14, fontWeight: 600 }}>{(c.nombre || '?')[0].toUpperCase()}</span>
+                }
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="runner-name">{c.nombre}</div>
+                <div className="runner-email">{c.email}</div>
+              </div>
+              {c.role === 'admin' && <span className="badge green">Admin</span>}
+              {c.role !== 'admin' && (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text2)', flexShrink: 0 }}><path d="M9 18l6-6-6-6"/></svg>
+              )}
+            </div>
+            {c.role !== 'admin' && isAdmin && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
+                {c.activo === false && <span style={{ fontSize: '11px', color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '2px 7px' }}>Bloqueado</span>}
+                <button
+                  onClick={() => handleToggleAcceso(c)}
+                  style={{
+                    fontSize: '11px', padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                    background: c.activo === false ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)',
+                    color: c.activo === false ? '#4ade80' : '#f87171',
+                  }}
+                >
+                  {c.activo === false ? 'Desbloquear' : 'Bloquear acceso'}
+                </button>
               </div>
             )}
           </div>

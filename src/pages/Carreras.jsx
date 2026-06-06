@@ -56,7 +56,14 @@ function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
   )
 }
 
-const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
+const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false }
+
+const INSTRUCTIVO_RUNNING_TEAM = `1. Entrar a EntryFee.com.ar con tu usuario y contraseña.
+2. Ir a la solapa GRUPO.
+3. Apretar UNIRSE y buscar FLAMA TRAINING. Unirse al grupo.
+4. Una vez aceptado, poner "Running Team" en el apartado MODALIDAD para acceder al descuento por GRUPO.
+
+El descuento quedará disponible para todas las carreras que organice esta asociación.`
 const ESTADOS = ['Inscripto', 'Quizás', 'No voy', 'Lista de espera', 'Stand Flama']
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
@@ -80,6 +87,7 @@ export default function Carreras() {
   const { isAdmin, user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [toast, setToast] = useState('')
+  const [modalRunningTeam, setModalRunningTeam] = useState(false)
   const [carreras, setCarreras] = useState([])
   const [participaciones, setParticipaciones] = useState([])
   const [distanciasSeleccionadas, setDistanciasSeleccionadas] = useState({})
@@ -162,7 +170,8 @@ export default function Carreras() {
       hora: form.hora || null,
       lugar: form.lugar || null,
       link: form.link || null,
-      codigo: form.codigo || null,
+      codigo: form.running_team ? null : (form.codigo || null),
+      running_team: form.running_team || false,
       tipo: form.tipo || null,
       distancias: distanciasArr,
       distancia: distanciasArr[0] || null,
@@ -189,6 +198,7 @@ export default function Carreras() {
       link: c.link || '',
       codigo: c.codigo || '',
       tipo: c.tipo || '',
+      running_team: c.running_team || false,
     })
     setEditId(c.id)
     setShowForm(true)
@@ -491,7 +501,23 @@ export default function Carreras() {
             </div>
             <div className="field">
               <label>Código de descuento</label>
-              <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="FLAMA20" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <input
+                  value={form.codigo}
+                  onChange={e => setForm({ ...form, codigo: e.target.value })}
+                  placeholder="FLAMA20"
+                  disabled={form.running_team}
+                  style={{ opacity: form.running_team ? 0.4 : 1 }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text2)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.running_team || false}
+                    onChange={e => setForm({ ...form, running_team: e.target.checked, codigo: '' })}
+                  />
+                  Asociar Running Team (Club de Corredores)
+                </label>
+              </div>
             </div>
             <div className="field full">
               <label>Link de inscripción</label>
@@ -705,7 +731,16 @@ export default function Carreras() {
                       >📍 {c.lugar}</a>
                     )}
                     {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
-                    {c.codigo && (() => {
+                    {c.running_team && (
+                      <span
+                        className="tag code-tag"
+                        style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        onClick={() => setModalRunningTeam(true)}
+                      >
+                        🏃 Asociar Running Team <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
+                      </span>
+                    )}
+                    {!c.running_team && c.codigo && (() => {
                       const esCupon = /^\S+$/.test(c.codigo.trim())
                       return esCupon ? (
                         <span
@@ -730,6 +765,24 @@ export default function Carreras() {
                     })()}
                   </div>
                 </div>
+
+                {modalRunningTeam && (
+                  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setModalRunningTeam(false)}>
+                    <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '24px', maxWidth: '400px', width: '100%' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ margin: 0, fontSize: '15px' }}>🏃 Cómo asociar Running Team</h3>
+                        <button onClick={() => setModalRunningTeam(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+                      </div>
+                      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '12px' }}>
+                        Para acceder al descuento por grupo en EntryFee:
+                      </p>
+                      <div style={{ fontSize: '13px', lineHeight: 1.7, color: 'var(--text)', whiteSpace: 'pre-line' }}>
+                        {INSTRUCTIVO_RUNNING_TEAM}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {isAdmin && (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button className="btn-icon" onClick={() => toggleDestacada(c)} title={c.destacada ? 'Quitar destacada' : 'Marcar como destacada'} style={c.destacada ? { color: '#eab308', borderColor: 'rgba(234,179,8,0.4)' } : {}}>⭐</button>
