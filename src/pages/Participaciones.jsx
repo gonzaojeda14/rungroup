@@ -7,7 +7,7 @@ import { formatFechaHora } from '../lib/utils'
 
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
-  'Tal vez': '#fbbf24',
+  'Quizás': '#fbbf24',
   'Lista de espera': '#60a5fa',
   'No voy': '#f87171',
   'Pendiente': '#475569',

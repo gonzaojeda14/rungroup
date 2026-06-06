@@ -57,11 +57,11 @@ function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
 }
 
 const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '' }
-const ESTADOS = ['Inscripto', 'No voy', 'Tal vez', 'Lista de espera', 'Stand Flama']
+const ESTADOS = ['Inscripto', 'Quizás', 'No voy', 'Lista de espera', 'Stand Flama']
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
   'No voy': '#f87171',
-  'Tal vez': '#fbbf24',
+  'Quizás': '#fbbf24',
   'Lista de espera': '#60a5fa',
   'Stand Flama': '#ff2d2d',
   'Pendiente': '#64748b',
@@ -395,7 +395,8 @@ export default function Carreras() {
       .from('profiles')
       .select('nombre, avatar_url')
       .in('id', userIds)
-    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: perfiles || [] }))
+    const ordenados = (perfiles || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
+    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: ordenados }))
   }
 
   function getDistancias(c) {
@@ -740,7 +741,7 @@ export default function Carreras() {
 
               {c.link && (
                 <a href={c.link} target="_blank" rel="noopener noreferrer" className="race-link">
-                  Ver inscripción →
+                  Inscribirme →
                 </a>
               )}
 

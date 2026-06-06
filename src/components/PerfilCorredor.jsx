@@ -65,7 +65,7 @@ export default function PerfilCorredor({ corredor, onClose }) {
   const certVencido = certAnio && certAnio < thisYear
   const tieneCert = !!extra.certificado_fecha
 
-  const proximasCarreras = participaciones.filter(p => p.carrera?.fecha && p.carrera.fecha >= hoy && ['Inscripto', 'Tal vez', 'Lista de espera'].includes(p.estado))
+  const proximasCarreras = participaciones.filter(p => p.carrera?.fecha && p.carrera.fecha >= hoy && ['Inscripto', 'Quizás', 'Lista de espera'].includes(p.estado))
   const ultimasCarreras = participaciones.filter(p => p.carrera?.fecha && p.carrera.fecha < hoy).slice(0, 5)
 
   return (
