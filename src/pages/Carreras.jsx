@@ -755,7 +755,7 @@ export default function Carreras() {
                       return esCupon ? (
                         <span
                           className="tag code-tag"
-                          style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                          style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', maxWidth: '220px', overflow: 'hidden' }}
                           title="Tocar para copiar"
                           onClick={() => {
                             navigator.clipboard.writeText(c.codigo)
@@ -766,7 +766,7 @@ export default function Carreras() {
                             }
                           }}
                         >
-                          🎟 {c.codigo}
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🎟 {c.codigo}</span>
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         </span>
                       ) : (
