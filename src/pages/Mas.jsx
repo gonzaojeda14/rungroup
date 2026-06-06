@@ -165,17 +165,17 @@ export default function Mas() {
               fontSize: '13px', fontWeight: tab === t ? 700 : 400,
               color: tab === t ? 'var(--accent)' : 'var(--text2)',
               borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
-              fontFamily: 'inherit', transition: 'all .15s', position: 'relative',
+              fontFamily: 'inherit', transition: 'all .15s',
             }}
           >
             {t}
             {t === 'Inscripciones' && ventasDisponibles > 0 && (
               <span style={{
-                position: 'absolute', top: 6, right: 8,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                marginLeft: '4px', verticalAlign: 'middle',
                 minWidth: 14, height: 14, padding: '0 3px',
                 background: '#ff2d2d', borderRadius: '999px',
                 fontSize: 9, fontWeight: 700, color: '#fff',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
               </span>
