@@ -419,14 +419,16 @@ function FlamaPoints() {
       </div>
       <div>
         <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>Selfie con tu dorsal y tu medalla</label>
-        <input ref={inputRef} type="file" accept="image/*" capture="environment"
-          onChange={e => setArchivo(e.target.files?.[0] || null)}
-          style={{ fontSize: '12px', color: 'var(--text2)' }} />
-        {archivo && fotoPreview && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-            <img src={fotoPreview} alt="Vista previa de la foto" style={{ width: 64, height: 64, borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border)' }} />
-            <span style={{ fontSize: '12px', color: 'var(--text2)' }}>✅ Foto cargada: {archivo.name}</span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {fotoPreview && (
+            <img src={fotoPreview} alt="Vista previa de la foto" style={{ width: 56, height: 56, borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
+          )}
+          <input ref={inputRef} type="file" accept="image/*" capture="environment"
+            onChange={e => setArchivo(e.target.files?.[0] || null)}
+            style={{ fontSize: '12px', color: 'var(--text2)', minWidth: 0 }} />
+        </div>
+        {archivo && (
+          <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '6px' }}>✅ Foto cargada: {archivo.name}</div>
         )}
       </div>
       <button className="btn-accent" disabled={!archivo || !dorsal.trim() || subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
