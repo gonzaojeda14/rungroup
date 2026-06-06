@@ -17,45 +17,69 @@ export function formatFechaHora(fecha, hora) {
   return hora ? `${formatFecha(fecha)} ${formatHora(hora)}hs` : formatFecha(fecha)
 }
 
-// Genera y descarga un archivo ICS para agregar al calendario
+// Agrega al calendario: ICS en iOS, Google Calendar en Android/desktop
 export function agregarAlCalendario(nombre, fecha, hora, lugar) {
   if (!fecha) return
-  const fechaStr = fecha.replace(/-/g, '')
-  let dtStart, dtEnd
-  if (hora) {
-    const horaStr = hora.slice(0, 5).replace(':', '') + '00'
-    dtStart = `${fechaStr}T${horaStr}`
-    // Fin = 3 horas después
-    const [h, m] = hora.split(':').map(Number)
-    const totalMin = h * 60 + m + 180
-    const hFin = String(Math.floor(totalMin / 60) % 24).padStart(2, '0')
-    const mFin = String(totalMin % 60).padStart(2, '0')
-    dtEnd = `${fechaStr}T${hFin}${mFin}00`
-  } else {
-    dtStart = fechaStr
-    dtEnd = fechaStr
-  }
-  const ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//FlamaRun//ES',
-    'BEGIN:VEVENT',
-    `SUMMARY:${nombre}`,
-    `DTSTART:${dtStart}`,
-    `DTEND:${dtEnd}`,
-    lugar ? `LOCATION:${lugar}` : '',
-    `DESCRIPTION:Carrera organizada a través de Flama Run`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].filter(Boolean).join('\r\n')
+  const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
 
-  const blob = new Blob([ics], { type: 'text/calendar' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${nombre.replace(/\s+/g, '_')}.ics`
-  a.click()
-  URL.revokeObjectURL(url)
+  if (esIOS) {
+    const fechaStr = fecha.replace(/-/g, '')
+    let dtStart, dtEnd
+    if (hora) {
+      const horaStr = hora.slice(0, 5).replace(':', '') + '00'
+      dtStart = `${fechaStr}T${horaStr}`
+      const [h, m] = hora.split(':').map(Number)
+      const totalMin = h * 60 + m + 180
+      const hFin = String(Math.floor(totalMin / 60) % 24).padStart(2, '0')
+      const mFin = String(totalMin % 60).padStart(2, '0')
+      dtEnd = `${fechaStr}T${hFin}${mFin}00`
+    } else {
+      dtStart = fechaStr
+      dtEnd = fechaStr
+    }
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//FlamaRun//ES',
+      'BEGIN:VEVENT',
+      `SUMMARY:${nombre}`,
+      `DTSTART:${dtStart}`,
+      `DTEND:${dtEnd}`,
+      lugar ? `LOCATION:${lugar}` : '',
+      'DESCRIPTION:Carrera organizada a través de Flama Run',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].filter(Boolean).join('\r\n')
+    const blob = new Blob([ics], { type: 'text/calendar' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${nombre.replace(/\s+/g, '_')}.ics`
+    a.click()
+    URL.revokeObjectURL(url)
+  } else {
+    // Google Calendar URL
+    const fechaStr = fecha.replace(/-/g, '')
+    let dates
+    if (hora) {
+      const horaStr = hora.slice(0, 5).replace(':', '') + '00'
+      const [h, m] = hora.split(':').map(Number)
+      const totalMin = h * 60 + m + 180
+      const hFin = String(Math.floor(totalMin / 60) % 24).padStart(2, '0')
+      const mFin = String(totalMin % 60).padStart(2, '0')
+      dates = `${fechaStr}T${horaStr}/${fechaStr}T${hFin}${mFin}00`
+    } else {
+      dates = `${fechaStr}/${fechaStr}`
+    }
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: nombre,
+      dates,
+      details: 'Carrera organizada a través de Flama Run',
+      ...(lugar ? { location: lugar } : {}),
+    })
+    window.open(`https://calendar.google.com/calendar/render?${params}`, '_blank')
+  }
 }
 
 // Valida que un teléfono tenga entre 8 y 15 dígitos

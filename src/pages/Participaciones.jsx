@@ -317,7 +317,7 @@ export default function Participaciones() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
                     {p.carrera?.link && !pasada && (
                       <a href={p.carrera.link} target="_blank" rel="noopener noreferrer" className="race-link" style={{ display: 'inline-block' }}>
-                        Inscribirme →
+                        Inscribirme
                       </a>
                     )}
                     {p.carrera?.fecha && !pasada && p.estado === 'Inscripto' && (

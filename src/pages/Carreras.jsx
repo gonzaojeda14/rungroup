@@ -794,7 +794,7 @@ export default function Carreras() {
 
               {c.link && (
                 <a href={c.link} target="_blank" rel="noopener noreferrer" className="race-link">
-                  Inscribirme →
+                  Inscribirme
                 </a>
               )}
 
