@@ -789,6 +789,18 @@ export default function Carreras() {
                       <div style={{ fontSize: '13px', lineHeight: 1.7, color: 'var(--text)', whiteSpace: 'pre-line' }}>
                         {INSTRUCTIVO_RUNNING_TEAM}
                       </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(INSTRUCTIVO_RUNNING_TEAM)
+                          setToast('✅ Instructivo copiado')
+                          setTimeout(() => setToast(''), 2000)
+                          setModalRunningTeam(false)
+                        }}
+                        className="btn-ghost"
+                        style={{ marginTop: '16px', width: '100%', height: 38, fontSize: 13 }}
+                      >
+                        Copiar instructivo
+                      </button>
                     </div>
                   </div>
                 )}
