@@ -744,7 +744,7 @@ export default function Carreras() {
                     {c.running_team && (
                       <span
                         className="tag code-tag"
-                        style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
                         onClick={() => setModalRunningTeam(true)}
                       >
                         🏃 Descuento Club de Corredores <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
