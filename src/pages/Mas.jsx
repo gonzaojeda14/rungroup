@@ -67,7 +67,7 @@ const ESTADO_INFO = {
   pendiente: { label: 'En revisión', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', icon: '⏳' },
   validado: { label: 'Validado', color: '#4ade80', bg: 'rgba(74,222,128,0.12)', icon: '✓' },
   rechazado: { label: 'Rechazado', color: '#f87171', bg: 'rgba(248,113,113,0.12)', icon: '✕' },
-  revision_admin: { label: 'Revisión final del admin', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', icon: '👀' },
+  revision_admin: { label: 'Revisión final del profe', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', icon: '👀' },
 }
 
 // ─── SECCIÓN ALIANZAS ─────────────────────────────────────────────────────────
@@ -266,7 +266,7 @@ function RevisionAdmin() {
 
 // ─── SECCIÓN FLAMA POINTS ─────────────────────────────────────────────────────
 
-function FlamaPoints({ onPendientesChange }) {
+function FlamaPoints() {
   const { user, isAdmin } = useAuth()
   const [loading, setLoading] = useState(true)
   const [pendientes, setPendientes] = useState([])  // carreras completadas, sin ningún envío todavía
@@ -310,7 +310,6 @@ function FlamaPoints({ onPendientesChange }) {
     setPendientes(elegibles)
     setEnvios(env || [])
     setLoading(false)
-    onPendientesChange?.(elegibles.length)
   }
 
   // Genera (y limpia) una vista previa local de la foto elegida — así el corredor
@@ -474,7 +473,7 @@ function FlamaPoints({ onPendientesChange }) {
         subiendo una selfie donde se vean tu <strong style={{ color: 'var(--text)' }}>dorsal y tu medalla</strong>.
         Una IA revisa la foto al toque: si confirma tu dorsal, los puntos se acreditan en el momento. Si no logra
         confirmarlo, tenés <strong style={{ color: 'var(--text)' }}>una segunda oportunidad</strong> para volver a
-        subir la foto — y si tampoco se puede confirmar esa vez, el admin lo revisa a mano y da el veredicto final.
+        subir la foto — y si tampoco se puede confirmar esa vez, el profe lo revisa a mano y da el veredicto final.
       </div>
 
       {/* Total */}
@@ -559,7 +558,7 @@ function FlamaPoints({ onPendientesChange }) {
 
                   {e.estado === 'revision_admin' && (
                     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text2)' }}>
-                      No se pudo confirmar el dorsal en ninguno de los 2 intentos — el admin va a revisar ambas fotos a mano y darte el veredicto final.
+                      No se pudo confirmar el dorsal en ninguno de los 2 intentos — el profe va a revisar ambas fotos a mano y darte el veredicto final.
                     </div>
                   )}
                 </div>
@@ -591,6 +590,7 @@ function formatFechaCorta(fecha) {
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function Mas({ ventasDisponibles = 0 }) {
+  const { user } = useAuth()
   // Recordamos la última pestaña elegida (en sessionStorage) para que, al
   // navegar a otra sección y volver a "Más", no se reinicie en "Alianzas".
   const [tab, setTab] = useState(() => {
@@ -599,7 +599,37 @@ export default function Mas({ ventasDisponibles = 0 }) {
   })
   // Carreras completadas a las que todavía no le mandaste la prueba de dorsal —
   // se muestra como notificación (igual que "Inscripciones") para que no se te pase.
+  // OJO: se calcula acá (no dentro de FlamaPoints) y de forma independiente de la
+  // pestaña activa — si dependiera de que el usuario abra "Flama Points" para
+  // calcularse, la notificación tardaría en aparecer y no reflejaría la cantidad real.
   const [flamaPendientes, setFlamaPendientes] = useState(0)
+
+  useEffect(() => {
+    let activo = true
+    async function calcularFlamaPendientes() {
+      const hoy = new Date().toISOString().split('T')[0]
+      const [{ data: parts }, { data: env }] = await Promise.all([
+        supabase.from('participaciones')
+          .select('carrera_id, carrera:carreras(id, fecha, flama_points)')
+          .eq('user_id', user.id)
+          .eq('estado', 'Inscripto'),
+        supabase.from('puntos_carreras')
+          .select('carrera_id')
+          .eq('user_id', user.id),
+      ])
+      const enviadasIds = new Set((env || []).map(e => e.carrera_id))
+      const cantidad = (parts || [])
+        .filter(p => p.carrera && p.carrera.flama_points && p.carrera.fecha < hoy && !enviadasIds.has(p.carrera_id))
+        .length
+      if (activo) setFlamaPendientes(cantidad)
+    }
+    calcularFlamaPendientes()
+    const channel = supabase.channel('mas-flama-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'puntos_carreras', filter: `user_id=eq.${user.id}` }, calcularFlamaPendientes)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones', filter: `user_id=eq.${user.id}` }, calcularFlamaPendientes)
+      .subscribe()
+    return () => { activo = false; supabase.removeChannel(channel) }
+  }, [user.id])
 
   function cambiarTab(t) {
     setTab(t)
@@ -652,7 +682,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       {/* Contenido */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'Alianzas' && <Alianzas />}
-        {tab === 'Flama Points' && <FlamaPoints onPendientesChange={setFlamaPendientes} />}
+        {tab === 'Flama Points' && <FlamaPoints />}
         {tab === 'Inscripciones' && <Ventas />}
       </div>
     </div>
