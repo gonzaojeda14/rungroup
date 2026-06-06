@@ -18,15 +18,15 @@ const ALIANZAS = [
   { nombre: 'NC Body Therapy', categoria: 'Masajes', emoji: '💆', wp: wp('+5491166874129'), ig: ig('@nc.bodytherapy'), web: null, descuento: '10% en masajes y reflexología', codigo: null, ubicacion: null },
   // Marcas
   { nombre: 'Fuel Store Arg', categoria: 'Suplementos', emoji: '⚡', wp: wp('+5491126816998'), ig: ig('@fuelstorearg'), web: 'https://www.fuelstorearg.com', descuento: 'Descuento en suplementos', codigo: 'FLAMA', ubicacion: null },
-  { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', emoji: '👕', wp: wp('+5491125039851'), ig: ig('@pantrotienda'), web: 'https://www.pantrotienda.com.ar', descuento: '35% en efectivo', codigo: null, ubicacion: null },
+  { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', emoji: '👕', wp: wp('+5491125039851'), ig: ig('@pantrotienda'), web: 'https://www.pantrotienda.com.ar', descuento: '35% en efectivo', codigo: null, ubicacion: 'Iberá 3168, Núñez' },
   { nombre: 'A Nation', categoria: 'Calzado', emoji: '👟', wp: null, ig: ig('@anationoficial'), web: 'https://www.anation.com.ar', descuento: '15% en todos los productos', codigo: 'FLAMA', ubicacion: null },
-  { nombre: 'Fitnesas', categoria: 'Productos deportivos', emoji: '🏋️', wp: wp('+5491168599619'), ig: ig('@fitnesas.ar'), web: 'https://www.fitnesas.com.ar', descuento: '10% en local y web', codigo: 'FLAMA2025', ubicacion: null },
+  { nombre: 'Fitnesas', categoria: 'Productos deportivos', emoji: '🏋️', wp: wp('+5491168599619'), ig: ig('@fitnesas.ar'), web: 'https://www.fitnesas.com.ar', descuento: '10% en local y web', codigo: 'FLAMA2025', ubicacion: 'Bulnes 2026, Palermo · Guillermo White 4335, Munro' },
   { nombre: 'Olmos Ortopedia', categoria: 'Plantillas deportivas', emoji: '🦶', wp: wp('+5491126280043'), ig: ig('@ortopediaolmos'), web: null, descuento: '15% a 25% en plantillas', codigo: null, ubicacion: null },
   // Gastronomía
   { nombre: 'La Panera Rosa', categoria: 'Gastronomía', emoji: '🥐', wp: null, ig: null, web: null, descuento: '20% en todo el menú', codigo: null, ubicacion: 'Arenales 511, Vicente López' },
   { nombre: 'La Pianca', categoria: 'Gastronomía', emoji: '🍽', wp: null, ig: null, web: null, descuento: '15% en todo el menú', codigo: null, ubicacion: 'Tapiales 1136, Vicente López' },
   // Próximamente
-  { nombre: 'Brina Makeup Beauty Studio', categoria: 'Belleza', emoji: '✨', wp: null, ig: null, web: null, descuento: '10% en tratamientos', codigo: 'FLAMA', ubicacion: null },
+  { nombre: 'Brina Makeup Beauty Studio', categoria: 'Belleza', emoji: '✨', wp: wp('+5491168552470'), ig: ig('@brinamakeup'), web: null, descuento: '10% en tratamientos faciales y corporales', codigo: 'FLAMA', ubicacion: 'Gral. Juan Lavalle 1800, Vicente López' },
 ]
 
 // ─── ICONOS ──────────────────────────────────────────────────────────────────
