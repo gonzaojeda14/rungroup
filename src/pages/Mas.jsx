@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Ventas from './Ventas'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
 
 // ─── DATOS ───────────────────────────────────────────────────────────────────
 
@@ -51,7 +53,7 @@ const WebIcon = () => (
 
 // ─── TABS ────────────────────────────────────────────────────────────────────
 
-const TABS = ['Inscripciones', 'Beneficios', 'Partners']
+const TABS = ['Partners', 'Beneficios', 'Inscripciones']
 
 // ─── SECCIONES ───────────────────────────────────────────────────────────────
 
@@ -137,10 +139,21 @@ function Partners() {
 // ─── COMPONENTE PRINCIPAL ────────────────────────────────────────────────────
 
 export default function Mas() {
-  const [tab, setTab] = useState('Inscripciones')
+  const { user } = useAuth()
+  const [tab, setTab] = useState('Partners')
+  const [ventasDisponibles, setVentasDisponibles] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    supabase.from('ventas_inscripciones')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'disponible')
+      .neq('vendedor_id', user.id)
+      .then(({ count }) => setVentasDisponibles(count || 0))
+  }, [user])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg)', flexShrink: 0 }}>
         {TABS.map(t => (
@@ -152,10 +165,21 @@ export default function Mas() {
               fontSize: '13px', fontWeight: tab === t ? 700 : 400,
               color: tab === t ? 'var(--accent)' : 'var(--text2)',
               borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
-              fontFamily: 'inherit', transition: 'all .15s',
+              fontFamily: 'inherit', transition: 'all .15s', position: 'relative',
             }}
           >
             {t}
+            {t === 'Inscripciones' && ventasDisponibles > 0 && (
+              <span style={{
+                position: 'absolute', top: 6, right: 8,
+                minWidth: 14, height: 14, padding: '0 3px',
+                background: '#ff2d2d', borderRadius: '999px',
+                fontSize: 9, fontWeight: 700, color: '#fff',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
+              </span>
+            )}
           </button>
         ))}
       </div>
