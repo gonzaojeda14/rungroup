@@ -402,7 +402,7 @@ function FlamaPoints() {
     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <div className="field" style={{ margin: 0 }}>
         <label>Número de dorsal</label>
-        <input value={dorsal} onChange={e => setDorsal(e.target.value)} placeholder="Ej: 1234" inputMode="numeric" />
+        <input value={dorsal} onChange={e => setDorsal(e.target.value)} placeholder="Ej: 1234 o A1234" />
       </div>
       <div>
         <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>Selfie con tu dorsal y tu medalla</label>
