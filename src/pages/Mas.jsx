@@ -75,7 +75,10 @@ function Beneficios() {
             {b.instruccion && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{b.instruccion}</div>}
             {b.codigo && (
               <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,45,45,0.1)', border: '1px solid rgba(255,45,45,0.2)', borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}
-                onClick={() => { navigator.clipboard.writeText(b.codigo) }}>
+                onClick={() => {
+                  navigator.clipboard.writeText(b.codigo)
+                  // El toast nativo de móvil es suficiente
+                }}>
                 🎟 {b.codigo}
               </div>
             )}

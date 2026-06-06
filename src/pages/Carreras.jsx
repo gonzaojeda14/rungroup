@@ -759,8 +759,8 @@ export default function Carreras() {
                           title="Tocar para copiar"
                           onClick={() => {
                             navigator.clipboard.writeText(c.codigo)
-                            const esAndroid = /Android/i.test(navigator.userAgent)
-                            if (!esAndroid) {
+                            const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+                            if (!esMobile) {
                               setToast(`Código "${c.codigo}" copiado`)
                               setTimeout(() => setToast(''), 2500)
                             }
@@ -792,8 +792,8 @@ export default function Carreras() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(INSTRUCTIVO_RUNNING_TEAM)
-                          setToast('✅ Instructivo copiado')
-                          setTimeout(() => setToast(''), 2000)
+                          const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+                          if (!esMobile) { setToast('✅ Instructivo copiado'); setTimeout(() => setToast(''), 2000) }
                           setModalRunningTeam(false)
                         }}
                         className="btn-ghost"

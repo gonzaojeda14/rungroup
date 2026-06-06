@@ -69,8 +69,8 @@ export default function Corredores() {
     })
     const link = `${base}/registro?${params.toString()}`
     navigator.clipboard.writeText(link)
-    setMsg('📋 Link copiado — pegalo en WhatsApp')
-    setTimeout(() => setMsg(''), 3000)
+    const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+    if (!esMobile) { setMsg('📋 Link copiado — pegalo en WhatsApp'); setTimeout(() => setMsg(''), 3000) }
     setNewEmail('')
     setNewNombre('')
   }
