@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import RecordsPersonales from './RecordsPersonales'
 import { formatTelefonoWA } from '../lib/utils'
+import { useAuth } from '../lib/auth'
 
 const thisYear = new Date().getFullYear()
 
@@ -20,11 +21,13 @@ function formatFecha(f) {
   return `${d}/${m}/${y}`
 }
 
-export default function PerfilCorredor({ corredor, onClose }) {
+export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
+  const { isAdmin } = useAuth()
   const [participaciones, setParticipaciones] = useState([])
   const [certUrl, setCertUrl] = useState(null)
   const [loading, setLoading] = useState(true)
   const [extra, setExtra] = useState({})
+  const [bloqueado, setBloqueado] = useState(corredor.activo === false)
 
   const hoy = new Date().toISOString().split('T')[0]
 
@@ -59,6 +62,14 @@ export default function PerfilCorredor({ corredor, onClose }) {
 
     setLoading(false)
   }
+
+  async function handleToggleAcceso() {
+    const nuevoEstado = !bloqueado
+    await supabase.from('profiles').update({ activo: !nuevoEstado }).eq('id', corredor.id)
+    setBloqueado(nuevoEstado)
+    if (onToggleAcceso) onToggleAcceso(corredor.id, nuevoEstado)
+  }
+
   const edad = calcularEdad(extra.fecha_nacimiento)
   const certAnio = extra.certificado_fecha ? new Date(extra.certificado_fecha).getFullYear() : null
   const certVigente = certAnio === thisYear
@@ -80,6 +91,18 @@ export default function PerfilCorredor({ corredor, onClose }) {
           <div style={{ fontWeight: 700, fontSize: '15px' }}>{corredor.nombre}</div>
           {edad && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{edad} años</div>}
         </div>
+        {isAdmin && (
+          <button
+            onClick={handleToggleAcceso}
+            style={{
+              fontSize: '12px', padding: '4px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+              background: bloqueado ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)',
+              color: bloqueado ? '#4ade80' : '#f87171',
+            }}
+          >
+            {bloqueado ? 'Desbloquear' : 'Bloquear'}
+          </button>
+        )}
         {corredor.avatar_url
           ? <img src={corredor.avatar_url} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} alt="" />
           : <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,45,45,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>{(corredor.nombre || '?')[0].toUpperCase()}</div>
