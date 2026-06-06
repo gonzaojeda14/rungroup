@@ -314,7 +314,7 @@ export default function Participaciones() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
                     {p.carrera?.link && !pasada && (
                       <a href={p.carrera.link} target="_blank" rel="noopener noreferrer" className="race-link" style={{ display: 'inline-block' }}>
                         Inscribirme →
@@ -323,7 +323,7 @@ export default function Participaciones() {
                     {p.carrera?.fecha && !pasada && p.estado === 'Inscripto' && (
                       <button
                         onClick={() => agregarAlCalendario(p.carrera.nombre, p.carrera.fecha, p.carrera.hora, p.carrera.lugar)}
-                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '12px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
                       >
                         📅 Agregar al calendario
                       </button>
