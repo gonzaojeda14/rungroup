@@ -10,6 +10,7 @@ import Resumen from './pages/Resumen'
 import Corredores from './pages/Corredores'
 import MiPerfil from './pages/MiPerfil'
 import Ventas from './pages/Ventas'
+import Mas from './pages/Mas'
 import Novedades from './pages/Novedades'
 import ResetPassword from './pages/ResetPassword'
 
@@ -35,7 +36,7 @@ function OfertaAlert() {
 
   return (
     <div
-      onClick={() => navigate('/ventas')}
+      onClick={() => navigate('/mas')}
       style={{
         background: 'rgba(251,191,36,0.15)', borderBottom: '1px solid rgba(251,191,36,0.3)',
         padding: '10px 16px', cursor: 'pointer',
@@ -146,6 +147,7 @@ function Shell() {
           <Route path="/corredores" element={<Corredores />} />
           <Route path="/perfil" element={<MiPerfil />} />
           <Route path="/ventas" element={<Ventas />} />
+          <Route path="/mas" element={<Mas />} />
           <Route path="/novedades" element={<Novedades />} />
         </Routes>
       </main>
@@ -213,9 +215,9 @@ function Shell() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
           <span>Historial</span>
         </NavLink>
-        <NavLink to="/ventas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <NavLink to="/mas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div style={{ position: 'relative', display: 'inline-flex' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
             {ventasDisponibles > 0 && (
               <span style={{
                 position: 'absolute', top: -4, right: -6,
@@ -230,7 +232,7 @@ function Shell() {
               </span>
             )}
           </div>
-          <span>Inscripciones</span>
+          <span>Más</span>
         </NavLink>
         <NavLink to="/perfil" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
