@@ -723,7 +723,7 @@ export default function Carreras() {
           return (
             <div key={c.id} className="card race-card" style={c.destacada ? { borderColor: 'rgba(234,179,8,0.5)', boxShadow: '0 0 0 1px rgba(234,179,8,0.2)' } : {}}>
               <div className="race-card-top">
-                <div>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     {c.destacada && <span style={{ fontSize: '15px', lineHeight: 1 }}>⭐</span>}
                     <h3 style={{ margin: 0 }}>{c.nombre}</h3>
@@ -741,42 +741,40 @@ export default function Carreras() {
                       >📍 {c.lugar}</a>
                     )}
                     {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
-                  </div>
-                </div>
-
-                  {/* Cupón / Running Team — línea propia para no comprimir los botones */}
-                  {c.running_team && (
-                    <span
-                      className="tag code-tag"
-                      style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}
-                      onClick={() => setModalRunningTeam(true)}
-                    >
-                      🏃 Descuento Club de Corredores <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
-                    </span>
-                  )}
-                  {!c.running_team && c.codigo && (() => {
-                    const esCupon = /^\S+$/.test(c.codigo.trim())
-                    return esCupon ? (
+                    {c.running_team && (
                       <span
                         className="tag code-tag"
-                        style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}
-                        title="Tocar para copiar"
-                        onClick={() => {
-                          navigator.clipboard.writeText(c.codigo)
-                          const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
-                          if (!esMobile) {
-                            setToast(`Código "${c.codigo}" copiado`)
-                            setTimeout(() => setToast(''), 2500)
-                          }
-                        }}
+                        style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        onClick={() => setModalRunningTeam(true)}
                       >
-                        🎟 {c.codigo}
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        🏃 Descuento Club de Corredores <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
                       </span>
-                    ) : (
-                      <span className="tag code-tag" style={{ marginTop: '6px' }}>🎟 {c.codigo}</span>
-                    )
-                  })()}
+                    )}
+                    {!c.running_team && c.codigo && (() => {
+                      const esCupon = /^\S+$/.test(c.codigo.trim())
+                      return esCupon ? (
+                        <span
+                          className="tag code-tag"
+                          style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                          title="Tocar para copiar"
+                          onClick={() => {
+                            navigator.clipboard.writeText(c.codigo)
+                            const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+                            if (!esMobile) {
+                              setToast(`Código "${c.codigo}" copiado`)
+                              setTimeout(() => setToast(''), 2500)
+                            }
+                          }}
+                        >
+                          🎟 {c.codigo}
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </span>
+                      ) : (
+                        <span className="tag code-tag">🎟 {c.codigo}</span>
+                      )
+                    })()}
+                  </div>
+                </div>
 
                 {modalRunningTeam && (
                   <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setModalRunningTeam(false)}>
