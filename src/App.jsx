@@ -216,23 +216,23 @@ function Shell() {
           <span>Avisos</span>
         </NavLink>
         <NavLink to="/mas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-          <div style={{ position: 'relative', display: 'inline-flex' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          <span style={{ fontSize: '22px', lineHeight: 1 }}>🔥</span>
+          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+            <span>Flama</span>
             {ventasDisponibles > 0 && (
               <span style={{
-                position: 'absolute', top: -4, right: -6,
-                minWidth: 16, height: 16, padding: '0 4px',
+                position: 'absolute', top: -4, right: -14,
+                minWidth: 14, height: 14, padding: '0 3px',
                 background: '#ff2d2d', borderRadius: '999px',
                 border: '1.5px solid var(--bg2)',
-                fontSize: 10, fontWeight: 700, color: '#fff',
+                fontSize: 9, fontWeight: 700, color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
-                {ventasDisponibles > 99 ? '99+' : ventasDisponibles}
+                {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
               </span>
             )}
           </div>
-          <span>Más</span>
         </NavLink>
         <NavLink to="/perfil" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>

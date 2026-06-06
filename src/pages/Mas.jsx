@@ -20,7 +20,7 @@ const ALIANZAS = [
   { nombre: 'Fuel Store Arg', categoria: 'Suplementos', emoji: '⚡', wp: wp('+5491126816998'), ig: ig('@fuelstorearg'), web: 'https://www.fuelstorearg.com', descuento: 'Descuento en suplementos', codigo: 'FLAMA', ubicacion: null },
   { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', emoji: '👕', wp: wp('+5491125039851'), ig: ig('@pantrotienda'), web: 'https://www.pantrotienda.com.ar', descuento: '35% en efectivo', codigo: null, ubicacion: 'Iberá 3168, Núñez' },
   { nombre: 'A Nation', categoria: 'Calzado', emoji: '👟', wp: null, ig: ig('@anationoficial'), web: 'https://www.anation.com.ar', descuento: '15% en todos los productos', codigo: 'FLAMA', ubicacion: null },
-  { nombre: 'Fitnesas', categoria: 'Productos deportivos', emoji: '🏋️', wp: wp('+5491168599619'), ig: ig('@fitnesas.ar'), web: 'https://www.fitnesas.com.ar', descuento: '10% en local y web', codigo: 'FLAMA2025', ubicacion: 'Bulnes 2026, Palermo · Guillermo White 4335, Munro' },
+  { nombre: 'Fitnesas', categoria: 'Productos deportivos', emoji: '🏋️', wp: wp('+5491168599619'), ig: ig('@fitnesas.ar'), web: 'https://www.fitnesas.com.ar', descuento: '10% en local y web', codigo: 'FLAMA2025', ubicacion: ['Bulnes 2026, Palermo', 'Guillermo White 4335, Munro'] },
   { nombre: 'Olmos Ortopedia', categoria: 'Plantillas deportivas', emoji: '🦶', wp: wp('+5491126280043'), ig: ig('@ortopediaolmos'), web: null, descuento: '15% a 25% en plantillas', codigo: null, ubicacion: null },
   // Gastronomía
   { nombre: 'La Panera Rosa', categoria: 'Gastronomía', emoji: '🥐', wp: null, ig: null, web: null, descuento: '20% en todo el menú', codigo: null, ubicacion: 'Arenales 511, Vicente López' },
@@ -131,13 +131,17 @@ function Alianzas() {
 
             {/* Ubicación */}
             {a.ubicacion && (
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.ubicacion)}`}
-                target="_blank" rel="noopener noreferrer"
-                style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text2)', textDecoration: 'none' }}
-              >
-                <MapIcon /> {a.ubicacion}
-              </a>
+              <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {(Array.isArray(a.ubicacion) ? a.ubicacion : [a.ubicacion]).map((u, j) => (
+                  <a key={j}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(u)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text2)', textDecoration: 'none' }}
+                  >
+                    <MapIcon /> {u}
+                  </a>
+                ))}
+              </div>
             )}
           </div>
         ))}
