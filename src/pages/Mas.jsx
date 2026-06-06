@@ -334,11 +334,29 @@ function FlamaPoints({ onPendientesChange }) {
     setArchivo(null)
   }
 
+  // Mensaje flotante de 3 segundos (validaciones, confirmaciones, errores)
+  function avisar(mensaje) {
+    setToast(mensaje)
+    setTimeout(() => setToast(''), 3000)
+  }
+
   // Sube la foto a Cloudinary, crea o actualiza la fila en `puntos_carreras`
   // (1 sola por corredor/carrera) y dispara la validación. No hay forma de
   // cancelar una vez enviada.
   async function enviar() {
-    if (!archivo || !dorsal.trim() || !accion) return
+    if (!accion) return
+    if (!dorsal.trim() && !archivo) {
+      avisar('⚠️ Te falta cargar el número de dorsal y la foto')
+      return
+    }
+    if (!dorsal.trim()) {
+      avisar('⚠️ Te falta cargar el número de dorsal')
+      return
+    }
+    if (!archivo) {
+      avisar('⚠️ Te falta cargar la foto')
+      return
+    }
     setSubiendo(true)
 
     const esReintento = accion.tipo === 'reintento'
@@ -391,15 +409,13 @@ function FlamaPoints({ onPendientesChange }) {
       // (la propia función es idempotente: si el envío ya no está "pendiente", no hace nada)
       supabase.functions.invoke('validar-dorsal', { body: { envio_id: envioId } }).catch(() => {})
 
-      setToast('📸 Solicitud enviada — la estamos revisando')
-      setTimeout(() => setToast(''), 3000)
+      avisar('📸 Solicitud enviada — la estamos revisando')
       setAccion(null)
       setDorsal('')
       setArchivo(null)
       fetchTodo()
     } catch (e) {
-      setToast('❌ Error al enviar: ' + e.message)
-      setTimeout(() => setToast(''), 3000)
+      avisar('❌ Error al enviar: ' + e.message)
     }
     setSubiendo(false)
   }
@@ -432,7 +448,7 @@ function FlamaPoints({ onPendientesChange }) {
           <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '6px' }}>✅ Foto cargada: {archivo.name}</div>
         )}
       </div>
-      <button className="btn-accent" disabled={!archivo || !dorsal.trim() || subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
+      <button className="btn-accent" disabled={subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
         {subiendo ? 'Enviando...' : 'Enviar solicitud'}
       </button>
       <div style={{ fontSize: '11px', color: 'var(--text2)' }}>
