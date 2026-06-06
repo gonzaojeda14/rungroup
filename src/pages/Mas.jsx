@@ -73,7 +73,10 @@ function Alianzas() {
 
   return (
     <div className="page">
-      <div className="page-header"><h2>Alianzas</h2></div>
+      <div className="page-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+        <h2>Alianzas</h2>
+        <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Profesionales y beneficios</span>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {ALIANZAS.map((a, i) => (
           <div key={i} className="card">
