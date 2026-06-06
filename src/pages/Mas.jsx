@@ -17,18 +17,22 @@ const BENEFICIOS = [
   { empresa: 'Brina Makeup Beauty Studio', emoji: '✨', descuento: '10% en todos los tratamientos faciales y corporales', codigo: 'FLAMA' },
 ]
 
+const WP_MSG = encodeURIComponent('Hola! Te escribo de parte de Flama Training')
+const wp = (num) => `https://wa.me/${num.replace(/\D/g, '')}?text=${WP_MSG}`
+const ig = (user) => `https://instagram.com/${user.replace('@', '')}`
+
 const PROFESIONALES = [
-  { nombre: 'Eugenia Gancedo', categoria: 'Nutrición', ig: null, wp: null },
-  { nombre: 'Diego Dobler', categoria: 'Kinesiología', ig: null, wp: null },
-  { nombre: 'NC Body Therapy (Nico)', categoria: 'Masajes', ig: null, wp: null },
+  { nombre: 'Eugenia Gancedo', categoria: 'Nutrición', ig: ig('@eg.nutriciondeportiva'), wp: wp('+5491164860148') },
+  { nombre: 'Diego Dobler', categoria: 'Kinesiología', ig: null, wp: wp('+5491163081610') },
+  { nombre: 'NC Body Therapy', categoria: 'Masajes', ig: ig('@nc.bodytherapy'), wp: wp('+5491166874129') },
 ]
 
 const MARCAS = [
-  { nombre: 'Fuel Store Arg', categoria: 'Suplementos', web: null, ig: null, wp: null },
-  { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', web: null, ig: null, wp: null },
+  { nombre: 'Fuel Store Arg', categoria: 'Suplementos', web: 'https://www.fuelstorearg.com', ig: ig('@fuelstorearg'), wp: wp('+5491126816998') },
+  { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', web: 'https://www.pantrotienda.com.ar', ig: ig('@pantrotienda'), wp: wp('+5491125039851') },
   { nombre: 'A Nation', categoria: 'Calzado', web: null, ig: null, wp: null },
   { nombre: 'Fitnesas', categoria: 'Productos deportivos', web: null, ig: null, wp: null },
-  { nombre: 'Olmos Ortopedia', categoria: 'Plantillas deportivas', web: null, ig: null, wp: null },
+  { nombre: 'Olmos Ortopedia', categoria: 'Plantillas deportivas', web: null, ig: ig('@ortopediaolmos'), wp: wp('+5491126280043') },
 ]
 
 // ─── ICONOS ──────────────────────────────────────────────────────────────────
