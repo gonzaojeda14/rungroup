@@ -56,7 +56,7 @@ function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
   )
 }
 
-const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false }
+const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false }
 
 const INSTRUCTIVO_RUNNING_TEAM = `1. Entrar a EntryFee.com.ar con tu usuario y contraseña.
 2. Ir a la solapa GRUPO.
@@ -91,6 +91,7 @@ export default function Carreras() {
   const [carreras, setCarreras] = useState([])
   const [participaciones, setParticipaciones] = useState([])
   const [distanciasSeleccionadas, setDistanciasSeleccionadas] = useState({})
+  const [dorsales, setDorsales] = useState({})
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -148,13 +149,18 @@ export default function Carreras() {
   async function fetchAll() {
     const [{ data: cars }, { data: parts }] = await Promise.all([
       supabase.from('carreras').select('*').order('fecha', { ascending: true }),
-      supabase.from('participaciones').select('carrera_id, estado, distancia_elegida').eq('user_id', user.id)
+      supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, dorsal').eq('user_id', user.id)
     ])
     setCarreras(cars || [])
     setParticipaciones(parts || [])
     const distMap = {}
-    parts?.forEach(p => { if (p.distancia_elegida) distMap[p.carrera_id] = p.distancia_elegida })
+    const dorsalMap = {}
+    parts?.forEach(p => {
+      if (p.distancia_elegida) distMap[p.carrera_id] = p.distancia_elegida
+      if (p.dorsal) dorsalMap[p.carrera_id] = p.dorsal
+    })
     setDistanciasSeleccionadas(distMap)
+    setDorsales(dorsalMap)
     setLoading(false)
   }
 
@@ -172,6 +178,7 @@ export default function Carreras() {
       link: form.link || null,
       codigo: form.running_team ? null : (form.codigo || null),
       running_team: form.running_team || false,
+      flama_points: form.flama_points || false,
       tipo: form.tipo || null,
       distancias: distanciasArr,
       distancia: distanciasArr[0] || null,
@@ -199,6 +206,7 @@ export default function Carreras() {
       codigo: c.codigo || '',
       tipo: c.tipo || '',
       running_team: c.running_team || false,
+      flama_points: c.flama_points || false,
     })
     setEditId(c.id)
     setShowForm(true)
@@ -256,6 +264,14 @@ export default function Carreras() {
     setDistanciasSeleccionadas(prev => ({ ...prev, [carreraId]: distancia }))
     await supabase.from('participaciones')
       .update({ distancia_elegida: distancia })
+      .eq('carrera_id', carreraId)
+      .eq('user_id', user.id)
+  }
+
+  async function updateDorsal(carreraId, dorsal) {
+    setDorsales(prev => ({ ...prev, [carreraId]: dorsal }))
+    await supabase.from('participaciones')
+      .update({ dorsal: dorsal.trim() || null })
       .eq('carrera_id', carreraId)
       .eq('user_id', user.id)
   }
@@ -519,6 +535,21 @@ export default function Carreras() {
                   {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
                 <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
+              </label>
+            </div>
+            <div className="field">
+              <label>Flama Points</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
+                  background: form.flama_points ? 'var(--accent)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
+                }}>
+                  {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flama Points</span>
               </label>
             </div>
             <div className="field full">
@@ -878,6 +909,24 @@ export default function Carreras() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {estado === 'Inscripto' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.6rem 0' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Mi número de dorsal:</span>
+                  <input
+                    value={dorsales[c.id] ?? ''}
+                    onChange={e => setDorsales(prev => ({ ...prev, [c.id]: e.target.value }))}
+                    onBlur={e => updateDorsal(c.id, e.target.value)}
+                    placeholder="Ej: 1234"
+                    inputMode="numeric"
+                    style={{
+                      width: '90px', background: 'var(--bg2)', border: '1px solid var(--border)',
+                      borderRadius: '8px', color: 'var(--text)', padding: '6px 10px',
+                      fontSize: '13px', fontFamily: 'inherit',
+                    }}
+                  />
                 </div>
               )}
 

@@ -1,5 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Ventas from './Ventas'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
+
+const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+const PUNTOS_POR_CARRERA = 10
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -55,7 +61,13 @@ const MapIcon = () => (
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 
-const TABS = ['Alianzas', 'Inscripciones']
+const TABS = ['Alianzas', 'Flama Points', 'Inscripciones']
+
+const ESTADO_INFO = {
+  pendiente: { label: 'En revisión', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', icon: '⏳' },
+  validado: { label: 'Validado', color: '#4ade80', bg: 'rgba(74,222,128,0.12)', icon: '✓' },
+  rechazado: { label: 'Rechazado', color: '#f87171', bg: 'rgba(248,113,113,0.12)', icon: '✕' },
+}
 
 // ─── SECCIÓN ALIANZAS ─────────────────────────────────────────────────────────
 
@@ -151,6 +163,292 @@ function Alianzas() {
   )
 }
 
+// ─── REVISIÓN ADMIN (aprobación manual de solicitudes) ───────────────────────
+
+function RevisionAdmin() {
+  const { user } = useAuth()
+  const [items, setItems] = useState([])
+  const [procesando, setProcesando] = useState({})
+
+  useEffect(() => {
+    fetchPendientes()
+    const channel = supabase.channel('puntos-carreras-admin-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'puntos_carreras' }, fetchPendientes)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
+
+  async function fetchPendientes() {
+    const { data } = await supabase.from('puntos_carreras')
+      .select('*, corredor:profiles!user_id(nombre), carrera:carreras(nombre)')
+      .eq('estado', 'pendiente')
+      .order('created_at', { ascending: true })
+    setItems(data || [])
+  }
+
+  async function resolver(id, estado) {
+    setProcesando(prev => ({ ...prev, [id]: true }))
+    await supabase.from('puntos_carreras').update({
+      estado,
+      revisado_at: new Date().toISOString(),
+      revisado_por: user.id,
+    }).eq('id', id)
+    setProcesando(prev => { const n = { ...prev }; delete n[id]; return n })
+  }
+
+  // Solo mostramos los que la IA no pudo resolver sola (tienen "motivo" cargado)
+  if (items.length === 0) return null
+
+  return (
+    <div style={{ marginBottom: '18px' }}>
+      <div style={{ fontSize: '12px', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+        ⏳ Solicitudes de Flama Points por revisar ({items.length})
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {items.map(it => (
+          <div key={it.id} className="card">
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <img src={it.foto_url.replace('/upload/', '/upload/w_300,q_auto/')} alt=""
+                style={{ width: 84, height: 84, borderRadius: '10px', objectFit: 'cover', flexShrink: 0, cursor: 'pointer' }}
+                onClick={() => window.open(it.foto_url, '_blank')} />
+              <div style={{ flex: 1, minWidth: 0, fontSize: '13px' }}>
+                <div style={{ fontWeight: 700 }}>{it.corredor?.nombre}</div>
+                <div style={{ color: 'var(--text2)', fontSize: '12px' }}>{it.carrera?.nombre}</div>
+                <div style={{ marginTop: '4px' }}>Dorsal declarado: <strong>{it.dorsal_declarado}</strong></div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+              <button className="btn-ghost" disabled={procesando[it.id]} onClick={() => resolver(it.id, 'validado')}
+                style={{ fontSize: '12px', height: 32, flex: 1, color: '#4ade80', borderColor: 'rgba(74,222,128,0.3)' }}>
+                ✓ Aprobar (+{it.puntos})
+              </button>
+              <button className="btn-ghost" disabled={procesando[it.id]} onClick={() => resolver(it.id, 'rechazado')}
+                style={{ fontSize: '12px', height: 32, flex: 1, color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}>
+                ✕ Rechazar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── SECCIÓN FLAMA POINTS ─────────────────────────────────────────────────────
+
+function FlamaPoints() {
+  const { user, isAdmin } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [pendientes, setPendientes] = useState([])  // carreras completadas sin envío todavía
+  const [envios, setEnvios] = useState([])          // envíos ya hechos (cualquier estado)
+  const [carreraForm, setCarreraForm] = useState(null) // carrera para la que se está cargando foto
+  const [dorsal, setDorsal] = useState('')
+  const [archivo, setArchivo] = useState(null)
+  const [subiendo, setSubiendo] = useState(false)
+  const [toast, setToast] = useState('')
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    fetchTodo()
+    const channel = supabase.channel('puntos-carreras-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'puntos_carreras', filter: `user_id=eq.${user.id}` }, fetchTodo)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
+
+  async function fetchTodo() {
+    const hoy = new Date().toISOString().split('T')[0]
+    const [{ data: parts }, { data: env }] = await Promise.all([
+      supabase.from('participaciones')
+        .select('carrera_id, dorsal, carrera:carreras(id, nombre, fecha, distancia, tipo, flama_points)')
+        .eq('user_id', user.id)
+        .eq('estado', 'Inscripto'),
+      supabase.from('puntos_carreras')
+        .select('*, carrera:carreras(id, nombre, fecha)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+    ])
+
+    const enviadasIds = new Set((env || []).map(e => e.carrera_id))
+    const elegibles = (parts || [])
+      .filter(p => p.carrera && p.carrera.flama_points && p.carrera.fecha < hoy && !enviadasIds.has(p.carrera_id))
+      .map(p => ({ ...p.carrera, dorsal: p.dorsal }))
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
+
+    setPendientes(elegibles)
+    setEnvios(env || [])
+    setLoading(false)
+  }
+
+  async function enviar() {
+    if (!archivo || !dorsal.trim() || !carreraForm) return
+    setSubiendo(true)
+
+    const folder = `flamarun/puntos/${carreraForm.nombre?.replace(/\s+/g, '_') || carreraForm.id}`
+    const fd = new FormData()
+    fd.append('file', archivo)
+    fd.append('upload_preset', PRESET)
+    fd.append('folder', folder)
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!data.secure_url) throw new Error('No se pudo subir la imagen')
+
+      const { error } = await supabase.from('puntos_carreras').insert({
+        user_id: user.id,
+        carrera_id: carreraForm.id,
+        puntos: PUNTOS_POR_CARRERA,
+        foto_url: data.secure_url,
+        foto_public_id: data.public_id,
+        dorsal_declarado: dorsal.trim(),
+        estado: 'pendiente',
+      })
+      if (error) throw error
+
+      setToast('📸 Solicitud enviada — el admin la va a revisar pronto')
+      setTimeout(() => setToast(''), 3000)
+      setCarreraForm(null)
+      setDorsal('')
+      setArchivo(null)
+      fetchTodo()
+    } catch (e) {
+      setToast('❌ Error al enviar: ' + e.message)
+      setTimeout(() => setToast(''), 3000)
+    }
+    setSubiendo(false)
+  }
+
+  const totalPuntos = envios.filter(e => e.estado === 'validado').reduce((acc, e) => acc + (e.puntos || 0), 0)
+
+  if (loading) return <div className="empty-state">Cargando...</div>
+
+  return (
+    <div className="page">
+      <div className="page-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+        <h2>Flama Points</h2>
+        <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Sumá puntos corriendo</span>
+      </div>
+
+      {isAdmin && <RevisionAdmin />}
+
+      {/* Explicación */}
+      <div className="card" style={{ marginBottom: '14px', fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>
+        <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px', fontSize: '14px' }}>¿Qué es esto?</div>
+        Cada vez que completás una carrera en la que estabas anotado/a como "Inscripto" (a partir de Adidas 15K en
+        adelante), podés solicitar <strong style={{ color: 'var(--text)' }}>{PUNTOS_POR_CARRERA} Flama Points</strong>.
+        Para pedirlos, subí una foto donde se vean tu{' '}
+        <strong style={{ color: 'var(--text)' }}>dorsal y tu medalla</strong>. El admin revisa cada solicitud a mano
+        y, si está todo en orden, te acredita los puntos.
+      </div>
+
+      {/* Total */}
+      <div className="card" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '13px', color: 'var(--text2)' }}>Tus puntos acumulados</span>
+        <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent)' }}>🔥 {totalPuntos}</span>
+      </div>
+
+      {/* Carreras pendientes de cargar */}
+      {pendientes.length > 0 && (
+        <div style={{ marginBottom: '18px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+            Carreras completadas
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {pendientes.map(c => (
+              <div key={c.id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '14px' }}>{c.nombre}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{formatFechaCorta(c.fecha)}</div>
+                  </div>
+                  <button className="btn-accent" style={{ fontSize: '12px', height: 32, padding: '0 14px', flexShrink: 0 }}
+                    onClick={() => { setCarreraForm(c); setDorsal(c.dorsal || ''); setArchivo(null) }}>
+                    🏅 Solicitar recompensa
+                  </button>
+                </div>
+
+                {carreraForm?.id === c.id && (
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div className="field" style={{ margin: 0 }}>
+                      <label>Número de dorsal</label>
+                      <input value={dorsal} onChange={e => setDorsal(e.target.value)} placeholder="Ej: 1234" inputMode="numeric" />
+                      {!c.dorsal && (
+                        <span style={{ fontSize: '11px', color: '#fbbf24' }}>No habías cargado tu dorsal al anotarte — confirmalo acá.</span>
+                      )}
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>Selfie con tu dorsal y tu medalla</label>
+                      <input ref={inputRef} type="file" accept="image/*" capture="environment"
+                        onChange={e => setArchivo(e.target.files?.[0] || null)}
+                        style={{ fontSize: '12px', color: 'var(--text2)' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn-accent" disabled={!archivo || !dorsal.trim() || subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36, flex: 1 }}>
+                        {subiendo ? 'Enviando...' : 'Enviar solicitud'}
+                      </button>
+                      <button className="btn-ghost" onClick={() => setCarreraForm(null)} style={{ fontSize: '13px', height: 36 }}>Cancelar</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Historial de envíos */}
+      {envios.length > 0 && (
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+            Mis envíos
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {envios.map(e => {
+              const info = ESTADO_INFO[e.estado] || ESTADO_INFO.pendiente
+              return (
+                <div key={e.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <img src={e.foto_url.replace('/upload/', '/upload/w_120,h_120,c_fill,q_auto/')} alt="" style={{ width: 52, height: 52, borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.carrera?.nombre}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text2)' }}>Dorsal {e.dorsal_declarado}</div>
+                    {e.estado === 'rechazado' && e.motivo && (
+                      <div style={{ fontSize: '11px', color: '#f87171', marginTop: '2px' }}>{e.motivo}</div>
+                    )}
+                  </div>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0,
+                    fontSize: '11px', fontWeight: 700, padding: '4px 9px', borderRadius: '20px',
+                    background: info.bg, color: info.color,
+                  }}>
+                    {info.icon} {e.estado === 'validado' ? `+${e.puntos}` : info.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {pendientes.length === 0 && envios.length === 0 && (
+        <div className="empty-state">Todavía no completaste carreras como "Inscripto". ¡Cuando termines una, vas a poder cargar tu foto acá!</div>
+      )}
+
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', boxShadow: '0 4px 16px rgba(0,0,0,0.3)', zIndex: 100, maxWidth: '90%', textAlign: 'center' }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function formatFechaCorta(fecha) {
+  if (!fecha) return ''
+  const [y, m, d] = fecha.split('-')
+  return `${d}/${m}/${y}`
+}
+
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function Mas({ ventasDisponibles = 0 }) {
@@ -191,6 +489,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       {/* Contenido */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'Alianzas' && <Alianzas />}
+        {tab === 'Flama Points' && <FlamaPoints />}
         {tab === 'Inscripciones' && <Ventas />}
       </div>
     </div>
