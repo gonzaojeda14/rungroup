@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import ConfirmModal from './ConfirmModal'
@@ -18,11 +18,56 @@ export default function FotosModal({ carrera, onClose }) {
   const [seleccionadas, setSeleccionadas] = useState(new Set())
   const [confirmarBorrarSeleccion, setConfirmarBorrarSeleccion] = useState(false)
   const [toast, setToast] = useState('')
+  const [tagsFoto, setTagsFoto] = useState([])
+  const [editandoTags, setEditandoTags] = useState(false)
+  const [todosPerfiles, setTodosPerfiles] = useState(null)
+  const [buscarTag, setBuscarTag] = useState('')
+  const [guardandoTag, setGuardandoTag] = useState({})
   const fotoInputRef = useRef()
 
   useState(() => {
     cargarFotos()
   }, [])
+
+  useEffect(() => {
+    if (!fotoAmpliada) {
+      setTagsFoto([])
+      setEditandoTags(false)
+      setBuscarTag('')
+      return
+    }
+    fetchTags(fotoAmpliada.id)
+  }, [fotoAmpliada?.id])
+
+  async function fetchTags(fotoId) {
+    const { data } = await supabase
+      .from('foto_tags')
+      .select('user_id, profiles!foto_tags_user_id_fkey(nombre)')
+      .eq('foto_id', fotoId)
+    setTagsFoto((data || []).map(t => ({ user_id: t.user_id, nombre: t.profiles?.nombre || '—' })))
+  }
+
+  async function abrirSelectorTags() {
+    if (!todosPerfiles) {
+      const { data } = await supabase.from('profiles').select('id, nombre').order('nombre')
+      setTodosPerfiles(data || [])
+    }
+    setEditandoTags(true)
+  }
+
+  async function toggleTag(perfil) {
+    if (!fotoAmpliada || guardandoTag[perfil.id]) return
+    setGuardandoTag(g => ({ ...g, [perfil.id]: true }))
+    const yaEtiquetado = tagsFoto.some(t => t.user_id === perfil.id)
+    if (yaEtiquetado) {
+      await supabase.from('foto_tags').delete().eq('foto_id', fotoAmpliada.id).eq('user_id', perfil.id)
+      setTagsFoto(tags => tags.filter(t => t.user_id !== perfil.id))
+    } else {
+      await supabase.from('foto_tags').insert({ foto_id: fotoAmpliada.id, user_id: perfil.id, etiquetado_por: user.id })
+      setTagsFoto(tags => [...tags, { user_id: perfil.id, nombre: perfil.nombre }])
+    }
+    setGuardandoTag(g => { const { [perfil.id]: _, ...resto } = g; return resto })
+  }
 
   async function cargarFotos() {
     setLoading(true)
@@ -207,6 +252,61 @@ export default function FotosModal({ carrera, onClose }) {
       {fotoAmpliada && (
         <div onClick={() => setFotoAmpliada(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <img src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')} alt="" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }} />
+
+          <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
+            {tagsFoto.length > 0 && (
+              <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--text2)' }}>
+                <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>Corredores etiquetados</div>
+                {tagsFoto.map(t => t.nombre).join(', ')}
+              </div>
+            )}
+
+            {fotoAmpliada.user_id === user.id && !editandoTags && (
+              <button onClick={abrirSelectorTags} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, cursor: 'pointer' }}>
+                🏷️ Etiquetar compañeros
+              </button>
+            )}
+
+            {editandoTags && (
+              <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 12, maxHeight: 280, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  value={buscarTag}
+                  onChange={e => setBuscarTag(e.target.value)}
+                  placeholder="Buscar compañero..."
+                  style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: 13 }}
+                />
+                <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {(todosPerfiles || [])
+                    .filter(p => p.id !== fotoAmpliada.user_id)
+                    .filter(p => p.nombre?.toLowerCase().includes(buscarTag.toLowerCase()))
+                    .map(p => {
+                      const marcado = tagsFoto.some(t => t.user_id === p.id)
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => toggleTag(p)}
+                          disabled={!!guardandoTag[p.id]}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '8px 12px', borderRadius: 6, border: 'none', textAlign: 'left',
+                            background: marcado ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.05)',
+                            color: '#fff', fontSize: 13, cursor: guardandoTag[p.id] ? 'default' : 'pointer',
+                            opacity: guardandoTag[p.id] ? 0.5 : 1,
+                          }}
+                        >
+                          <span>{p.nombre}</span>
+                          {marcado && <span style={{ color: '#4ade80' }}>✓</span>}
+                        </button>
+                      )
+                    })}
+                </div>
+                <button onClick={() => setEditandoTags(false)} style={{ alignSelf: 'flex-end', padding: '6px 14px', background: 'transparent', border: 'none', color: 'var(--text2)', fontSize: 13, cursor: 'pointer' }}>
+                  Listo
+                </button>
+              </div>
+            )}
+          </div>
+
           <a href={fotoAmpliada.cloudinary_url} download target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ marginTop: 10, padding: '8px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 13, textDecoration: 'none' }}>
             ⬇ Descargar original
           </a>
