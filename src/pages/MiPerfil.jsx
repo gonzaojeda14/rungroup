@@ -1,9 +1,10 @@
 import PageLoader from '../components/PageLoader'
 import RecordsPersonales from '../components/RecordsPersonales'
+import FotosModal from '../components/FotosModal'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFecha, validarTelefono, capitalizarNombre } from '../lib/utils'
+import { formatFecha, validarTelefono, capitalizarNombre, yaEmpezo } from '../lib/utils'
 import PasswordInput from '../components/PasswordInput'
 import { suscribirPush } from '../lib/push'
 
@@ -33,6 +34,9 @@ export default function MiPerfil() {
   const [savingLesion, setSavingLesion] = useState(false)
   const [msgLesion, setMsgLesion] = useState('')
   const [pushStatus, setPushStatus] = useState('idle') // idle | loading | ok | error
+  const [carrerasFotos, setCarrerasFotos] = useState([])
+  const [mostrarSelectorFotos, setMostrarSelectorFotos] = useState(false)
+  const [fotosCarrera, setFotosCarrera] = useState(null)
 
   // Bugs
   const [bugs, setBugs] = useState([])
@@ -48,6 +52,7 @@ export default function MiPerfil() {
   useEffect(() => {
     fetchProfile()
     fetchBugs()
+    fetchCarrerasFotos()
     // Verificar si ya hay suscripción push activa en este dispositivo
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.ready.then(reg => {
@@ -57,6 +62,18 @@ export default function MiPerfil() {
       }).catch(() => {})
     }
   }, [])
+
+  async function fetchCarrerasFotos() {
+    const { data } = await supabase.from('participaciones')
+      .select('carrera:carreras(id, nombre, fecha, hora)')
+      .eq('user_id', user.id)
+      .neq('estado', 'Pendiente')
+    const carreras = (data || [])
+      .map(p => p.carrera)
+      .filter(c => c && yaEmpezo(c.fecha, c.hora))
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
+    setCarrerasFotos(carreras)
+  }
 
   async function fetchBugs() {
     // Borrar los resueltos con más de 24h
@@ -471,6 +488,38 @@ export default function MiPerfil() {
           </span>
         </button>
       </div>
+
+      {/* CARGA DE FOTOS */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>📷 Carga de fotos</h3>
+        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px', lineHeight: 1.4 }}>
+          ¿Tenés fotos de alguna carrera? Subilas acá para que todos las puedan ver.
+        </div>
+        {carrerasFotos.length === 0 ? (
+          <div style={{ fontSize: '13px', color: 'var(--text2)' }}>Todavía no corriste ninguna carrera para subir fotos.</div>
+        ) : !mostrarSelectorFotos ? (
+          <button className="btn-primary" onClick={() => setMostrarSelectorFotos(true)}>Elegir carrera</button>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {carrerasFotos.map(c => (
+              <button
+                key={c.id}
+                onClick={() => { setFotosCarrera(c); setMostrarSelectorFotos(false) }}
+                className="btn-ghost"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', width: '100%' }}
+              >
+                <span>{c.nombre}</span>
+                {c.fecha && <span style={{ fontSize: '12px', color: 'var(--text2)' }}>{formatFecha(c.fecha)}</span>}
+              </button>
+            ))}
+            <button className="btn-ghost" style={{ alignSelf: 'flex-start' }} onClick={() => setMostrarSelectorFotos(false)}>Cancelar</button>
+          </div>
+        )}
+      </div>
+
+      {fotosCarrera && (
+        <FotosModal carrera={fotosCarrera} onClose={() => setFotosCarrera(null)} />
+      )}
 
       {/* RECORDS PERSONALES */}
       <RecordsPersonales />
