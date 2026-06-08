@@ -251,7 +251,11 @@ export default function FotosModal({ carrera, onClose }) {
 
       {fotoAmpliada && (
         <div onClick={() => setFotoAmpliada(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <img src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')} alt="" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }} />
+          <button
+            onClick={e => { e.stopPropagation(); setFotoAmpliada(null) }}
+            style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}
+          >✕</button>
+          <img onClick={e => e.stopPropagation()} src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')} alt="" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }} />
 
           <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
             {tagsFoto.length > 0 && (
@@ -262,49 +266,67 @@ export default function FotosModal({ carrera, onClose }) {
             )}
 
             {fotoAmpliada.user_id === user.id && !editandoTags && (
-              <button onClick={abrirSelectorTags} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, cursor: 'pointer' }}>
+              <button type="button" onClick={abrirSelectorTags} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, cursor: 'pointer' }}>
                 🏷️ Etiquetar compañeros
               </button>
             )}
 
-            {editandoTags && (
-              <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 12, maxHeight: 280, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <input
-                  value={buscarTag}
-                  onChange={e => setBuscarTag(e.target.value)}
-                  placeholder="Buscar compañero..."
-                  style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: 13 }}
-                />
-                <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {(todosPerfiles || [])
-                    .filter(p => p.id !== fotoAmpliada.user_id)
-                    .filter(p => p.nombre?.toLowerCase().includes(buscarTag.toLowerCase()))
-                    .map(p => {
-                      const marcado = tagsFoto.some(t => t.user_id === p.id)
-                      return (
-                        <button
-                          key={p.id}
-                          onClick={() => toggleTag(p)}
-                          disabled={!!guardandoTag[p.id]}
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '8px 12px', borderRadius: 6, border: 'none', textAlign: 'left',
-                            background: marcado ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.05)',
-                            color: '#fff', fontSize: 13, cursor: guardandoTag[p.id] ? 'default' : 'pointer',
-                            opacity: guardandoTag[p.id] ? 0.5 : 1,
-                          }}
-                        >
-                          <span>{p.nombre}</span>
-                          {marcado && <span style={{ color: '#4ade80' }}>✓</span>}
-                        </button>
-                      )
-                    })}
+            {editandoTags && (() => {
+              const MAX_RESULTADOS = 5
+              const texto = buscarTag.trim().toLowerCase()
+              const candidatos = (todosPerfiles || []).filter(p => p.id !== fotoAmpliada.user_id)
+              const resultados = texto
+                ? candidatos.filter(p => p.nombre?.toLowerCase().includes(texto)).slice(0, MAX_RESULTADOS)
+                : candidatos.filter(p => tagsFoto.some(t => t.user_id === p.id))
+              return (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <input
+                    value={buscarTag}
+                    onChange={e => setBuscarTag(e.target.value)}
+                    placeholder="Escribí el nombre del compañero..."
+                    style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: 13 }}
+                  />
+                  {!texto && tagsFoto.length === 0 && (
+                    <div style={{ fontSize: 12, color: 'var(--text2)', padding: '0 2px' }}>
+                      Escribí un nombre para buscar y agregar etiquetas.
+                    </div>
+                  )}
+                  {resultados.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {resultados.map(p => {
+                        const marcado = tagsFoto.some(t => t.user_id === p.id)
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => toggleTag(p)}
+                            disabled={!!guardandoTag[p.id]}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: '8px 12px', borderRadius: 6, border: 'none', textAlign: 'left',
+                              background: marcado ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.05)',
+                              color: '#fff', fontSize: 13, cursor: guardandoTag[p.id] ? 'default' : 'pointer',
+                              opacity: guardandoTag[p.id] ? 0.5 : 1,
+                            }}
+                          >
+                            <span>{p.nombre}</span>
+                            {marcado && <span style={{ color: '#4ade80' }}>✓</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                  {texto && resultados.length === 0 && (
+                    <div style={{ fontSize: 12, color: 'var(--text2)', padding: '0 2px' }}>
+                      Sin resultados para "{buscarTag}".
+                    </div>
+                  )}
+                  <button type="button" onClick={() => setEditandoTags(false)} style={{ alignSelf: 'flex-end', padding: '6px 14px', background: 'transparent', border: 'none', color: 'var(--text2)', fontSize: 13, cursor: 'pointer' }}>
+                    Listo
+                  </button>
                 </div>
-                <button onClick={() => setEditandoTags(false)} style={{ alignSelf: 'flex-end', padding: '6px 14px', background: 'transparent', border: 'none', color: 'var(--text2)', fontSize: 13, cursor: 'pointer' }}>
-                  Listo
-                </button>
-              </div>
-            )}
+              )
+            })()}
           </div>
 
           <a href={fotoAmpliada.cloudinary_url} download target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ marginTop: 10, padding: '8px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 13, textDecoration: 'none' }}>

@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom'
 import PageLoader from '../components/PageLoader'
 import FotosModal from '../components/FotosModal'
 import { useEffect, useState } from 'react'
@@ -84,6 +85,26 @@ export default function Participaciones() {
   const [editandoTiempo, setEditandoTiempo] = useState({}) // { key: true } cuando está en modo edición
   const [savingTiempo, setSavingTiempo] = useState({})
   const [fotosCarrera, setFotosCarrera] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  function abrirGaleria(carrera) {
+    setFotosCarrera(carrera)
+    setSearchParams({ galeria: carrera.id }, { replace: true })
+  }
+
+  function cerrarGaleria() {
+    setFotosCarrera(null)
+    setSearchParams({}, { replace: true })
+  }
+
+  // Restaurar la galería abierta tras un refresh, leyendo el id de la URL
+  useEffect(() => {
+    const galeriaId = searchParams.get('galeria')
+    if (galeriaId && !fotosCarrera && items.length > 0) {
+      const encontrada = items.find(p => p.carrera?.id === galeriaId)?.carrera
+      if (encontrada) setFotosCarrera(encontrada)
+    }
+  }, [searchParams, items])
 
   useEffect(() => {
     fetchMisCarreras()
@@ -381,7 +402,7 @@ export default function Participaciones() {
                   {/* Fotos */}
                   {pasada && (
                     <button
-                      onClick={() => setFotosCarrera(p.carrera)}
+                      onClick={() => abrirGaleria(p.carrera)}
                       style={{ marginTop: '10px', width: '100%', padding: '8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                     >
                       📷 Fotos de la carrera
@@ -458,7 +479,7 @@ export default function Participaciones() {
       {fotosCarrera && (
         <FotosModal
           carrera={fotosCarrera}
-          onClose={() => setFotosCarrera(null)}
+          onClose={cerrarGaleria}
         />
       )}
 
