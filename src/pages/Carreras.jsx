@@ -526,7 +526,7 @@ export default function Carreras() {
               </label>
             </div>
             <div className="field">
-              <label>Flama Points</label>
+              <label>Flamitas</label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
                 onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
               >
@@ -537,7 +537,7 @@ export default function Carreras() {
                 }}>
                   {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
-                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flama Points</span>
+                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flamitas</span>
               </label>
             </div>
             <div className="field full">
@@ -721,7 +721,7 @@ export default function Carreras() {
                     </label>
                   </div>
                   <div className="field">
-                    <label>Flama Points</label>
+                    <label>Flamitas</label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
                       onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
                     >
@@ -732,7 +732,7 @@ export default function Carreras() {
                       }}>
                         {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                       </div>
-                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flama Points</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flamitas</span>
                     </label>
                   </div>
                   <div className="field full">

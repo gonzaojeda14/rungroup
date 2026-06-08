@@ -77,7 +77,7 @@ const MapIcon = () => (
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 
-const TABS = ['Alianzas', 'Flama Points', 'Inscripciones']
+const TABS = ['Alianzas', 'Flamitas', 'Inscripciones']
 
 const ESTADO_INFO = {
   pendiente: { label: 'En revisión', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', icon: '⏳' },
@@ -441,7 +441,7 @@ function RevisionAdmin() {
   return (
     <div style={{ marginBottom: '18px' }}>
       <div style={{ fontSize: '12px', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-        ⏳ Solicitudes de Flama Points por revisar ({escalados.length + trabados.length})
+        ⏳ Solicitudes de Flamitas por revisar ({escalados.length + trabados.length})
       </div>
 
       {escalados.length > 0 && (
@@ -475,7 +475,7 @@ function FlamaPointsProximamente() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '10px', padding: '24px', textAlign: 'center' }}>
       <span style={{ fontSize: '40px' }}>🪙</span>
-      <div style={{ fontSize: '16px', fontWeight: 700 }}>Flama Points</div>
+      <div style={{ fontSize: '16px', fontWeight: 700 }}>Flamitas</div>
       <div style={{ fontSize: '13px', color: 'var(--text2)', maxWidth: '280px', lineHeight: 1.5 }}>
         Próximamente vas a poder sumar puntos por participar en carreras. ¡Estamos terminando de afinar los detalles!
       </div>
@@ -630,7 +630,7 @@ function FlamaPoints() {
         supabase.functions.invoke('validar-dorsal', { body: { envio_id: envioId } }).catch(() => {})
         avisar('📸 Solicitud enviada — la estamos revisando')
       } else {
-        avisar(`✅ ¡Listo! Sumaste ${puntos} Flama Point${puntos === 1 ? '' : 's'}`)
+        avisar(`✅ ¡Listo! Sumaste ${puntos} Flamita${puntos === 1 ? '' : 's'}`)
       }
       setAccion(null)
       setArchivo(null)
@@ -677,7 +677,7 @@ function FlamaPoints() {
         )}
       </div>
       <button className="btn-accent" disabled={subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
-        {subiendo ? 'Enviando...' : `Enviar y sumar ${puntosAccion} ${puntosAccion === 1 ? 'punto' : 'puntos'}`}
+        {subiendo ? 'Enviando...' : `Enviar y sumar ${puntosAccion} ${puntosAccion === 1 ? 'Flamita' : 'Flamitas'}`}
       </button>
       <div style={{ fontSize: '11px', color: 'var(--text2)' }}>
         {esStandFlama
@@ -690,7 +690,7 @@ function FlamaPoints() {
   return (
     <div className="page">
       <div className="page-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-        <h2>Flama Points</h2>
+        <h2>Flamitas</h2>
         <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Sumá puntos corriendo</span>
       </div>
 
@@ -705,11 +705,11 @@ function FlamaPoints() {
         <br /><br />
         🏅 <strong style={{ color: 'var(--text)' }}>Si corriste ("Inscripto")</strong>: subí una foto donde se vea tu{' '}
         <strong style={{ color: 'var(--text)' }}>dorsal</strong> (y, en lo posible, tu <strong style={{ color: 'var(--text)' }}>medalla</strong> —
-        durante la carrera o después, como prefieras) y sumás <strong style={{ color: 'var(--text)' }}>{PUNTOS_INSCRIPTO} Flama Points</strong>.
+        durante la carrera o después, como prefieras) y sumás <strong style={{ color: 'var(--text)' }}>{PUNTOS_INSCRIPTO} Flamitas</strong>.
         <br /><br />
         🧉 <strong style={{ color: 'var(--text)' }}>Si fuiste al Stand Flama</strong>: no hace falta dorsal ni medalla, alcanza con subir{' '}
         <strong style={{ color: 'var(--text)' }}>una foto</strong> de la previa, el aliento o el stand (¡así también tenemos material para las redes!) y sumás{' '}
-        <strong style={{ color: 'var(--text)' }}>{PUNTOS_STAND_FLAMA} Flama Point</strong>.
+        <strong style={{ color: 'var(--text)' }}>{PUNTOS_STAND_FLAMA} Flamita</strong>.
         <br /><br />
         Apenas subís la foto, los puntos se acreditan <strong style={{ color: 'var(--text)' }}>al instante</strong> — no hay que esperar revisión.
         <br /><br />
@@ -953,7 +953,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
               </span>
             )}
             {/* TEMP: notif de Flama Points desactivada hasta que el apartado esté listo para todos. Reactivar quitando "&& false" */}
-            {false && t === 'Flama Points' && isAdmin && flamaPendientes > 0 && (
+            {false && t === 'Flamitas' && isAdmin && flamaPendientes > 0 && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: '4px', verticalAlign: 'middle',
@@ -971,7 +971,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       {/* Contenido */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'Alianzas' && <Alianzas />}
-        {tab === 'Flama Points' && (isAdmin ? <FlamaPoints /> : <FlamaPointsProximamente />)}
+        {tab === 'Flamitas' && (isAdmin ? <FlamaPoints /> : <FlamaPointsProximamente />)}
         {tab === 'Inscripciones' && <Ventas />}
       </div>
     </div>

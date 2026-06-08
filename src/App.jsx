@@ -59,6 +59,7 @@ function Shell() {
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
   const [ventasDisponibles, setVentasDisponibles] = useState(0)
   const [flamaPendientes, setFlamaPendientes] = useState(0)
+  const [totalFlamaPoints, setTotalFlamaPoints] = useState(null)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
 
   useEffect(() => {
@@ -134,6 +135,24 @@ function Shell() {
     return () => { activo = false; supabase.removeChannel(channel) }
   }, [user])
 
+  useEffect(() => {
+    if (!user) return
+    let activo = true
+    async function fetchTotalPoints() {
+      const { data } = await supabase
+        .from('puntos_carreras')
+        .select('puntos')
+        .eq('user_id', user.id)
+        .eq('estado', 'validado')
+      if (activo) setTotalFlamaPoints((data || []).reduce((acc, r) => acc + (r.puntos || 0), 0))
+    }
+    fetchTotalPoints()
+    const ch = supabase.channel('app-flama-total')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'puntos_carreras', filter: `user_id=eq.${user.id}` }, fetchTotalPoints)
+      .subscribe()
+    return () => { activo = false; supabase.removeChannel(ch) }
+  }, [user])
+
   if (loading) return (
     <div className="splash">
       <FlamaLogo height={36} light={modoClaro} />
@@ -149,6 +168,11 @@ function Shell() {
           <FlamaLogo height={28} light={modoClaro} />
         </div>
         <div className="topbar-social">
+          {totalFlamaPoints !== null && totalFlamaPoints > 0 && (
+            <span className="social-btn" title="Mis Flamitas" style={{ fontSize: '13px', fontWeight: 700, cursor: 'default', letterSpacing: '-0.3px' }}>
+              🪙 {totalFlamaPoints}
+            </span>
+          )}
           <a href="https://www.instagram.com/flama.training/" target="_blank" rel="noopener noreferrer" className="social-btn" title="Instagram">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
           </a>
