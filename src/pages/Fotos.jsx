@@ -308,7 +308,7 @@ export default function Fotos() {
               )}
             </div>
 
-            <
+            <a
               href={fotoAmpliada.cloudinary_url}
               download
               target="_blank"
