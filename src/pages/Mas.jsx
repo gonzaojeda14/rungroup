@@ -461,7 +461,7 @@ function RevisionAdmin() {
 function FlamaPointsProximamente() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '10px', padding: '24px', textAlign: 'center' }}>
-      <span style={{ fontSize: '40px' }}>🏅</span>
+      <span style={{ fontSize: '40px' }}>🪙</span>
       <div style={{ fontSize: '16px', fontWeight: 700 }}>Flama Points</div>
       <div style={{ fontSize: '13px', color: 'var(--text2)', maxWidth: '280px', lineHeight: 1.5 }}>
         Próximamente vas a poder sumar puntos por participar en carreras. ¡Estamos terminando de afinar los detalles!
@@ -678,16 +678,7 @@ function FlamaPoints() {
       {/* Total */}
       <div className="card" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: '13px', color: 'var(--text2)' }}>Tus puntos acumulados</span>
-        <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="14.5" cy="4.5" r="1.8" />
-            <path d="M13 6.5 L10 12 L7 14.5" />
-            <path d="M10 12 L13.5 14.5 L12.5 19" />
-            <path d="M11.5 9 L14.5 8" />
-            <path d="M11 10.5 L8.5 12.5" />
-          </svg>
-          {totalPuntos}
-        </span>
+        <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent)' }}>🪙 {totalPuntos}</span>
       </div>
 
       {/* Carreras completadas sin ningún envío todavía */}

@@ -258,7 +258,13 @@ function Shell() {
           <span>Avisos</span>
         </NavLink>
         <NavLink to="/mas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="14.5" cy="4.5" r="1.8" />
+            <path d="M13 6.5 L10 12 L7 14.5" />
+            <path d="M10 12 L13.5 14.5 L12.5 19" />
+            <path d="M11.5 9 L14.5 8" />
+            <path d="M11 10.5 L8.5 12.5" />
+          </svg>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <span>Flama</span>
             {(ventasDisponibles + flamaPendientes) > 0 && (
