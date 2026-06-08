@@ -3,7 +3,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFecha, formatTelefonoWA } from '../lib/utils'
+import { formatFecha, formatTelefonoWA, transferenciaCerrada } from '../lib/utils'
 
 function calcularHorasLimite(fechaCarrera) {
   if (!fechaCarrera) return 24
@@ -94,18 +94,23 @@ export default function Ventas() {
     const [{ data: cars }, { data: vsRaw }] = await Promise.all([
       supabase.from('carreras').select('id, nombre, fecha, distancias, distancia').order('fecha'),
       supabase.from('ventas_inscripciones')
-        .select('*, carrera:carreras(nombre, fecha)')
+        .select('*, carrera:carreras(nombre, fecha, hora)')
         .in('estado', ['disponible', 'ofertada', 'contactada'])
         .order('created_at'),
     ])
 
+    // Las publicaciones de transferencia se ocultan automáticamente 2hs antes
+    // del inicio de la carrera — pasado ese punto ya no tiene sentido ofrecer
+    // o tomar un lugar (no llegaría a confirmarse a tiempo).
+    const vsVigentes = (vsRaw || []).filter(v => !transferenciaCerrada(v.carrera?.fecha, v.carrera?.hora))
+
     // Enriquecer con datos del vendedor desde profiles
-    const vendedorIds = [...new Set((vsRaw || []).map(v => v.vendedor_id))]
+    const vendedorIds = [...new Set(vsVigentes.map(v => v.vendedor_id))]
     const { data: perfiles } = vendedorIds.length
       ? await supabase.from('profiles').select('id, nombre, telefono').in('id', vendedorIds)
       : { data: [] }
     const perfilesMap = Object.fromEntries((perfiles || []).map(p => [p.id, p]))
-    const vs = (vsRaw || []).map(v => ({ ...v, vendedor: perfilesMap[v.vendedor_id] || null }))
+    const vs = vsVigentes.map(v => ({ ...v, vendedor: perfilesMap[v.vendedor_id] || null }))
 
     setCarreras(cars || [])
     setVentas(vs || [])

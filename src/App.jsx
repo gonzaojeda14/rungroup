@@ -13,6 +13,9 @@ import Ventas from './pages/Ventas'
 import Mas from './pages/Mas'
 import Novedades from './pages/Novedades'
 import ResetPassword from './pages/ResetPassword'
+import { yaEmpezo, dentroDePlazo } from './lib/utils'
+
+const PLAZO_RECLAMO_DIAS = 7
 
 function OfertaAlert() {
   const { user } = useAuth()
@@ -55,6 +58,7 @@ function Shell() {
   const [adminMenu, setAdminMenu] = useState(false)
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
   const [ventasDisponibles, setVentasDisponibles] = useState(0)
+  const [flamaPendientes, setFlamaPendientes] = useState(0)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
 
   useEffect(() => {
@@ -90,6 +94,39 @@ function Shell() {
       setVentasDisponibles(count || 0)
     }
     checkVentas()
+  }, [user])
+
+  // Mismo cálculo que el badge de "Flama Points" dentro de Mas.jsx — se replica
+  // acá para que el ícono "Flama" del nav inferior sume AMBAS notificaciones
+  // (inscripciones disponibles + Flama Points pendientes) y no solo una de ellas.
+  useEffect(() => {
+    if (!user) return
+    let activo = true
+    async function calcularFlamaPendientes() {
+      const [{ data: parts }, { data: env }] = await Promise.all([
+        supabase.from('participaciones')
+          .select('carrera_id, carrera:carreras(id, fecha, hora, flama_points)')
+          .eq('user_id', user.id)
+          .eq('estado', 'Inscripto'),
+        supabase.from('puntos_carreras')
+          .select('carrera_id')
+          .eq('user_id', user.id),
+      ])
+      const enviadasIds = new Set((env || []).map(e => e.carrera_id))
+      const cantidad = (parts || [])
+        .filter(p => p.carrera && p.carrera.flama_points
+          && yaEmpezo(p.carrera.fecha, p.carrera.hora)
+          && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
+          && !enviadasIds.has(p.carrera_id))
+        .length
+      if (activo) setFlamaPendientes(cantidad)
+    }
+    calcularFlamaPendientes()
+    const channel = supabase.channel('app-flama-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'puntos_carreras', filter: `user_id=eq.${user.id}` }, calcularFlamaPendientes)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones', filter: `user_id=eq.${user.id}` }, calcularFlamaPendientes)
+      .subscribe()
+    return () => { activo = false; supabase.removeChannel(channel) }
   }, [user])
 
   if (loading) return (
@@ -219,7 +256,7 @@ function Shell() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <span>Flama</span>
-            {ventasDisponibles > 0 && (
+            {(ventasDisponibles + flamaPendientes) > 0 && (
               <span style={{
                 position: 'absolute', top: -4, right: -14,
                 minWidth: 14, height: 14, padding: '0 3px',
@@ -229,7 +266,7 @@ function Shell() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
-                {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
+                {(ventasDisponibles + flamaPendientes) > 9 ? '9+' : (ventasDisponibles + flamaPendientes)}
               </span>
             )}
           </div>

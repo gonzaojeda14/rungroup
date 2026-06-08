@@ -60,6 +60,17 @@ export function dentroDePlazo(fecha, dias) {
   return new Date() < limite
 }
 
+// True si ya se cerró la ventana para publicar/operar transferencias de inscripción
+// para esta carrera — se cierra 2 horas antes del horario de inicio, para evitar
+// transferencias de último momento que no llegarían a confirmarse a tiempo.
+// Las publicaciones que cumplen esta condición deben dejar de listarse.
+export function transferenciaCerrada(fecha, hora) {
+  if (!fecha) return false
+  const inicio = new Date(`${fecha}T${hora || '00:00'}`)
+  const cierre = new Date(inicio.getTime() - 2 * 60 * 60 * 1000)
+  return new Date() >= cierre
+}
+
 // Agrega al calendario: ICS en iOS, Google Calendar en Android/desktop
 export function agregarAlCalendario(nombre, fecha, hora, lugar) {
   if (!fecha) return
