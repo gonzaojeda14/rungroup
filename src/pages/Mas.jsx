@@ -437,6 +437,7 @@ function FlamaPoints() {
   const [loading, setLoading] = useState(true)
   const [pendientes, setPendientes] = useState([])  // carreras completadas, sin ningún envío todavía
   const [envios, setEnvios] = useState([])          // envíos ya hechos (cualquier estado)
+  const [verHistorial, setVerHistorial] = useState(false)  // modal con envíos resueltos hace más de PLAZO_RECLAMO_DIAS
   // accion: { tipo: 'nuevo', carrera } | { tipo: 'reintento', envio } | null
   const [accion, setAccion] = useState(null)
   const [archivo, setArchivo] = useState(null)
@@ -668,63 +669,101 @@ function FlamaPoints() {
         </div>
       )}
 
-      {/* Historial de envíos (acá también vive el reintento, si corresponde) */}
-      {envios.length > 0 && (
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-            Mis envíos
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {envios.map(e => {
-              const info = ESTADO_INFO[e.estado] || ESTADO_INFO.pendiente
-              const puedeReintentar = e.estado === 'rechazado' && e.intentos === 1
-              const enReintento = accion?.tipo === 'reintento' && accion.envio.id === e.id
-              return (
-                <div key={e.id} className="card">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src={e.foto_url.replace('/upload/', '/upload/w_120,h_120,c_fill,q_auto/')} alt="" style={{ width: 52, height: 52, borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.carrera?.nombre}</div>
-                      {e.intentos === 2 && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>2do intento</div>}
-                      {e.motivo && (e.estado === 'rechazado' || e.estado === 'revision_admin') && (
-                        <div style={{ fontSize: '11px', color: '#f87171', marginTop: '2px' }}>{e.motivo}</div>
-                      )}
-                    </div>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0,
-                      fontSize: '11px', fontWeight: 700, padding: '4px 9px', borderRadius: '20px',
-                      background: info.bg, color: info.color,
-                    }}>
-                      {info.icon} {e.estado === 'validado' ? `Aprobado +${e.puntos}` : info.label}
-                    </span>
-                  </div>
+      {/* Historial de envíos (acá también vive el reintento, si corresponde).
+          Se muestran siempre los que siguen "en curso" (sin resolución final
+          — pendiente, escalado a revisión, o rechazado con reintento disponible),
+          sin importar la fecha. Los que ya tienen resolución final (aprobados o
+          rechazados sin más reintentos) se muestran acá solo si la carrera fue
+          dentro de los últimos PLAZO_RECLAMO_DIAS días; los más viejos se ocultan
+          y quedan disponibles en el modal "Ver historial completo". */}
+      {(() => {
+        const enCurso = e => e.estado === 'pendiente' || e.estado === 'revision_admin' || (e.estado === 'rechazado' && e.intentos === 1)
+        const vigentes = envios.filter(e => enCurso(e) || dentroDePlazo(e.carrera?.fecha, PLAZO_RECLAMO_DIAS))
+        const historial = envios.filter(e => !enCurso(e) && !dentroDePlazo(e.carrera?.fecha, PLAZO_RECLAMO_DIAS))
 
-                  {puedeReintentar && (
-                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
-                      {!enReintento ? (
-                        <>
-                          <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '8px' }}>
-                            Tenés <strong style={{ color: 'var(--text)' }}>un último intento</strong> para volver a subir la foto de esta carrera.
-                          </div>
-                          <button className="btn-accent" style={{ fontSize: '12px', height: 32 }} onClick={() => iniciarReintento(e)}>
-                            🔁 Volver a subir foto
-                          </button>
-                        </>
-                      ) : formulario}
-                    </div>
-                  )}
-
-                  {e.estado === 'revision_admin' && (
-                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text2)' }}>
-                      No se pudo confirmar la foto en ninguno de los 2 intentos — el profe va a revisar ambas fotos a mano y darte el veredicto final.
-                    </div>
+        const Envio = ({ e }) => {
+          const info = ESTADO_INFO[e.estado] || ESTADO_INFO.pendiente
+          const puedeReintentar = e.estado === 'rechazado' && e.intentos === 1
+          const enReintento = accion?.tipo === 'reintento' && accion.envio.id === e.id
+          return (
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src={e.foto_url.replace('/upload/', '/upload/w_120,h_120,c_fill,q_auto/')} alt="" style={{ width: 52, height: 52, borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.carrera?.nombre}</div>
+                  {e.intentos === 2 && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>2do intento</div>}
+                  {e.motivo && (e.estado === 'rechazado' || e.estado === 'revision_admin') && (
+                    <div style={{ fontSize: '11px', color: '#f87171', marginTop: '2px' }}>{e.motivo}</div>
                   )}
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0,
+                  fontSize: '11px', fontWeight: 700, padding: '4px 9px', borderRadius: '20px',
+                  background: info.bg, color: info.color,
+                }}>
+                  {info.icon} {e.estado === 'validado' ? `Aprobado +${e.puntos}` : info.label}
+                </span>
+              </div>
+
+              {puedeReintentar && (
+                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                  {!enReintento ? (
+                    <>
+                      <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '8px' }}>
+                        Tenés <strong style={{ color: 'var(--text)' }}>un último intento</strong> para volver a subir la foto de esta carrera.
+                      </div>
+                      <button className="btn-accent" style={{ fontSize: '12px', height: 32 }} onClick={() => iniciarReintento(e)}>
+                        🔁 Volver a subir foto
+                      </button>
+                    </>
+                  ) : formulario}
+                </div>
+              )}
+
+              {e.estado === 'revision_admin' && (
+                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text2)' }}>
+                  No se pudo confirmar la foto en ninguno de los 2 intentos — el profe va a revisar ambas fotos a mano y darte el veredicto final.
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        return (
+          <>
+            {vigentes.length > 0 && (
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+                  Mis envíos
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {vigentes.map(e => <Envio key={e.id} e={e} />)}
+                </div>
+                {historial.length > 0 && (
+                  <button className="btn-ghost" onClick={() => setVerHistorial(true)}
+                    style={{ fontSize: '12px', height: 36, width: '100%', marginTop: '10px', color: 'var(--text2)' }}>
+                    Ver historial completo ({historial.length})
+                  </button>
+                )}
+              </div>
+            )}
+
+            {verHistorial && (
+              <div onClick={() => setVerHistorial(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                <div onClick={ev => ev.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '16px 16px 0 0', maxHeight: '85vh', width: '100%', maxWidth: '520px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700 }}>Historial completo de envíos</div>
+                    <button className="btn-ghost" onClick={() => setVerHistorial(false)} style={{ fontSize: '12px', height: 30, padding: '0 12px' }}>Cerrar</button>
+                  </div>
+                  <div style={{ overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {historial.map(e => <Envio key={e.id} e={e} />)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {pendientes.length === 0 && envios.length === 0 && (
         <div className="empty-state">Todavía no completaste carreras como "Inscripto". ¡Cuando termines una, vas a poder cargar tu foto acá!</div>
