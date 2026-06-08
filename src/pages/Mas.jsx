@@ -721,7 +721,7 @@ function FlamaPoints() {
       {/* Total */}
       <div className="card" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: '13px', color: 'var(--text2)' }}>Tus puntos acumulados</span>
-        <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent)' }}>🪙 {totalPuntos}</span>
+        <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent)' }}>💎 {totalPuntos}</span>
       </div>
 
       {/* Carreras completadas sin ningún envío todavía */}
