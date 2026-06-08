@@ -151,9 +151,8 @@ export default function Novedades() {
       return
     }
 
-    // TEMP: notificación push desactivada para poder probar la publicación de novedades sin spamear. Reactivar quitando "&& false"
     // Disparar push a todos los suscriptores (solo si es publicación inmediata, y solo si se guardó bien)
-    if (!programarEn && false) {
+    if (!programarEn) {
       const { data: { session } } = await supabase.auth.getSession()
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`, {
         method: 'POST',
