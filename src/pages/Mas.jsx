@@ -213,7 +213,7 @@ function CarreraActual() {
     // "Ver quiénes van" de Carreras.jsx, que funciona sin problemas.
     const { data: parts } = await supabase
       .from('participaciones')
-      .select('user_id, asistencia_confirmada')
+      .select('user_id, asistencia_confirmada, asistencia_no_vino')
       .eq('carrera_id', actual.id)
       .eq('estado', 'Inscripto')
     const userIds = (parts || []).map(p => p.user_id)
@@ -245,7 +245,17 @@ function CarreraActual() {
   async function toggleAsistencia(userId, valorActual) {
     setMarcando(prev => ({ ...prev, [userId]: true }))
     await supabase.from('participaciones')
-      .update({ asistencia_confirmada: !valorActual })
+      // Son mutuamente excluyentes: marcar "Llegó" limpia "No vino" y viceversa
+      .update({ asistencia_confirmada: !valorActual, asistencia_no_vino: false })
+      .eq('carrera_id', carrera.id)
+      .eq('user_id', userId)
+    setMarcando(prev => { const n = { ...prev }; delete n[userId]; return n })
+  }
+
+  async function toggleNoVino(userId, valorActual) {
+    setMarcando(prev => ({ ...prev, [userId]: true }))
+    await supabase.from('participaciones')
+      .update({ asistencia_no_vino: !valorActual, asistencia_confirmada: false })
       .eq('carrera_id', carrera.id)
       .eq('user_id', userId)
     setMarcando(prev => { const n = { ...prev }; delete n[userId]; return n })
@@ -260,7 +270,8 @@ function CarreraActual() {
       </div>
       <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '10px', lineHeight: 1.4 }}>
         Marcá a quienes ya viste llegar. Cuando suban su foto pidiendo los puntos, se les va a
-        aprobar directo — sin pasar por el análisis de la IA.
+        aprobar directo — sin pasar por el análisis de la IA. Si marcás "No vino", su solicitud
+        se va a rechazar directo de la misma forma.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {inscriptos.map(it => (
@@ -273,14 +284,28 @@ function CarreraActual() {
                 🏅 Premio reclamado y aprobado
               </span>
             ) : (
-              <button
-                disabled={marcando[it.user_id]}
-                onClick={() => toggleAsistencia(it.user_id, it.asistencia_confirmada)}
-                className={it.asistencia_confirmada ? 'btn-accent' : 'btn-ghost'}
-                style={{ fontSize: '12px', height: 28, padding: '0 12px', flexShrink: 0 }}
-              >
-                {it.asistencia_confirmada ? '✓ Llegó' : 'Marcar que llegó'}
-              </button>
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                <button
+                  disabled={marcando[it.user_id]}
+                  onClick={() => toggleAsistencia(it.user_id, it.asistencia_confirmada)}
+                  className={it.asistencia_confirmada ? 'btn-accent' : 'btn-ghost'}
+                  style={{ fontSize: '12px', height: 28, padding: '0 12px' }}
+                >
+                  {it.asistencia_confirmada ? '✓ Llegó' : 'Marcar que llegó'}
+                </button>
+                <button
+                  disabled={marcando[it.user_id]}
+                  onClick={() => toggleNoVino(it.user_id, it.asistencia_no_vino)}
+                  style={{
+                    fontSize: '12px', height: 28, padding: '0 12px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit',
+                    background: it.asistencia_no_vino ? 'rgba(248,113,113,0.15)' : 'transparent',
+                    color: it.asistencia_no_vino ? '#f87171' : 'var(--text2)',
+                    border: it.asistencia_no_vino ? '1px solid rgba(248,113,113,0.4)' : '1px solid var(--border)',
+                  }}
+                >
+                  {it.asistencia_no_vino ? '✓ No vino' : 'No vino'}
+                </button>
+              </div>
             )}
           </div>
         ))}

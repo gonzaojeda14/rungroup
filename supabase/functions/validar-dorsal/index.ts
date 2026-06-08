@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     // y eso podría dar la sensación de favoritismo o trampa.
     const { data: participacion } = await supabase
       .from('participaciones')
-      .select('asistencia_confirmada')
+      .select('asistencia_confirmada, asistencia_no_vino')
       .eq('user_id', envio.user_id)
       .eq('carrera_id', envio.carrera_id)
       .maybeSingle()
@@ -93,6 +93,30 @@ Deno.serve(async (req) => {
         revisado_at: new Date().toISOString(),
       }).eq('id', envio_id)
       return json({ ok: true, resultado: 'validado', via: 'pre_aprobado' })
+    }
+
+    // ── PRE-RECHAZO ──
+    // Lógica inversa: si el profe marcó "No vino", ya hay confirmación humana
+    // de que no corrió, así que no tiene sentido gastar en análisis de IA —
+    // se rechaza directo. Misma demora artificial de ~1 minuto para que se
+    // vea primero "En revisión" y después el rechazo, en vez de un rechazo
+    // instantáneo que delataría el atajo manual.
+    if (participacion?.asistencia_no_vino) {
+      await supabase.from('validaciones_log').insert({
+        envio_id: envio.id,
+        intento: envio.intentos,
+        modo: 'pre_rechazado',
+        resultado: JSON.stringify({ asistencia_no_vino: true }),
+      })
+
+      await new Promise(resolve => setTimeout(resolve, 60_000))
+
+      await supabase.from('puntos_carreras').update({
+        estado: 'rechazado',
+        motivo: 'Según el registro del profe, no corriste esta carrera',
+        revisado_at: new Date().toISOString(),
+      }).eq('id', envio_id)
+      return json({ ok: true, resultado: 'rechazado', via: 'pre_rechazado' })
     }
 
     let analisis: { dorsal_visible: boolean; numero_detectado: string | null; medalla_visible: boolean; confianza: string } | null
