@@ -259,11 +259,9 @@ function Shell() {
         </NavLink>
         <NavLink to="/mas" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="14.5" cy="4.5" r="1.8" />
-            <path d="M13 6.5 L10 12 L7 14.5" />
-            <path d="M10 12 L13.5 14.5 L12.5 19" />
-            <path d="M11.5 9 L14.5 8" />
-            <path d="M11 10.5 L8.5 12.5" />
+            <path d="M3 17.5c0-1.7 1.1-2.7 2.8-3.2l4.7-1.4 3.6-2.7c.9-.7 2-1 3.1-1h1.8c1.4 0 2.5 1.1 2.5 2.5V16a2 2 0 0 1-2 2H4a1 1 0 0 1-1-1z" />
+            <path d="M7 13.6V10.2" />
+            <path d="M10.5 12.4V9.4" />
           </svg>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <span>Flama</span>
