@@ -206,12 +206,25 @@ function CarreraActual() {
     if (!actual) { setCarrera(null); setInscriptos([]); setLoading(false); return }
 
     setCarrera(actual)
+    // OJO: se evita el join embebido `corredor:profiles!user_id(...)` porque
+    // PostgREST no reconoce esa relación para `participaciones` (sí funciona
+    // para `puntos_carreras`, que es otra tabla) — la consulta entera fallaba
+    // en silencio y devolvía vacío. Se trae todo por separado, igual que en
+    // "Ver quiénes van" de Carreras.jsx, que funciona sin problemas.
     const { data: parts } = await supabase
       .from('participaciones')
-      .select('user_id, asistencia_confirmada, corredor:profiles!user_id(nombre)')
+      .select('user_id, asistencia_confirmada')
       .eq('carrera_id', actual.id)
       .eq('estado', 'Inscripto')
-    const ordenados = (parts || []).sort((a, b) => (a.corredor?.nombre || '').localeCompare(b.corredor?.nombre || '', 'es'))
+    const userIds = (parts || []).map(p => p.user_id)
+    let perfilMap = {}
+    if (userIds.length > 0) {
+      const { data: perfiles } = await supabase.from('profiles').select('id, nombre').in('id', userIds)
+      perfilMap = Object.fromEntries((perfiles || []).map(p => [p.id, p]))
+    }
+    const ordenados = (parts || [])
+      .map(p => ({ ...p, corredor: perfilMap[p.user_id] || null }))
+      .sort((a, b) => (a.corredor?.nombre || '').localeCompare(b.corredor?.nombre || '', 'es'))
     setInscriptos(ordenados)
     setLoading(false)
   }
