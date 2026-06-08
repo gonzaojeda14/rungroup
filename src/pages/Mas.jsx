@@ -455,6 +455,21 @@ function RevisionAdmin() {
   )
 }
 
+// Mientras se termina de pulir el flujo de Flama Points, los no-admin ven un
+// simple "Próximamente" en vez de la sección completa (que sigue funcionando
+// para el admin, que la sigue probando y ajustando).
+function FlamaPointsProximamente() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '10px', padding: '24px', textAlign: 'center' }}>
+      <span style={{ fontSize: '40px' }}>🏅</span>
+      <div style={{ fontSize: '16px', fontWeight: 700 }}>Flama Points</div>
+      <div style={{ fontSize: '13px', color: 'var(--text2)', maxWidth: '280px', lineHeight: 1.5 }}>
+        Próximamente vas a poder sumar puntos por participar en carreras. ¡Estamos terminando de afinar los detalles!
+      </div>
+    </div>
+  )
+}
+
 // ─── SECCIÓN FLAMA POINTS ─────────────────────────────────────────────────────
 
 function FlamaPoints() {
@@ -812,7 +827,7 @@ function formatFechaCorta(fecha) {
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function Mas({ ventasDisponibles = 0 }) {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   // Recordamos la última pestaña elegida (en sessionStorage) para que, al
   // navegar a otra sección y volver a "Más", no se reinicie en "Alianzas".
   const [tab, setTab] = useState(() => {
@@ -888,7 +903,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
                 {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
               </span>
             )}
-            {t === 'Flama Points' && flamaPendientes > 0 && (
+            {t === 'Flama Points' && isAdmin && flamaPendientes > 0 && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: '4px', verticalAlign: 'middle',
@@ -906,7 +921,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       {/* Contenido */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'Alianzas' && <Alianzas />}
-        {tab === 'Flama Points' && <FlamaPoints />}
+        {tab === 'Flama Points' && (isAdmin ? <FlamaPoints /> : <FlamaPointsProximamente />)}
         {tab === 'Inscripciones' && <Ventas />}
       </div>
     </div>
