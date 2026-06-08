@@ -720,6 +720,21 @@ export default function Carreras() {
                       <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
                     </label>
                   </div>
+                  <div className="field">
+                    <label>Flama Points</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                      onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
+                    >
+                      <div style={{
+                        width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
+                        background: form.flama_points ? 'var(--accent)' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
+                      }}>
+                        {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flama Points</span>
+                    </label>
+                  </div>
                   <div className="field full">
                     <label>Link de inscripción</label>
                     <input value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} placeholder="https://..." />
