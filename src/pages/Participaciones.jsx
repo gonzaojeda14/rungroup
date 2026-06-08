@@ -73,8 +73,9 @@ export default function Participaciones() {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtro, setFiltro] = useState(() => localStorage.getItem('agenda_filtro') || 'proximas')
+  const [filtro, setFiltro] = useState(() => localStorage.getItem('agenda_filtro') || 'recientes')
   const [mesActivo, setMesActivo] = useState(() => localStorage.getItem('agenda_mes') || null)
+  const [showFiltros, setShowFiltros] = useState(false)
 
   function setFiltroGuardado(val) { setFiltro(val); localStorage.setItem('agenda_filtro', val) }
   function setMesActivoGuardado(val) { setMesActivo(val); val ? localStorage.setItem('agenda_mes', val) : localStorage.removeItem('agenda_mes') }
@@ -215,9 +216,11 @@ export default function Participaciones() {
   }
 
   const hoy = new Date().toISOString().split('T')[0]
+  const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
   const filtradas = items.filter(p => {
     if (filtro === 'proximas' && p.carrera?.fecha && p.carrera.fecha < hoy) return false
+    if (filtro === 'recientes' && p.carrera?.fecha && p.carrera.fecha < hace7dias) return false
     return true
   })
 
@@ -259,27 +262,73 @@ export default function Participaciones() {
     <div className="page">
       <div className="page-header">
         <h2>Historial</h2>
-        <div className="filtro-group">
-          {[['proximas', 'Próximas'], ['todas', 'Todas']].map(([val, label]) => (
-            <button key={val} className={`filtro-btn ${filtro === val ? 'active' : ''}`} onClick={() => setFiltroGuardado(val)}>{label}</button>
-          ))}
-        </div>
       </div>
 
-      {mesesDisponibles.length > 1 && (
-        <div className="filtros-bar" style={{ marginBottom: '12px' }}>
-          <div className="filtro-group">
-            <button className={`filtro-btn ${!mesActivo ? 'active' : ''}`} onClick={() => setMesActivoGuardado(null)}>Todos</button>
-            {mesesDisponibles.map(m => (
-              <button key={m.key} className={`filtro-btn ${mesActivo === m.key ? 'active' : ''}`} onClick={() => setMesActivoGuardado(m.key)}>{m.label}</button>
-            ))}
+      {/* Botón filtros */}
+      <div style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button
+          onClick={() => setShowFiltros(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            background: (filtro !== 'recientes' || mesActivo) ? 'rgba(255,45,45,0.12)' : 'var(--bg3)',
+            border: (filtro !== 'recientes' || mesActivo) ? '1px solid rgba(255,45,45,0.4)' : '1px solid var(--border)',
+            color: (filtro !== 'recientes' || mesActivo) ? 'var(--accent)' : 'var(--text2)',
+            borderRadius: '8px', padding: '7px 14px', fontSize: '13px',
+            cursor: 'pointer', fontFamily: 'inherit', fontWeight: (filtro !== 'recientes' || mesActivo) ? 600 : 400,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filtros
+        </button>
+        {(filtro !== 'recientes' || mesActivo) && (
+          <button
+            onClick={() => { setFiltroGuardado('recientes'); setMesActivoGuardado(null) }}
+            style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
+
+      {showFiltros && (
+        <>
+          <div onClick={() => setShowFiltros(false)} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)' }} />
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 70, background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', padding: '20px 16px 32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <span style={{ fontWeight: 700, fontSize: '15px' }}>Filtros</span>
+              <button onClick={() => setShowFiltros(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Período</div>
+                <div className="filtro-group">
+                  {[['recientes', 'Recientes'], ['proximas', 'Próximas'], ['todas', 'Todas']].map(([val, label]) => (
+                    <button key={val} className={`filtro-btn ${filtro === val ? 'active' : ''}`} onClick={() => setFiltroGuardado(val)}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              {mesesDisponibles.length > 1 && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Mes</div>
+                  <div className="filtro-group" style={{ flexWrap: 'wrap' }}>
+                    <button className={`filtro-btn ${!mesActivo ? 'active' : ''}`} onClick={() => setMesActivoGuardado(null)}>Todos</button>
+                    {mesesDisponibles.map(m => (
+                      <button key={m.key} className={`filtro-btn ${mesActivo === m.key ? 'active' : ''}`} onClick={() => setMesActivoGuardado(m.key)}>{m.label}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button className="btn-primary" style={{ width: '100%', marginTop: '20px', height: '44px' }} onClick={() => setShowFiltros(false)}>
+              Ver {porFiltroMes.length} carrera{porFiltroMes.length !== 1 ? 's' : ''}
+            </button>
           </div>
-        </div>
+        </>
       )}
 
       {porFiltroMes.length === 0 && (
         <div className="empty-state">
-          {filtro === 'proximas' ? 'No tenés carreras próximas marcadas' : 'No tenés carreras marcadas todavía'}
+          {filtro === 'proximas' ? 'No tenés carreras próximas marcadas' : filtro === 'recientes' ? 'No tenés carreras recientes marcadas' : 'No tenés carreras marcadas todavía'}
         </div>
       )}
 
