@@ -363,7 +363,10 @@ export default function Novedades() {
                         // En iOS PWA target="_blank" abre un webview in-app que queda en blanco.
                         // En mobile navegamos directo (Safari abre el archivo y el back vuelve a la app).
                         // En desktop abrimos en pestaña nueva.
-                        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                        // iOS PWA: target="_blank" abre un webview que queda en blanco con archivos de Supabase.
+                        // Solución: navegar directo (Safari abre el archivo, back button vuelve a la app).
+                        // Android y desktop: window.open funciona bien y abre en nueva pestaña sin efectos raros.
+                        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
                           window.location.href = url
                         } else {
                           window.open(url, '_blank', 'noopener,noreferrer')
