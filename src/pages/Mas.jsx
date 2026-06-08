@@ -167,7 +167,7 @@ function Alianzas() {
 // ─── REVISIÓN ADMIN ──────────────────────────────────────────────────────────
 // La IA resuelve la gran mayoría sola (validado / rechazado en el intento 1).
 // Acá solo llegan los casos que necesitan ojo humano:
-//   • "revision_admin" → la IA no pudo confirmar el dorsal en NINGUNO de los 2
+//   • "revision_admin" → la IA no pudo confirmar la foto (dorsal + medalla) en NINGUNO de los 2
 //     intentos. Se ven ambas fotos lado a lado y el admin da el veredicto final
 //     (no hay más reintentos posibles para el corredor).
 //   • "pendiente" colgado → quedó sin resolver (p. ej. la función falló). Sirve
@@ -228,14 +228,14 @@ function RevisionAdmin() {
             <div key={it.id} className="card">
               <div style={{ fontSize: '11px', fontWeight: 700, color: escalado ? '#fbbf24' : 'var(--text2)', marginBottom: '8px' }}>
                 {escalado
-                  ? '⚠️ La IA no pudo confirmar el dorsal en sus 2 intentos — necesita tu veredicto final'
+                  ? '⚠️ La IA no pudo confirmar la foto en sus 2 intentos — necesita tu veredicto final'
                   : '⏳ Esperando validación automática (puede haberse trabado)'}
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 {escalado ? (
                   <>
-                    <Foto url={it.foto_url_anterior} label={`Intento 1 · Dorsal: ${it.dorsal_declarado_anterior ?? '—'}`} />
-                    <Foto url={it.foto_url} label={`Intento 2 · Dorsal: ${it.dorsal_declarado}`} />
+                    <Foto url={it.foto_url_anterior} label="Intento 1" />
+                    <Foto url={it.foto_url} label="Intento 2" />
                   </>
                 ) : (
                   <Foto url={it.foto_url} />
@@ -244,7 +244,6 @@ function RevisionAdmin() {
               <div style={{ marginTop: '10px', fontSize: '13px' }}>
                 <div style={{ fontWeight: 700 }}>{it.corredor?.nombre}</div>
                 <div style={{ color: 'var(--text2)', fontSize: '12px' }}>{it.carrera?.nombre}</div>
-                {!escalado && <div style={{ marginTop: '4px' }}>Dorsal declarado: <strong>{it.dorsal_declarado}</strong></div>}
                 {it.motivo && <div style={{ fontSize: '11px', color: '#fbbf24', marginTop: '4px' }}>{it.motivo}</div>}
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
@@ -274,7 +273,6 @@ function FlamaPoints() {
   const [envios, setEnvios] = useState([])          // envíos ya hechos (cualquier estado)
   // accion: { tipo: 'nuevo', carrera } | { tipo: 'reintento', envio } | null
   const [accion, setAccion] = useState(null)
-  const [dorsal, setDorsal] = useState('')
   const [archivo, setArchivo] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
   const [subiendo, setSubiendo] = useState(false)
@@ -324,13 +322,11 @@ function FlamaPoints() {
 
   function iniciarNuevo(carrera) {
     setAccion({ tipo: 'nuevo', carrera })
-    setDorsal(carrera.dorsal || '')
     setArchivo(null)
   }
 
   function iniciarReintento(envio) {
     setAccion({ tipo: 'reintento', envio })
-    setDorsal(envio.dorsal_declarado || '')
     setArchivo(null)
   }
 
@@ -345,14 +341,6 @@ function FlamaPoints() {
   // cancelar una vez enviada.
   async function enviar() {
     if (!accion) return
-    if (!dorsal.trim() && !archivo) {
-      avisar('⚠️ Te falta cargar el número de dorsal y la foto')
-      return
-    }
-    if (!dorsal.trim()) {
-      avisar('⚠️ Te falta cargar el número de dorsal')
-      return
-    }
     if (!archivo) {
       avisar('⚠️ Te falta cargar la foto')
       return
@@ -383,10 +371,8 @@ function FlamaPoints() {
           motivo: null,
           foto_url_anterior: previo.foto_url,
           foto_public_id_anterior: previo.foto_public_id,
-          dorsal_declarado_anterior: previo.dorsal_declarado,
           foto_url: data.secure_url,
           foto_public_id: data.public_id,
-          dorsal_declarado: dorsal.trim(),
         }).eq('id', previo.id)
         if (error) throw error
         envioId = previo.id
@@ -398,7 +384,6 @@ function FlamaPoints() {
           intentos: 1,
           foto_url: data.secure_url,
           foto_public_id: data.public_id,
-          dorsal_declarado: dorsal.trim(),
           estado: 'pendiente',
         }).select('id').single()
         if (error) throw error
@@ -411,7 +396,6 @@ function FlamaPoints() {
 
       avisar('📸 Solicitud enviada — la estamos revisando')
       setAccion(null)
-      setDorsal('')
       setArchivo(null)
       fetchTodo()
     } catch (e) {
@@ -430,17 +414,15 @@ function FlamaPoints() {
   // sacándote del campo después de cada carácter (y reseteando el selector de archivo).
   const formulario = (
     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      <div className="field" style={{ margin: 0 }}>
-        <label>Número de dorsal</label>
-        <input value={dorsal} onChange={e => setDorsal(e.target.value)} placeholder="Ej: 1234 o A1234" />
-      </div>
       <div>
-        <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>Selfie con tu dorsal y tu medalla</label>
+        <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>
+          Foto con tu dorsal y tu medalla — selfie o que te la saquen, las dos valen
+        </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {fotoPreview && (
             <img src={fotoPreview} alt="Vista previa de la foto" style={{ width: 56, height: 56, borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
           )}
-          <input ref={inputRef} type="file" accept="image/*" capture="environment"
+          <input ref={inputRef} type="file" accept="image/*"
             onChange={e => setArchivo(e.target.files?.[0] || null)}
             style={{ fontSize: '12px', color: 'var(--text2)', minWidth: 0 }} />
         </div>
@@ -452,7 +434,7 @@ function FlamaPoints() {
         {subiendo ? 'Enviando...' : 'Enviar solicitud'}
       </button>
       <div style={{ fontSize: '11px', color: 'var(--text2)' }}>
-        ⚠️ Una vez enviada no se puede cancelar — revisá la foto y el dorsal antes de mandarla.
+        ⚠️ Una vez enviada no se puede cancelar — revisá que se vea bien el dorsal y la medalla antes de mandarla.
       </div>
     </div>
   )
@@ -471,9 +453,9 @@ function FlamaPoints() {
         <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px', fontSize: '14px' }}>¿Qué es esto?</div>
         Cada vez que completás una carrera en la que estabas anotado/a como "Inscripto" (a partir de Adidas 15K en
         adelante), podés solicitar <strong style={{ color: 'var(--text)' }}>{PUNTOS_POR_CARRERA} Flama Points</strong>{' '}
-        subiendo una selfie donde se vean tu <strong style={{ color: 'var(--text)' }}>dorsal y tu medalla</strong>.
-        Una IA revisa la foto al toque: si confirma tu dorsal, los puntos se acreditan en el momento. Si no logra
-        confirmarlo, tenés <strong style={{ color: 'var(--text)' }}>una segunda oportunidad</strong> para volver a
+        subiendo una foto (selfie o que te la saquen) donde se vean tu <strong style={{ color: 'var(--text)' }}>dorsal y tu medalla</strong>.
+        Una IA revisa la foto al toque: si los confirma, los puntos se acreditan en el momento. Si no logra
+        confirmarlos, tenés <strong style={{ color: 'var(--text)' }}>una segunda oportunidad</strong> para volver a
         subir la foto — y si tampoco se puede confirmar esa vez, el profe lo revisa a mano y da el veredicto final.
       </div>
 
@@ -528,7 +510,7 @@ function FlamaPoints() {
                     <img src={e.foto_url.replace('/upload/', '/upload/w_120,h_120,c_fill,q_auto/')} alt="" style={{ width: 52, height: 52, borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.carrera?.nombre}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text2)' }}>Dorsal {e.dorsal_declarado}{e.intentos === 2 && ' · 2do intento'}</div>
+                      {e.intentos === 2 && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>2do intento</div>}
                       {e.motivo && (e.estado === 'rechazado' || e.estado === 'revision_admin') && (
                         <div style={{ fontSize: '11px', color: '#f87171', marginTop: '2px' }}>{e.motivo}</div>
                       )}
@@ -559,7 +541,7 @@ function FlamaPoints() {
 
                   {e.estado === 'revision_admin' && (
                     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text2)' }}>
-                      No se pudo confirmar el dorsal en ninguno de los 2 intentos — el profe va a revisar ambas fotos a mano y darte el veredicto final.
+                      No se pudo confirmar la foto en ninguno de los 2 intentos — el profe va a revisar ambas fotos a mano y darte el veredicto final.
                     </div>
                   )}
                 </div>
