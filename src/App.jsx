@@ -265,7 +265,8 @@ function Shell() {
           </svg>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <span>Flama</span>
-            {(ventasDisponibles + flamaPendientes) > 0 && (
+            {/* TEMP: Flama Points notifs desactivadas hasta que el apartado esté listo para todos. Reactivar sumando + flamaPendientes de nuevo */}
+            {(ventasDisponibles) > 0 && (
               <span style={{
                 position: 'absolute', top: -4, right: -14,
                 minWidth: 14, height: 14, padding: '0 3px',
@@ -275,7 +276,7 @@ function Shell() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
-                {(ventasDisponibles + flamaPendientes) > 9 ? '9+' : (ventasDisponibles + flamaPendientes)}
+                {(ventasDisponibles) > 9 ? '9+' : (ventasDisponibles)}
               </span>
             )}
           </div>

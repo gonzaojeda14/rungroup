@@ -903,7 +903,8 @@ export default function Mas({ ventasDisponibles = 0 }) {
                 {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
               </span>
             )}
-            {t === 'Flama Points' && isAdmin && flamaPendientes > 0 && (
+            {/* TEMP: notif de Flama Points desactivada hasta que el apartado esté listo para todos. Reactivar quitando "&& false" */}
+            {false && t === 'Flama Points' && isAdmin && flamaPendientes > 0 && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: '4px', verticalAlign: 'middle',
