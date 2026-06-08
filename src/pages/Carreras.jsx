@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFechaHora } from '../lib/utils'
+import { formatFechaHora, yaEmpezo } from '../lib/utils'
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
@@ -752,6 +752,11 @@ export default function Carreras() {
 
           const part = participaciones.find(p => p.carrera_id === c.id)
           const estado = part?.estado || 'Pendiente'
+          // Una vez que la carrera ya arrancó, no se puede modificar el estado
+          // de participación — habilitar eso permitiría, por ejemplo, marcarse
+          // "Inscripto" después y subir fotos pidiendo Flama Points de una
+          // carrera que en realidad nunca se corrió.
+          const carreraPasada = yaEmpezo(c.fecha, c.hora)
           const dists = getDistancias(c)
           const multiDist = dists.length > 1
           const distSeleccionada = distanciasSeleccionadas[c.id] || (dists.length === 1 ? dists[0] : null)
@@ -919,8 +924,9 @@ export default function Carreras() {
                 <div className="race-estado-label">
                   Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
                   {distSeleccionada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
+                  {carreraPasada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '11px' }}> · ya no se puede modificar (la carrera ya pasó)</span>}
                 </div>
-                <div className="estado-buttons">
+                <div className="estado-buttons" style={carreraPasada ? { opacity: 0.35, pointerEvents: 'none' } : {}}>
                   {ESTADOS.map(e => (
                     <EstadoBtnConInfo
                       key={e}

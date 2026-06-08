@@ -218,12 +218,25 @@ function CarreraActual() {
       .eq('estado', 'Inscripto')
     const userIds = (parts || []).map(p => p.user_id)
     let perfilMap = {}
+    let aprobadosSet = new Set()
     if (userIds.length > 0) {
       const { data: perfiles } = await supabase.from('profiles').select('id, nombre').in('id', userIds)
       perfilMap = Object.fromEntries((perfiles || []).map(p => [p.id, p]))
+
+      // Si ya se le aprobaron los puntos para esta carrera, se bloquea el
+      // marcado de asistencia — de lo contrario el admin podría desmarcar
+      // "Llegó" después de haber pagado el premio, lo cual no tiene sentido
+      // (y podría confundir o generar reclamos).
+      const { data: puntosAprobados } = await supabase
+        .from('puntos_carreras')
+        .select('user_id')
+        .eq('carrera_id', actual.id)
+        .eq('estado', 'validado')
+        .in('user_id', userIds)
+      aprobadosSet = new Set((puntosAprobados || []).map(p => p.user_id))
     }
     const ordenados = (parts || [])
-      .map(p => ({ ...p, corredor: perfilMap[p.user_id] || null }))
+      .map(p => ({ ...p, corredor: perfilMap[p.user_id] || null, aprobado: aprobadosSet.has(p.user_id) }))
       .sort((a, b) => (a.corredor?.nombre || '').localeCompare(b.corredor?.nombre || '', 'es'))
     setInscriptos(ordenados)
     setLoading(false)
@@ -252,15 +265,23 @@ function CarreraActual() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {inscriptos.map(it => (
           <div key={it.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', background: 'var(--bg3)', borderRadius: '8px' }}>
-            <span style={{ fontSize: '13px' }}>{it.corredor?.nombre || '—'}</span>
-            <button
-              disabled={marcando[it.user_id]}
-              onClick={() => toggleAsistencia(it.user_id, it.asistencia_confirmada)}
-              className={it.asistencia_confirmada ? 'btn-accent' : 'btn-ghost'}
-              style={{ fontSize: '12px', height: 28, padding: '0 12px', flexShrink: 0 }}
-            >
-              {it.asistencia_confirmada ? '✓ Llegó' : 'Marcar que llegó'}
-            </button>
+            <span style={{ fontSize: '13px', textDecoration: it.aprobado ? 'line-through' : 'none', color: it.aprobado ? 'var(--text2)' : 'inherit' }}>
+              {it.corredor?.nombre || '—'}
+            </span>
+            {it.aprobado ? (
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#4ade80', background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '6px', padding: '4px 10px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                🏅 Premio reclamado y aprobado
+              </span>
+            ) : (
+              <button
+                disabled={marcando[it.user_id]}
+                onClick={() => toggleAsistencia(it.user_id, it.asistencia_confirmada)}
+                className={it.asistencia_confirmada ? 'btn-accent' : 'btn-ghost'}
+                style={{ fontSize: '12px', height: 28, padding: '0 12px', flexShrink: 0 }}
+              >
+                {it.asistencia_confirmada ? '✓ Llegó' : 'Marcar que llegó'}
+              </button>
+            )}
           </div>
         ))}
         {inscriptos.length === 0 && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>Todavía no hay inscriptos para esta carrera.</div>}
