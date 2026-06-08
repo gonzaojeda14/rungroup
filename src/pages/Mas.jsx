@@ -8,7 +8,20 @@ const PLAZO_RECLAMO_DIAS = 7
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-const PUNTOS_POR_CARRERA = 10
+
+// Puntos otorgados según el tipo de participación al subir la foto
+const PUNTOS_INSCRIPTO = 2
+const PUNTOS_STAND_FLAMA = 1
+
+// ─── AUTOMATIZACIÓN POR IA ───────────────────────────────────────────────────
+// Para Flama (este grupo) el otorgamiento es 100% automático: al subir la foto
+// se acreditan los puntos en el momento, sin revisión de por medio.
+//
+// La validación automática por IA (edge function `validar-dorsal`, reintentos,
+// escalado a revisión del admin, etc.) queda armada y funcionando en el código,
+// pero DESACTIVADA acá. Si en el futuro este aplicativo se escala a otros grupos
+// y se quiere usar ese flujo de validación, alcanza con poner esta constante en `true`.
+const AUTOMATIZACION_IA_ACTIVA = false
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -497,9 +510,9 @@ function FlamaPoints() {
   async function fetchTodo() {
     const [{ data: parts }, { data: env }] = await Promise.all([
       supabase.from('participaciones')
-        .select('carrera_id, carrera:carreras(id, nombre, fecha, hora, distancia, tipo, flama_points)')
+        .select('carrera_id, estado, carrera:carreras(id, nombre, fecha, hora, distancia, tipo, flama_points)')
         .eq('user_id', user.id)
-        .eq('estado', 'Inscripto'),
+        .in('estado', ['Inscripto', 'Stand Flama']),
       supabase.from('puntos_carreras')
         .select('*, carrera:carreras(id, nombre, fecha)')
         .eq('user_id', user.id)
@@ -509,12 +522,13 @@ function FlamaPoints() {
     const enviadasIds = new Set((env || []).map(e => e.carrera_id))
     // Habilitada para pedir Flama Points desde el horario de INICIO de la carrera
     // (no recién al día siguiente) y solo dentro del plazo de reclamo.
+    // Para "Inscripto" y "Stand Flama" — cada uno con su propia foto y puntaje.
     const elegibles = (parts || [])
       .filter(p => p.carrera && p.carrera.flama_points
         && yaEmpezo(p.carrera.fecha, p.carrera.hora)
         && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
         && !enviadasIds.has(p.carrera_id))
-      .map(p => ({ ...p.carrera }))
+      .map(p => ({ ...p.carrera, _tipoParticipacion: p.estado }))
       .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
 
     setPendientes(elegibles)
@@ -561,6 +575,10 @@ function FlamaPoints() {
     const esReintento = accion.tipo === 'reintento'
     const carrera = esReintento ? accion.envio.carrera : accion.carrera
     const carreraId = esReintento ? accion.envio.carrera_id : accion.carrera.id
+    // Tipo de participación con la que se solicita (define la foto pedida y el puntaje):
+    // para un envío nuevo viene de la carrera elegible; para un reintento, del envío original.
+    const tipoParticipacion = esReintento ? accion.envio.tipo_participacion : accion.carrera._tipoParticipacion
+    const puntos = tipoParticipacion === 'Stand Flama' ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO
     const folder = `flamarun/puntos/${carrera?.nombre?.replace(/\s+/g, '_') || carreraId}`
 
     const fd = new FormData()
@@ -573,12 +591,16 @@ function FlamaPoints() {
       const data = await res.json()
       if (!data.secure_url) throw new Error('No se pudo subir la imagen')
 
+      // Sin automatización por IA: el otorgamiento es inmediato al subir la foto.
+      // Con automatización activa (uso futuro / otros grupos): queda pendiente de validación.
+      const estadoInicial = AUTOMATIZACION_IA_ACTIVA ? 'pendiente' : 'validado'
+
       let envioId
       if (esReintento) {
         const previo = accion.envio
         const { error } = await supabase.from('puntos_carreras').update({
           intentos: 2,
-          estado: 'pendiente',
+          estado: estadoInicial,
           motivo: null,
           foto_url_anterior: previo.foto_url,
           foto_public_id_anterior: previo.foto_public_id,
@@ -591,21 +613,25 @@ function FlamaPoints() {
         const { data: inserted, error } = await supabase.from('puntos_carreras').insert({
           user_id: user.id,
           carrera_id: carreraId,
-          puntos: PUNTOS_POR_CARRERA,
+          tipo_participacion: tipoParticipacion,
+          puntos,
           intentos: 1,
           foto_url: data.secure_url,
           foto_public_id: data.public_id,
-          estado: 'pendiente',
+          estado: estadoInicial,
         }).select('id').single()
         if (error) throw error
         envioId = inserted.id
       }
 
-      // Dispara la validación — 1 sola llamada por intento, nunca más
-      // (la propia función es idempotente: si el envío ya no está "pendiente", no hace nada)
-      supabase.functions.invoke('validar-dorsal', { body: { envio_id: envioId } }).catch(() => {})
-
-      avisar('📸 Solicitud enviada — la estamos revisando')
+      if (AUTOMATIZACION_IA_ACTIVA) {
+        // Dispara la validación — 1 sola llamada por intento, nunca más
+        // (la propia función es idempotente: si el envío ya no está "pendiente", no hace nada)
+        supabase.functions.invoke('validar-dorsal', { body: { envio_id: envioId } }).catch(() => {})
+        avisar('📸 Solicitud enviada — la estamos revisando')
+      } else {
+        avisar(`✅ ¡Listo! Sumaste ${puntos} Flama Point${puntos === 1 ? '' : 's'}`)
+      }
       setAccion(null)
       setArchivo(null)
       fetchTodo()
@@ -619,6 +645,13 @@ function FlamaPoints() {
 
   if (loading) return <div className="empty-state">Cargando...</div>
 
+  // Tipo de participación de la acción en curso (define la consigna de la foto y el puntaje)
+  const tipoAccion = accion
+    ? (accion.tipo === 'reintento' ? accion.envio.tipo_participacion : accion.carrera._tipoParticipacion)
+    : null
+  const esStandFlama = tipoAccion === 'Stand Flama'
+  const puntosAccion = esStandFlama ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO
+
   // Formulario de carga (compartido entre "solicitar por primera vez" y "reintentar").
   // OJO: esto es JSX directo, NO un componente función — si fuera `const Formulario = () => (...)`,
   // cada tecleo en el input recrearía la función y React desmontaría/remontaría el <input>,
@@ -627,7 +660,9 @@ function FlamaPoints() {
     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <div>
         <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>
-          Foto con tu dorsal y tu medalla — selfie o que te la saquen, las dos valen
+          {esStandFlama
+            ? 'Foto del Stand Flama / aliento al grupo — no hace falta dorsal ni medalla, ¡pero sí que se vea la buena onda! 🧉'
+            : 'Foto con tu dorsal y, si la tenés, tu medalla — selfie o que te la saquen, las dos valen'}
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {fotoPreview && (
@@ -642,10 +677,12 @@ function FlamaPoints() {
         )}
       </div>
       <button className="btn-accent" disabled={subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
-        {subiendo ? 'Enviando...' : 'Enviar solicitud'}
+        {subiendo ? 'Enviando...' : `Enviar y sumar ${puntosAccion} ${puntosAccion === 1 ? 'punto' : 'puntos'}`}
       </button>
       <div style={{ fontSize: '11px', color: 'var(--text2)' }}>
-        ⚠️ Una vez enviada no se puede cancelar — revisá que se vea bien el dorsal y la medalla antes de mandarla.
+        {esStandFlama
+          ? '⚠️ Una vez enviada no se puede cambiar — revisá que la foto se vea bien antes de mandarla.'
+          : '⚠️ Una vez enviada no se puede cambiar — revisá que se vea bien el dorsal (y la medalla, si la tenés) antes de mandarla.'}
       </div>
     </div>
   )
@@ -657,18 +694,24 @@ function FlamaPoints() {
         <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Sumá puntos corriendo</span>
       </div>
 
-      {isAdmin && <CarreraActual />}
-      {isAdmin && <RevisionAdmin />}
+      {isAdmin && AUTOMATIZACION_IA_ACTIVA && <CarreraActual />}
+      {isAdmin && AUTOMATIZACION_IA_ACTIVA && <RevisionAdmin />}
 
       {/* Explicación */}
       <div className="card" style={{ marginBottom: '14px', fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>
         <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px', fontSize: '14px' }}>¿Qué es esto?</div>
-        Cada vez que completás una carrera en la que estabas anotado/a como "Inscripto" (a partir de Adidas 15K en
-        adelante), podés solicitar <strong style={{ color: 'var(--text)' }}>{PUNTOS_POR_CARRERA} Flama Points</strong>{' '}
-        subiendo una foto (selfie o que te la saquen) donde se vean tu <strong style={{ color: 'var(--text)' }}>dorsal y tu medalla</strong>.
-        Una IA revisa la foto al toque: si los confirma, los puntos se acreditan en el momento. Si no logra
-        confirmarlos, tenés <strong style={{ color: 'var(--text)' }}>una segunda oportunidad</strong> para volver a
-        subir la foto — y si tampoco se puede confirmar esa vez, el profe lo revisa a mano y da el veredicto final.
+        Cuando arranca una carrera en la que estabas anotado/a como <strong style={{ color: 'var(--text)' }}>"Inscripto"</strong>{' '}
+        o como <strong style={{ color: 'var(--text)' }}>"Stand Flama"</strong>, se habilita la carga de tu foto para sumar puntos:
+        <br /><br />
+        🏅 <strong style={{ color: 'var(--text)' }}>Si corriste ("Inscripto")</strong>: subí una foto donde se vea tu{' '}
+        <strong style={{ color: 'var(--text)' }}>dorsal</strong> (y, en lo posible, tu <strong style={{ color: 'var(--text)' }}>medalla</strong> —
+        durante la carrera o después, como prefieras) y sumás <strong style={{ color: 'var(--text)' }}>{PUNTOS_INSCRIPTO} Flama Points</strong>.
+        <br /><br />
+        🧉 <strong style={{ color: 'var(--text)' }}>Si fuiste al Stand Flama</strong>: no hace falta dorsal ni medalla, alcanza con subir{' '}
+        <strong style={{ color: 'var(--text)' }}>una foto</strong> de la previa, el aliento o el stand (¡así también tenemos material para las redes!) y sumás{' '}
+        <strong style={{ color: 'var(--text)' }}>{PUNTOS_STAND_FLAMA} Flama Point</strong>.
+        <br /><br />
+        Apenas subís la foto, los puntos se acreditan <strong style={{ color: 'var(--text)' }}>al instante</strong> — no hay que esperar revisión.
         <br /><br />
         ⚠️ <strong style={{ color: 'var(--text)' }}>Es obligatorio cargar la foto si querés sumar tus puntos</strong> — tenés{' '}
         <strong style={{ color: 'var(--text)' }}>hasta {PLAZO_RECLAMO_DIAS} días después de la carrera</strong> para hacerlo.
@@ -688,23 +731,29 @@ function FlamaPoints() {
             Carreras completadas
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {pendientes.map(c => (
-              <div key={c.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '14px' }}>{c.nombre}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{formatFechaCorta(c.fecha)}</div>
+            {pendientes.map(c => {
+              const esStand = c._tipoParticipacion === 'Stand Flama'
+              const pts = esStand ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO
+              return (
+                <div key={c.id} className="card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '14px' }}>{c.nombre}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text2)' }}>
+                        {formatFechaCorta(c.fecha)} · {esStand ? '🧉 Stand Flama' : '🏅 Inscripto'} · +{pts} pt{pts === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                    {accion?.tipo !== 'nuevo' || accion.carrera.id !== c.id ? (
+                      <button className="btn-accent" style={{ fontSize: '12px', height: 32, padding: '0 14px', flexShrink: 0 }}
+                        onClick={() => iniciarNuevo(c)}>
+                        📸 Subir foto
+                      </button>
+                    ) : null}
                   </div>
-                  {accion?.tipo !== 'nuevo' || accion.carrera.id !== c.id ? (
-                    <button className="btn-accent" style={{ fontSize: '12px', height: 32, padding: '0 14px', flexShrink: 0 }}
-                      onClick={() => iniciarNuevo(c)}>
-                      🏅 Solicitar recompensa
-                    </button>
-                  ) : null}
+                  {accion?.tipo === 'nuevo' && accion.carrera.id === c.id && formulario}
                 </div>
-                {accion?.tipo === 'nuevo' && accion.carrera.id === c.id && formulario}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -806,7 +855,7 @@ function FlamaPoints() {
       })()}
 
       {pendientes.length === 0 && envios.length === 0 && (
-        <div className="empty-state">Todavía no completaste carreras como "Inscripto". ¡Cuando termines una, vas a poder cargar tu foto acá!</div>
+        <div className="empty-state">Todavía no participaste de carreras como "Inscripto" o "Stand Flama". ¡Cuando arranque una en la que estés anotado/a así, vas a poder cargar tu foto acá!</div>
       )}
 
       {toast && (
