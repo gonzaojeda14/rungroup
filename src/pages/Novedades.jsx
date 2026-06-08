@@ -355,9 +355,23 @@ export default function Novedades() {
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                   {p.archivo_url && planesUrls[p.archivo_url] && (
-                    <a href={planesUrls[p.archivo_url]} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px', display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+                    <button
+                      className="btn-ghost"
+                      style={{ height: 32, fontSize: 12, padding: '0 12px' }}
+                      onClick={() => {
+                        const url = planesUrls[p.archivo_url]
+                        // En iOS PWA target="_blank" abre un webview in-app que queda en blanco.
+                        // En mobile navegamos directo (Safari abre el archivo y el back vuelve a la app).
+                        // En desktop abrimos en pestaña nueva.
+                        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                          window.location.href = url
+                        } else {
+                          window.open(url, '_blank', 'noopener,noreferrer')
+                        }
+                      }}
+                    >
                       Abrir →
-                    </a>
+                    </button>
                   )}
                   {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>✕</button>}
                 </div>
