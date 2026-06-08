@@ -79,9 +79,14 @@ export default function Register() {
     })
 
     if (signUpError) {
-      setError(signUpError.message === 'User already registered'
-        ? 'Ya existe una cuenta con ese email'
-        : signUpError.message)
+      if (signUpError.message === 'User already registered') {
+        setError('Ya existe una cuenta con ese email')
+        // Limpiamos el código de invitación para que el link "Ingresá acá" funcione
+        // y no quede atrapado redirigiendo de nuevo al registro
+        localStorage.removeItem('invite_code')
+      } else {
+        setError(signUpError.message)
+      }
       setSaving(false)
       return
     }
@@ -215,7 +220,7 @@ export default function Register() {
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: 'var(--text2)' }}>
-          ¿Ya tenés cuenta? <a href="/" style={{ color: '#ff2d2d' }}>Ingresá acá</a>
+          ¿Ya tenés cuenta? <a href="/" onClick={() => localStorage.removeItem('invite_code')} style={{ color: '#ff2d2d' }}>Ingresá acá</a>
         </p>
       </div>
     </div>
