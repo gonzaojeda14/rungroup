@@ -111,13 +111,16 @@ export default function Novedades() {
       const { error: uploadError } = await supabase.storage
         .from('planes')
         .upload(path, archivo, { upsert: false })
-      if (!uploadError) {
-        archivoUrl = path
-        archivoNombre = archivo.name
+      if (uploadError) {
+        setMsgError('Error al subir el archivo: ' + uploadError.message)
+        setSaving(false)
+        return
       }
+      archivoUrl = path
+      archivoNombre = archivo.name
     }
 
-    await supabase.from('novedades').insert([{
+    const { error: insertError } = await supabase.from('novedades').insert([{
       tipo,
       titulo: titulo || null,
       contenido: contenido || null,
@@ -131,7 +134,13 @@ export default function Novedades() {
       autor_id: user.id,
     }])
 
-    // Disparar push a todos los suscriptores (solo si es publicación inmediata)
+    if (insertError) {
+      setMsgError('Error al publicar: ' + insertError.message)
+      setSaving(false)
+      return
+    }
+
+    // Disparar push a todos los suscriptores (solo si es publicación inmediata, y solo si se guardó bien)
     if (!programarEn) {
       const { data: { session } } = await supabase.auth.getSession()
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`, {
