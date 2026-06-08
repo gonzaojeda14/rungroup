@@ -241,7 +241,10 @@ export default function Fotos() {
               alt=""
               style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }}
             />
-            <div style={{ marginTop: 12, color: 'var(--text2)', fontSize: 13 }}>
+            <div style={{ marginTop: 12, color: '#ff6b6b', fontSize: 11, fontWeight: 700 }}>
+              [DEBUG-TAGS-v1]
+            </div>
+            <div style={{ marginTop: 4, color: 'var(--text2)', fontSize: 13 }}>
               {fotoAmpliada.uploader?.nombre}
             </div>
 
