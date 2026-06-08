@@ -28,6 +28,10 @@ export default function MiPerfil() {
   const [msgCert, setMsgCert] = useState('')
   const [loading, setLoading] = useState(true)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
+  const [lesion, setLesion] = useState('')
+  const [lesionGuardada, setLesionGuardada] = useState('')
+  const [savingLesion, setSavingLesion] = useState(false)
+  const [msgLesion, setMsgLesion] = useState('')
   const [pushStatus, setPushStatus] = useState('idle') // idle | loading | ok | error
 
   // Bugs
@@ -112,6 +116,8 @@ export default function MiPerfil() {
       })
       setCertInfo({ url: data.certificado_url || null, fecha: data.certificado_fecha || null })
       setAvatarUrl(data.avatar_url || null)
+      setLesion(data.lesion_actual || '')
+      setLesionGuardada(data.lesion_actual || '')
     }
     setLoading(false)
   }
@@ -161,6 +167,28 @@ export default function MiPerfil() {
     if (!error) setForm(prev => ({ ...prev, nombre }))
     setMsg(error ? 'Error al guardar' : '✅ Datos actualizados')
     setSaving(false)
+  }
+
+  async function handleGuardarLesion(e) {
+    e.preventDefault()
+    setSavingLesion(true)
+    setMsgLesion('')
+    const texto = lesion.trim() || null
+    const { error } = await supabase.from('profiles').update({ lesion_actual: texto }).eq('id', user.id)
+    if (!error) setLesionGuardada(texto || '')
+    setMsgLesion(error ? 'Error al guardar' : (texto ? '✅ Guardado' : '✅ Listo, ya no figura ninguna lesión'))
+    setSavingLesion(false)
+    setTimeout(() => setMsgLesion(''), 2500)
+  }
+
+  async function handleBorrarLesion() {
+    setSavingLesion(true)
+    setMsgLesion('')
+    const { error } = await supabase.from('profiles').update({ lesion_actual: null }).eq('id', user.id)
+    if (!error) { setLesion(''); setLesionGuardada('') }
+    setMsgLesion(error ? 'Error al borrar' : '✅ Listo, ya no figura ninguna lesión')
+    setSavingLesion(false)
+    setTimeout(() => setMsgLesion(''), 2500)
   }
 
   async function handleSavePwd(e) {
@@ -303,6 +331,33 @@ export default function MiPerfil() {
             <button type="submit" className="btn-primary" disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
+          </div>
+        </form>
+      </div>
+
+      {/* LESIONES / MOLESTIAS */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Lesiones / molestias</h3>
+        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px', lineHeight: 1.4 }}>
+          Si tenés alguna lesión o molestia, contanos brevemente para que el equipo lo tenga en cuenta. Solo lo van a poder ver los profes.
+        </div>
+        <form onSubmit={handleGuardarLesion}>
+          <div className="form-grid">
+            <div className="field full">
+              <label>Detalle</label>
+              <input value={lesion} onChange={e => setLesion(e.target.value)} placeholder="Ej: molestia en la rodilla derecha" maxLength={200} />
+            </div>
+          </div>
+          {msgLesion && <div className={msgLesion.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgLesion}</div>}
+          <div className="form-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+            <button type="submit" className="btn-primary" disabled={savingLesion || lesion.trim() === lesionGuardada}>
+              {savingLesion ? 'Guardando...' : 'Guardar'}
+            </button>
+            {lesionGuardada && (
+              <button type="button" className="btn-ghost" onClick={handleBorrarLesion} disabled={savingLesion}>
+                Quitar
+              </button>
+            )}
           </div>
         </form>
       </div>

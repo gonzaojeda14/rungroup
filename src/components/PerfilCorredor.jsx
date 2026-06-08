@@ -44,7 +44,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
         .neq('estado', 'Pendiente')
         .order('created_at', { ascending: false }),
       supabase.from('profiles')
-        .select('certificado_url, certificado_fecha, fecha_nacimiento, telefono')
+        .select('certificado_url, certificado_fecha, fecha_nacimiento, telefono, lesion_actual')
         .eq('id', corredor.id)
         .single()
     ])
@@ -162,6 +162,17 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
             )}
           </div>
         </div>
+
+        {/* LESIONES / MOLESTIAS */}
+        {extra.lesion_actual && (
+          <div className="card">
+            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v8M8 12h8"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
+              Lesiones / molestias
+            </h3>
+            <div style={{ fontSize: '14px' }}>{extra.lesion_actual}</div>
+          </div>
+        )}
 
         {/* PRÓXIMAS CARRERAS */}
         {proximasCarreras.length > 0 && (

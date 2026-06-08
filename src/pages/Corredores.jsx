@@ -149,6 +149,11 @@ export default function Corredores() {
             {c.role === 'admin' && <span className="badge green">Admin</span>}
             {c.role !== 'admin' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {c.lesion_actual && (
+                  <span title="Tiene una lesión o molestia cargada" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: '50%', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', flexShrink: 0 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v8M8 12h8"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
+                  </span>
+                )}
                 {c.activo === false && <span style={{ fontSize: '11px', color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '2px 7px' }}>Bloqueado</span>}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text2)', flexShrink: 0 }}><path d="M9 18l6-6-6-6"/></svg>
               </div>
