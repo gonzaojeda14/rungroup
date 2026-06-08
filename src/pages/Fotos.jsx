@@ -17,6 +17,11 @@ export default function Fotos() {
   const [progreso, setProgreso] = useState(0)
   const [confirmarEliminar, setConfirmarEliminar] = useState(null)
   const [fotoAmpliada, setFotoAmpliada] = useState(null)
+  const [tagsFoto, setTagsFoto] = useState([])         // etiquetas de la foto abierta en el lightbox: [{ user_id, nombre }]
+  const [editandoTags, setEditandoTags] = useState(false)
+  const [todosPerfiles, setTodosPerfiles] = useState(null) // se carga una sola vez, perezosamente, al abrir el selector
+  const [buscarTag, setBuscarTag] = useState('')
+  const [guardandoTag, setGuardandoTag] = useState({})  // { [user_id]: true } mientras se procesa el toggle
   const inputRef = useRef()
 
   useEffect(() => {
@@ -98,6 +103,46 @@ export default function Fotos() {
   }
 
   const puedeEliminar = (foto) => isAdmin || foto.user_id === user.id
+
+  useEffect(() => {
+    if (!fotoAmpliada) {
+      setTagsFoto([])
+      setEditandoTags(false)
+      setBuscarTag('')
+      return
+    }
+    fetchTags(fotoAmpliada.id)
+  }, [fotoAmpliada?.id])
+
+  async function fetchTags(fotoId) {
+    const { data } = await supabase
+      .from('foto_tags')
+      .select('user_id, profiles!foto_tags_user_id_fkey(nombre)')
+      .eq('foto_id', fotoId)
+    setTagsFoto((data || []).map(t => ({ user_id: t.user_id, nombre: t.profiles?.nombre || '—' })))
+  }
+
+  async function abrirSelectorTags() {
+    if (!todosPerfiles) {
+      const { data } = await supabase.from('profiles').select('id, nombre').order('nombre')
+      setTodosPerfiles(data || [])
+    }
+    setEditandoTags(true)
+  }
+
+  async function toggleTag(perfil) {
+    if (!fotoAmpliada || guardandoTag[perfil.id]) return
+    setGuardandoTag(g => ({ ...g, [perfil.id]: true }))
+    const yaEtiquetado = tagsFoto.some(t => t.user_id === perfil.id)
+    if (yaEtiquetado) {
+      await supabase.from('foto_tags').delete().eq('foto_id', fotoAmpliada.id).eq('user_id', perfil.id)
+      setTagsFoto(tags => tags.filter(t => t.user_id !== perfil.id))
+    } else {
+      await supabase.from('foto_tags').insert({ foto_id: fotoAmpliada.id, user_id: perfil.id, etiquetado_por: user.id })
+      setTagsFoto(tags => [...tags, { user_id: perfil.id, nombre: perfil.nombre }])
+    }
+    setGuardandoTag(g => { const { [perfil.id]: _, ...resto } = g; return resto })
+  }
 
   return (
     <div className="page">
@@ -199,7 +244,71 @@ export default function Fotos() {
             <div style={{ marginTop: 12, color: 'var(--text2)', fontSize: 13 }}>
               {fotoAmpliada.uploader?.nombre}
             </div>
-            <a
+
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ marginTop: 14, width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}
+            >
+              {tagsFoto.length > 0 && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--text2)' }}>
+                  <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>Corredores etiquetados</div>
+                  {tagsFoto.map(t => t.nombre).join(', ')}
+                </div>
+              )}
+
+              {fotoAmpliada.user_id === user.id && !editandoTags && (
+                <button
+                  onClick={abrirSelectorTags}
+                  style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, cursor: 'pointer' }}
+                >
+                  🏷️ Etiquetar compañeros
+                </button>
+              )}
+
+              {editandoTags && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 12, maxHeight: 280, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <input
+                    value={buscarTag}
+                    onChange={e => setBuscarTag(e.target.value)}
+                    placeholder="Buscar compañero..."
+                    style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: 13 }}
+                  />
+                  <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {(todosPerfiles || [])
+                      .filter(p => p.id !== fotoAmpliada.user_id)
+                      .filter(p => p.nombre?.toLowerCase().includes(buscarTag.toLowerCase()))
+                      .map(p => {
+                        const marcado = tagsFoto.some(t => t.user_id === p.id)
+                        return (
+                          <button
+                            key={p.id}
+                            onClick={() => toggleTag(p)}
+                            disabled={!!guardandoTag[p.id]}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: '8px 12px', borderRadius: 6, border: 'none', textAlign: 'left',
+                              background: marcado ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.05)',
+                              color: '#fff', fontSize: 13, cursor: guardandoTag[p.id] ? 'default' : 'pointer',
+                              opacity: guardandoTag[p.id] ? 0.5 : 1,
+                            }}
+                          >
+                            <span>{p.nombre}</span>
+                            {marcado && <span style={{ color: '#4ade80' }}>✓</span>}
+                          </button>
+                        )
+                      })}
+                  </div>
+                  <button
+                    onClick={() => setEditandoTags(false)}
+                    style={{ alignSelf: 'flex-end', padding: '6px 14px', background: 'transparent', border: 'none', color: 'var(--text2)', fontSize: 13, cursor: 'pointer' }}
+                  >
+                    Listo
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <
               href={fotoAmpliada.cloudinary_url}
               download
               target="_blank"
