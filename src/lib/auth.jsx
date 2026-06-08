@@ -85,8 +85,12 @@ export function AuthProvider({ children }) {
     setProfile(prev => ({ ...prev, avisos_leido_hasta: ahora }))
   }
 
+  async function refreshProfile() {
+    if (user) await fetchProfile(user.id)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signIn, signOut, marcarAvisosLeidos }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signIn, signOut, marcarAvisosLeidos, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

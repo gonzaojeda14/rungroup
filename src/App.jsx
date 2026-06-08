@@ -59,7 +59,8 @@ function Shell() {
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
   const [ventasDisponibles, setVentasDisponibles] = useState(0)
   const [flamaPendientes, setFlamaPendientes] = useState(0)
-  const [totalFlamaPoints, setTotalFlamaPoints] = useState(null)
+  const [rawFlamaPoints, setRawFlamaPoints] = useState(null)
+  const totalFlamaPoints = rawFlamaPoints === null ? null : rawFlamaPoints + (profile?.bonus_perfil_otorgado ? 5 : 0)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
 
   useEffect(() => {
@@ -144,7 +145,7 @@ function Shell() {
         .select('puntos')
         .eq('user_id', user.id)
         .eq('estado', 'validado')
-      if (activo) setTotalFlamaPoints((data || []).reduce((acc, r) => acc + (r.puntos || 0), 0))
+      if (activo) setRawFlamaPoints((data || []).reduce((acc, r) => acc + (r.puntos || 0), 0))
     }
     fetchTotalPoints()
     const ch = supabase.channel('app-flama-total')
