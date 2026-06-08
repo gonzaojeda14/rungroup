@@ -167,4 +167,50 @@ Respondé ÚNICAMENTE con un JSON (sin texto adicional, sin markdown) con esta f
     // Validación basada PURAMENTE en lo que se ve en la foto — sin comparar
     // contra ningún número "declarado" (eso ya no existe: no aporta nada
     // verificar un autoreporte hecho en el mismo momento que la prueba).
-    const aprueba = !!(analisis && analisis.dorsal_visible && analisis.medalla_visible && analisis.confianza !== 'b
+    const aprueba = !!(analisis && analisis.dorsal_visible && analisis.medalla_visible && analisis.confianza !== 'baja')
+
+    if (aprueba) {
+      await supabase.from('puntos_carreras').update({
+        estado: 'validado',
+        revisado_at: new Date().toISOString(),
+      }).eq('id', envio_id)
+      return json({ ok: true, resultado: 'validado', via: SIMULAR_IA ? 'simulado' : 'ia' })
+    }
+
+    if (envio.intentos >= 2) {
+      // Segundo intento sin éxito: ya no hay más reintentos — queda para
+      // veredicto final manual del admin, que va a ver ambas fotos.
+      await supabase.from('puntos_carreras').update({
+        estado: 'revision_admin',
+        motivo: 'La IA no pudo confirmar dorsal y medalla en los 2 intentos — necesita veredicto final del admin',
+      }).eq('id', envio_id)
+      return json({ ok: true, resultado: 'revision_admin', via: SIMULAR_IA ? 'simulado' : 'ia' })
+    }
+
+    // Primer intento sin éxito: el corredor puede reintentar una vez más
+    const motivo = !analisis
+      ? 'No se pudo analizar la imagen — probá con otra foto'
+      : !analisis.dorsal_visible
+        ? 'No se pudo confirmar el dorsal en la foto'
+        : !analisis.medalla_visible
+          ? 'No se pudo confirmar la medalla en la foto'
+          : 'La confianza del análisis fue baja — probá con una foto más clara'
+
+    await supabase.from('puntos_carreras').update({
+      estado: 'rechazado',
+      motivo,
+    }).eq('id', envio_id)
+    return json({ ok: true, resultado: 'rechazado', via: SIMULAR_IA ? 'simulado' : 'ia' })
+
+  } catch (err) {
+    console.error(err)
+    return json({ error: String(err) }, 500)
+  }
+})
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, 'content-type': 'application/json' },
+  })
+}

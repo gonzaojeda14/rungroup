@@ -278,17 +278,29 @@ function CarreraActual() {
 //   • "pendiente" colgado → quedó sin resolver (p. ej. la función falló). Sirve
 //     como red de seguridad para que nada quede en el limbo.
 
+// Tiempo de gracia antes de considerar que una solicitud "pendiente" puede
+// estar trabada. Cubre el peor caso normal: el flujo con preaprobación tiene
+// una demora artificial de ~60s, y el análisis por IA suele resolver en
+// segundos — pasados ~2 minutos sin resolverse, recién ahí vale la pena
+// alertar al admin de que algo puede haberse trabado.
+const UMBRAL_TRABADO_MS = 2 * 60 * 1000
+
 function RevisionAdmin() {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [procesando, setProcesando] = useState({})
+  const [verTrabados, setVerTrabados] = useState(false)
+  const [ahora, setAhora] = useState(() => Date.now())
 
   useEffect(() => {
     fetchPendientes()
     const channel = supabase.channel('puntos-carreras-admin-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'puntos_carreras' }, fetchPendientes)
       .subscribe()
-    return () => supabase.removeChannel(channel)
+    // Recalcula cada 15s cuáles "pendiente" ya pasaron el umbral — sin esto,
+    // una solicitud trabada no aparecería hasta el próximo cambio en la tabla.
+    const intervalo = setInterval(() => setAhora(Date.now()), 15_000)
+    return () => { supabase.removeChannel(channel); clearInterval(intervalo) }
   }, [])
 
   async function fetchPendientes() {
@@ -310,7 +322,18 @@ function RevisionAdmin() {
     setProcesando(prev => { const n = { ...prev }; delete n[id]; return n })
   }
 
-  if (items.length === 0) return null
+  // Las "revision_admin" siempre necesitan tu veredicto — se muestran ya.
+  // Las "pendiente" están en proceso normal (IA o preaprobación con demora);
+  // solo se consideran "posiblemente trabadas" — y se muestran — si ya
+  // pasaron el umbral de gracia.
+  const escalados = items.filter(it => it.estado === 'revision_admin')
+  const trabados = items.filter(it => {
+    if (it.estado !== 'pendiente') return false
+    const creado = it.created_at ? new Date(it.created_at).getTime() : 0
+    return ahora - creado > UMBRAL_TRABADO_MS
+  })
+
+  if (escalados.length === 0 && trabados.length === 0) return null
 
   const Foto = ({ url, label }) => (
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -321,50 +344,67 @@ function RevisionAdmin() {
     </div>
   )
 
+  const Item = ({ it, escalado }) => (
+    <div className="card">
+      <div style={{ fontSize: '11px', fontWeight: 700, color: escalado ? '#fbbf24' : 'var(--text2)', marginBottom: '8px' }}>
+        {escalado
+          ? '⚠️ La IA no pudo confirmar la foto en sus 2 intentos — necesita tu veredicto final'
+          : '⏳ Lleva más de 2 minutos sin resolverse — puede haberse trabado'}
+      </div>
+      <div style={{ display: 'flex', gap: '12px' }}>
+        {escalado ? (
+          <>
+            <Foto url={it.foto_url_anterior} label="Intento 1" />
+            <Foto url={it.foto_url} label="Intento 2" />
+          </>
+        ) : (
+          <Foto url={it.foto_url} />
+        )}
+      </div>
+      <div style={{ marginTop: '10px', fontSize: '13px' }}>
+        <div style={{ fontWeight: 700 }}>{it.corredor?.nombre}</div>
+        <div style={{ color: 'var(--text2)', fontSize: '12px' }}>{it.carrera?.nombre}</div>
+        {it.motivo && <div style={{ fontSize: '11px', color: '#fbbf24', marginTop: '4px' }}>{it.motivo}</div>}
+      </div>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+        <button className="btn-ghost" disabled={procesando[it.id]} onClick={() => resolver(it.id, 'validado')}
+          style={{ fontSize: '12px', height: 32, flex: 1, color: '#4ade80', borderColor: 'rgba(74,222,128,0.3)' }}>
+          ✓ Aprobar (+{it.puntos})
+        </button>
+        <button className="btn-ghost" disabled={procesando[it.id]} onClick={() => resolver(it.id, 'rechazado')}
+          style={{ fontSize: '12px', height: 32, flex: 1, color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}>
+          ✕ Rechazar
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div style={{ marginBottom: '18px' }}>
       <div style={{ fontSize: '12px', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-        ⏳ Solicitudes de Flama Points por revisar ({items.length})
+        ⏳ Solicitudes de Flama Points por revisar ({escalados.length + trabados.length})
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {items.map(it => {
-          const escalado = it.estado === 'revision_admin'
-          return (
-            <div key={it.id} className="card">
-              <div style={{ fontSize: '11px', fontWeight: 700, color: escalado ? '#fbbf24' : 'var(--text2)', marginBottom: '8px' }}>
-                {escalado
-                  ? '⚠️ La IA no pudo confirmar la foto en sus 2 intentos — necesita tu veredicto final'
-                  : '⏳ Esperando validación automática (puede haberse trabado)'}
-              </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                {escalado ? (
-                  <>
-                    <Foto url={it.foto_url_anterior} label="Intento 1" />
-                    <Foto url={it.foto_url} label="Intento 2" />
-                  </>
-                ) : (
-                  <Foto url={it.foto_url} />
-                )}
-              </div>
-              <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                <div style={{ fontWeight: 700 }}>{it.corredor?.nombre}</div>
-                <div style={{ color: 'var(--text2)', fontSize: '12px' }}>{it.carrera?.nombre}</div>
-                {it.motivo && <div style={{ fontSize: '11px', color: '#fbbf24', marginTop: '4px' }}>{it.motivo}</div>}
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                <button className="btn-ghost" disabled={procesando[it.id]} onClick={() => resolver(it.id, 'validado')}
-                  style={{ fontSize: '12px', height: 32, flex: 1, color: '#4ade80', borderColor: 'rgba(74,222,128,0.3)' }}>
-                  ✓ Aprobar (+{it.puntos})
-                </button>
-                <button className="btn-ghost" disabled={procesando[it.id]} onClick={() => resolver(it.id, 'rechazado')}
-                  style={{ fontSize: '12px', height: 32, flex: 1, color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}>
-                  ✕ Rechazar
-                </button>
-              </div>
+
+      {escalados.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: trabados.length > 0 ? '10px' : 0 }}>
+          {escalados.map(it => <Item key={it.id} it={it} escalado />)}
+        </div>
+      )}
+
+      {trabados.length > 0 && (
+        <div>
+          <button className="btn-ghost" onClick={() => setVerTrabados(v => !v)}
+            style={{ fontSize: '12px', height: 36, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', color: 'var(--text2)' }}>
+            <span>⏳ Posiblemente trabadas ({trabados.length})</span>
+            <span>{verTrabados ? '▲ ocultar' : '▼ ver'}</span>
+          </button>
+          {verTrabados && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+              {trabados.map(it => <Item key={it.id} it={it} escalado={false} />)}
             </div>
-          )
-        })}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
