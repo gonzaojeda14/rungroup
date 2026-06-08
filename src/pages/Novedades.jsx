@@ -45,10 +45,11 @@ export default function Novedades() {
   }, [])
 
   async function fetchNovedades() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('novedades')
       .select('*, autor:profiles!autor_id(nombre, telefono)')
       .order('publicar_en', { ascending: false, nullsFirst: true })
+    if (error) console.error('Error al cargar novedades:', error)
     setItems(data || [])
 
     // Generar URLs firmadas para planes con archivo
@@ -140,8 +141,9 @@ export default function Novedades() {
       return
     }
 
+    // TEMP: notificación push desactivada para poder probar la publicación de novedades sin spamear. Reactivar quitando "&& false"
     // Disparar push a todos los suscriptores (solo si es publicación inmediata, y solo si se guardó bien)
-    if (!programarEn) {
+    if (!programarEn && false) {
       const { data: { session } } = await supabase.auth.getSession()
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`, {
         method: 'POST',
