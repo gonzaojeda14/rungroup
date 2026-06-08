@@ -13,7 +13,7 @@ import Ventas from './pages/Ventas'
 import Mas from './pages/Mas'
 import Novedades from './pages/Novedades'
 import ResetPassword from './pages/ResetPassword'
-import { yaEmpezo, dentroDePlazo } from './lib/utils'
+import { yaEmpezo, dentroDePlazo, transferenciaCerrada } from './lib/utils'
 
 const PLAZO_RECLAMO_DIAS = 7
 
@@ -86,12 +86,17 @@ function Shell() {
   useEffect(() => {
     if (!user) return
     async function checkVentas() {
-      const { count } = await supabase
+      // OJO: el conteo tiene que aplicar el mismo filtro que la lista real en
+      // Ventas.jsx (transferenciaCerrada — se ocultan 2hs antes del inicio de
+      // la carrera). Si no, el badge queda mostrando publicaciones que ya no
+      // aparecen en el listado real.
+      const { data } = await supabase
         .from('ventas_inscripciones')
-        .select('id', { count: 'exact', head: true })
+        .select('id, carrera:carreras(fecha, hora)')
         .eq('estado', 'disponible')
         .neq('vendedor_id', user.id)
-      setVentasDisponibles(count || 0)
+      const vigentes = (data || []).filter(v => !transferenciaCerrada(v.carrera?.fecha, v.carrera?.hora))
+      setVentasDisponibles(vigentes.length)
     }
     checkVentas()
   }, [user])
