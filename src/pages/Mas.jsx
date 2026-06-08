@@ -187,10 +187,11 @@ function RevisionAdmin() {
   }, [])
 
   async function fetchPendientes() {
-    const { data } = await supabase.from('puntos_carreras')
+    const { data, error } = await supabase.from('puntos_carreras')
       .select('*, corredor:profiles!user_id(nombre), carrera:carreras(nombre)')
       .in('estado', ['pendiente', 'revision_admin'])
       .order('created_at', { ascending: true })
+    if (error) console.error('RevisionAdmin — error al traer solicitudes:', error)
     setItems(data || [])
   }
 
