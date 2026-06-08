@@ -250,12 +250,13 @@ export default function FotosModal({ carrera, onClose }) {
       </div>
 
       {fotoAmpliada && (
-        <div onClick={() => setFotoAmpliada(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        <div onClick={() => setFotoAmpliada(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', padding: '16px 16px 32px' }}>
           <button
             onClick={e => { e.stopPropagation(); setFotoAmpliada(null) }}
-            style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}
+            style={{ position: 'fixed', top: 16, right: 16, width: 38, height: 38, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, backdropFilter: 'blur(4px)' }}
           >✕</button>
-          <img onClick={e => e.stopPropagation()} src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')} alt="" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }} />
+          <div style={{ flex: '0 0 auto', margin: 'auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+          <img onClick={e => e.stopPropagation()} src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')} alt="" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 8, objectFit: 'contain' }} />
 
           <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
             {tagsFoto.length > 0 && (
@@ -332,6 +333,7 @@ export default function FotosModal({ carrera, onClose }) {
           <a href={fotoAmpliada.cloudinary_url} download target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ marginTop: 10, padding: '8px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 13, textDecoration: 'none' }}>
             ⬇ Descargar original
           </a>
+          </div>
         </div>
       )}
 
