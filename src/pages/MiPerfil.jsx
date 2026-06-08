@@ -3,7 +3,7 @@ import RecordsPersonales from '../components/RecordsPersonales'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFecha, validarTelefono } from '../lib/utils'
+import { formatFecha, validarTelefono, capitalizarNombre } from '../lib/utils'
 import PasswordInput from '../components/PasswordInput'
 import { suscribirPush } from '../lib/push'
 
@@ -152,11 +152,13 @@ export default function MiPerfil() {
     }
     setSaving(true)
     setMsg('')
+    const nombre = capitalizarNombre(form.nombre)
     const { error } = await supabase.from('profiles').update({
-      nombre: form.nombre,
+      nombre,
       fecha_nacimiento: form.fechaNacimiento || null,
       telefono: form.telefono || null,
     }).eq('id', user.id)
+    if (!error) setForm(prev => ({ ...prev, nombre }))
     setMsg(error ? 'Error al guardar' : '✅ Datos actualizados')
     setSaving(false)
   }

@@ -17,6 +17,28 @@ export function formatFechaHora(fecha, hora) {
   return hora ? `${formatFecha(fecha)} ${formatHora(hora)}hs` : formatFecha(fecha)
 }
 
+// Normaliza nombres propios: primera letra de cada palabra en mayúscula, resto
+// en minúscula (ej. "fernanda rinaldi" / "FERNANDA RINALDI" → "Fernanda Rinaldi").
+export function capitalizarNombre(nombre) {
+  return String(nombre || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .map(palabra => palabra ? palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase() : palabra)
+    .join(' ')
+}
+
+// True si la carrera ya arrancó (fecha+hora ya pasaron). Las funcionalidades
+// post-carrera (Flama Points, feedback, carga de tiempo, etc.) se habilitan
+// desde este momento — NO recién al día siguiente. Si no hay hora cargada,
+// se asume que arranca a las 00:00 de ese día (es decir, el día completo cuenta
+// como "ya arrancó" desde la medianoche).
+export function yaEmpezo(fecha, hora) {
+  if (!fecha) return false
+  const inicio = new Date(`${fecha}T${hora || '00:00'}`)
+  return new Date() >= inicio
+}
+
 // Agrega al calendario: ICS en iOS, Google Calendar en Android/desktop
 export function agregarAlCalendario(nombre, fecha, hora, lugar) {
   if (!fecha) return

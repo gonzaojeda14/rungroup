@@ -3,7 +3,7 @@ import FotosModal from '../components/FotosModal'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFechaHora, agregarAlCalendario } from '../lib/utils'
+import { formatFechaHora, agregarAlCalendario, yaEmpezo } from '../lib/utils'
 
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
@@ -58,8 +58,8 @@ function diasRestantes(fecha) {
   return Math.ceil((carrera - hoy) / (1000 * 60 * 60 * 24))
 }
 
-function labelDias(dias) {
-  if (dias < 0) return 'Finalizada'
+function labelDias(dias, empezo) {
+  if (dias < 0 || (dias === 0 && empezo)) return 'Finalizada'
   if (dias === 0) return '¡Hoy!'
   if (dias === 1) return 'Mañana'
   if (dias < 7) return `En ${dias} días`
@@ -270,8 +270,9 @@ export default function Participaciones() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {grupo.items.map((p, i) => {
               const dias = diasRestantes(p.carrera?.fecha)
-              const urgente = dias !== null && dias >= 0 && dias < 7
-              const pasada = dias !== null && dias < 0
+              const empezo = yaEmpezo(p.carrera?.fecha, p.carrera?.hora)
+              const urgente = dias !== null && dias >= 0 && dias < 7 && !empezo
+              const pasada = (dias !== null && dias < 0) || empezo
 
               return (
                 <div key={i} className="card" style={{
@@ -308,7 +309,7 @@ export default function Participaciones() {
                       </span>
                       {dias !== null && (
                         <span style={{ fontSize: '11px', color: urgente ? '#fbbf24' : '#64748b', fontWeight: urgente ? 600 : 400 }}>
-                          {labelDias(dias)}
+                          {labelDias(dias, empezo)}
                         </span>
                       )}
                     </div>

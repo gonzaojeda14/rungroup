@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { validarTelefono } from '../lib/utils'
+import { validarTelefono, capitalizarNombre } from '../lib/utils'
 import PasswordInput from '../components/PasswordInput'
 
 export default function Register() {
@@ -69,11 +69,13 @@ export default function Register() {
       return
     }
 
+    const nombre = capitalizarNombre(form.nombre)
+
     // 1. Crear cuenta
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: { data: { nombre: form.nombre } }
+      options: { data: { nombre } }
     })
 
     if (signUpError) {
@@ -93,7 +95,7 @@ export default function Register() {
 
     // 2. Actualizar perfil con datos adicionales
     await supabase.from('profiles').update({
-      nombre: form.nombre,
+      nombre,
       fecha_nacimiento: form.fechaNacimiento || null,
       telefono: form.telefono || null,
     }).eq('id', userId)

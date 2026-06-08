@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import Ventas from './Ventas'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { yaEmpezo } from '../lib/utils'
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
@@ -288,10 +289,9 @@ function FlamaPoints() {
   }, [])
 
   async function fetchTodo() {
-    const hoy = new Date().toISOString().split('T')[0]
     const [{ data: parts }, { data: env }] = await Promise.all([
       supabase.from('participaciones')
-        .select('carrera_id, dorsal, carrera:carreras(id, nombre, fecha, distancia, tipo, flama_points)')
+        .select('carrera_id, carrera:carreras(id, nombre, fecha, hora, distancia, tipo, flama_points)')
         .eq('user_id', user.id)
         .eq('estado', 'Inscripto'),
       supabase.from('puntos_carreras')
@@ -301,9 +301,11 @@ function FlamaPoints() {
     ])
 
     const enviadasIds = new Set((env || []).map(e => e.carrera_id))
+    // Habilitada para pedir Flama Points desde el horario de INICIO de la carrera
+    // (no recién al día siguiente) — por eso se usa yaEmpezo(fecha, hora).
     const elegibles = (parts || [])
-      .filter(p => p.carrera && p.carrera.flama_points && p.carrera.fecha < hoy && !enviadasIds.has(p.carrera_id))
-      .map(p => ({ ...p.carrera, dorsal: p.dorsal }))
+      .filter(p => p.carrera && p.carrera.flama_points && yaEmpezo(p.carrera.fecha, p.carrera.hora) && !enviadasIds.has(p.carrera_id))
+      .map(p => ({ ...p.carrera }))
       .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
 
     setPendientes(elegibles)
@@ -590,10 +592,9 @@ export default function Mas({ ventasDisponibles = 0 }) {
   useEffect(() => {
     let activo = true
     async function calcularFlamaPendientes() {
-      const hoy = new Date().toISOString().split('T')[0]
       const [{ data: parts }, { data: env }] = await Promise.all([
         supabase.from('participaciones')
-          .select('carrera_id, carrera:carreras(id, fecha, flama_points)')
+          .select('carrera_id, carrera:carreras(id, fecha, hora, flama_points)')
           .eq('user_id', user.id)
           .eq('estado', 'Inscripto'),
         supabase.from('puntos_carreras')
@@ -602,7 +603,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       ])
       const enviadasIds = new Set((env || []).map(e => e.carrera_id))
       const cantidad = (parts || [])
-        .filter(p => p.carrera && p.carrera.flama_points && p.carrera.fecha < hoy && !enviadasIds.has(p.carrera_id))
+        .filter(p => p.carrera && p.carrera.flama_points && yaEmpezo(p.carrera.fecha, p.carrera.hora) && !enviadasIds.has(p.carrera_id))
         .length
       if (activo) setFlamaPendientes(cantidad)
     }
