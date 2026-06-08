@@ -47,10 +47,20 @@ export default function Novedades() {
   async function fetchNovedades() {
     const { data, error } = await supabase
       .from('novedades')
-      .select('*, autor:profiles!autor_id(nombre, telefono)')
+      .select('*')
       .order('publicar_en', { ascending: false, nullsFirst: true })
     if (error) console.error('Error al cargar novedades:', error)
-    setItems(data || [])
+
+    // Resolver datos del autor por separado (no hay relación FK directa para el embed de Supabase)
+    let itemsConAutor = data || []
+    const autorIds = [...new Set(itemsConAutor.filter(i => i.contacto_habilitado && i.autor_id).map(i => i.autor_id))]
+    if (autorIds.length) {
+      const { data: autores } = await supabase.from('profiles').select('id, nombre, telefono').in('id', autorIds)
+      const mapAutores = {}
+      ;(autores || []).forEach(a => { mapAutores[a.id] = a })
+      itemsConAutor = itemsConAutor.map(i => ({ ...i, autor: i.autor_id ? mapAutores[i.autor_id] : null }))
+    }
+    setItems(itemsConAutor)
 
     // Generar URLs firmadas para planes con archivo
     const conArchivo = (data || []).filter(i => i.tipo === 'plan' && i.archivo_url)
