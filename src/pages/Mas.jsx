@@ -474,7 +474,7 @@ function RevisionAdmin() {
 function FlamaPointsProximamente() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '10px', padding: '24px', textAlign: 'center' }}>
-      <span style={{ fontSize: '40px' }}>🪙</span>
+      <span style={{ fontSize: '40px' }}>💎</span>
       <div style={{ fontSize: '16px', fontWeight: 700 }}>Flamitas</div>
       <div style={{ fontSize: '13px', color: 'var(--text2)', maxWidth: '280px', lineHeight: 1.5 }}>
         Próximamente vas a poder sumar puntos por participar en carreras. ¡Estamos terminando de afinar los detalles!

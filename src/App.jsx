@@ -170,7 +170,7 @@ function Shell() {
         <div className="topbar-social">
           {totalFlamaPoints !== null && totalFlamaPoints > 0 && (
             <span className="social-btn" title="Mis Flamitas" style={{ fontSize: '13px', fontWeight: 700, cursor: 'default', letterSpacing: '-0.3px' }}>
-              🪙 {totalFlamaPoints}
+              💎 {totalFlamaPoints}
             </span>
           )}
           <a href="https://www.instagram.com/flama.training/" target="_blank" rel="noopener noreferrer" className="social-btn" title="Instagram">
