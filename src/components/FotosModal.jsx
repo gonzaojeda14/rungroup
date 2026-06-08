@@ -6,7 +6,7 @@ import ConfirmModal from './ConfirmModal'
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
-export default function FotosModal({ carrera, onClose, onToast }) {
+export default function FotosModal({ carrera, onClose }) {
   const { isAdmin, user } = useAuth()
   const [fotos, setFotos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -42,10 +42,12 @@ export default function FotosModal({ carrera, onClose, onToast }) {
     setLoading(false)
   }
 
+  // El modal ya muestra su propio toast (ver más abajo) — antes también se lo
+  // pasábamos al padre vía onToast, que mostraba OTRO toast con el mismo mensaje
+  // al mismo tiempo (de ahí el "Se cargaron 3 fotos" duplicado).
   function showToast(msg) {
     setToast(msg)
     setTimeout(() => setToast(''), 2500)
-    onToast?.(msg)
   }
 
   async function handleSubirFotos(e) {

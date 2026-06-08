@@ -459,7 +459,6 @@ export default function Participaciones() {
         <FotosModal
           carrera={fotosCarrera}
           onClose={() => setFotosCarrera(null)}
-          onToast={msg => { setToast(msg); setTimeout(() => setToast(''), 2500) }}
         />
       )}
 
