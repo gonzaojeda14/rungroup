@@ -25,11 +25,13 @@ export default function Register() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  const [cuentaExistente, setCuentaExistente] = useState(false)
 
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setCuentaExistente(false)
     const codigoEsperado = import.meta.env.VITE_INVITE_CODE
     if (!codigoEsperado || form.codigo.trim().toLowerCase() !== codigoEsperado.trim().toLowerCase()) {
       setError('Código de invitación incorrecto')
@@ -81,7 +83,8 @@ export default function Register() {
     if (signUpError) {
       if (signUpError.message === 'User already registered') {
         setError('Ya existe una cuenta con ese email')
-        // Limpiamos el código de invitación para que el link "Ingresá acá" funcione
+        setCuentaExistente(true)
+        // Limpiamos el código de invitación para que el botón de ingresar funcione
         // y no quede atrapado redirigiendo de nuevo al registro
         localStorage.removeItem('invite_code')
       } else {
@@ -212,7 +215,27 @@ export default function Register() {
             />
           </div>
 
-          {error && <div className="error-msg" style={{ marginBottom: '12px' }}>{error}</div>}
+          {error && !cuentaExistente && <div className="error-msg" style={{ marginBottom: '12px' }}>{error}</div>}
+
+          {cuentaExistente && (
+            <div style={{
+              marginBottom: '14px', padding: '14px', borderRadius: '12px',
+              background: 'rgba(255,45,45,0.1)', border: '1px solid rgba(255,45,45,0.35)',
+            }}>
+              <div className="error-msg" style={{ marginBottom: '10px' }}>{error}</div>
+              <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '12px' }}>
+                Si ya te registraste antes, no hace falta crear una cuenta nueva: ingresá con tu email y contraseña.
+              </div>
+              <a
+                href="/"
+                onClick={() => localStorage.removeItem('invite_code')}
+                className="btn-primary"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '44px', fontSize: '15px', textDecoration: 'none' }}
+              >
+                Ingresar a mi cuenta
+              </a>
+            </div>
+          )}
 
           <button type="submit" className="btn-primary" style={{ width: '100%', height: '44px', fontSize: '15px' }} disabled={saving}>
             {saving ? 'Registrando...' : 'Crear cuenta'}
