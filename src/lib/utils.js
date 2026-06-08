@@ -39,6 +39,27 @@ export function yaEmpezo(fecha, hora) {
   return new Date() >= inicio
 }
 
+// Ventana en la que el profe puede pre-marcar asistencia (Flama Points → "Carrera
+// actual"): arranca 3 horas antes del horario de inicio — para ir marcando a
+// quienes llegan a entrenar — y se mantiene abierta el resto del día de carrera.
+export function enVentanaPreAprobacion(fecha, hora) {
+  if (!fecha) return false
+  const inicio = new Date(`${fecha}T${hora || '00:00'}`)
+  const apertura = new Date(inicio.getTime() - 3 * 60 * 60 * 1000)
+  const cierre = new Date(inicio.getTime() + 24 * 60 * 60 * 1000)
+  const ahora = new Date()
+  return ahora >= apertura && ahora <= cierre
+}
+
+// True mientras siga dentro del plazo de "dias" días corridos posteriores a la
+// fecha de la carrera para reclamar los Flama Points (incluye el día de la carrera).
+export function dentroDePlazo(fecha, dias) {
+  if (!fecha) return false
+  const limite = new Date(`${fecha}T00:00:00`)
+  limite.setDate(limite.getDate() + dias + 1)
+  return new Date() < limite
+}
+
 // Agrega al calendario: ICS en iOS, Google Calendar en Android/desktop
 export function agregarAlCalendario(nombre, fecha, hora, lugar) {
   if (!fecha) return

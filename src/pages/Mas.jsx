@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from 'react'
 import Ventas from './Ventas'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { yaEmpezo } from '../lib/utils'
+import { yaEmpezo, enVentanaPreAprobacion, dentroDePlazo } from '../lib/utils'
+
+const PLAZO_RECLAMO_DIAS = 7
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
@@ -165,6 +167,95 @@ function Alianzas() {
   )
 }
 
+// ─── CARRERA ACTUAL (pre-marcado de asistencia) ─────────────────────────────
+// El profe puede marcar acá a quienes ve llegar a entrenar/correr ANTES de que
+// suban su foto. Si ya están marcados como "llegó" cuando piden los Flama
+// Points, se aprueban directo (sin pasar por el análisis de la IA) — ver la
+// rama de "pre-aprobación" en validar-dorsal.ts.
+// La sección solo se muestra dentro de la ventana habilitada: desde 3hs antes
+// del inicio (para ir marcando a los que llegan) y durante el resto del día.
+function CarreraActual() {
+  const [carrera, setCarrera] = useState(null)
+  const [inscriptos, setInscriptos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [marcando, setMarcando] = useState({})
+
+  useEffect(() => {
+    fetchCarreraActual()
+    const channel = supabase.channel('carrera-actual-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones' }, fetchCarreraActual)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
+
+  async function fetchCarreraActual() {
+    const ahora = new Date()
+    const desde = new Date(ahora); desde.setDate(desde.getDate() - 1)
+    const hasta = new Date(ahora); hasta.setDate(hasta.getDate() + 2)
+    const fmt = d => d.toISOString().split('T')[0]
+
+    const { data: candidatas } = await supabase
+      .from('carreras')
+      .select('id, nombre, fecha, hora, flama_points')
+      .eq('flama_points', true)
+      .gte('fecha', fmt(desde))
+      .lte('fecha', fmt(hasta))
+      .order('fecha', { ascending: true })
+
+    const actual = (candidatas || []).find(c => enVentanaPreAprobacion(c.fecha, c.hora))
+    if (!actual) { setCarrera(null); setInscriptos([]); setLoading(false); return }
+
+    setCarrera(actual)
+    const { data: parts } = await supabase
+      .from('participaciones')
+      .select('user_id, asistencia_confirmada, corredor:profiles!user_id(nombre)')
+      .eq('carrera_id', actual.id)
+      .eq('estado', 'Inscripto')
+    const ordenados = (parts || []).sort((a, b) => (a.corredor?.nombre || '').localeCompare(b.corredor?.nombre || '', 'es'))
+    setInscriptos(ordenados)
+    setLoading(false)
+  }
+
+  async function toggleAsistencia(userId, valorActual) {
+    setMarcando(prev => ({ ...prev, [userId]: true }))
+    await supabase.from('participaciones')
+      .update({ asistencia_confirmada: !valorActual })
+      .eq('carrera_id', carrera.id)
+      .eq('user_id', userId)
+    setMarcando(prev => { const n = { ...prev }; delete n[userId]; return n })
+  }
+
+  if (loading || !carrera) return null
+
+  return (
+    <div className="card" style={{ marginBottom: '14px' }}>
+      <div style={{ fontSize: '12px', fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+        🏁 Carrera actual — {carrera.nombre}
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '10px', lineHeight: 1.4 }}>
+        Marcá a quienes ya viste llegar. Cuando suban su foto pidiendo los puntos, se les va a
+        aprobar directo — sin pasar por el análisis de la IA.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {inscriptos.map(it => (
+          <div key={it.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', background: 'var(--bg3)', borderRadius: '8px' }}>
+            <span style={{ fontSize: '13px' }}>{it.corredor?.nombre || '—'}</span>
+            <button
+              disabled={marcando[it.user_id]}
+              onClick={() => toggleAsistencia(it.user_id, it.asistencia_confirmada)}
+              className={it.asistencia_confirmada ? 'btn-accent' : 'btn-ghost'}
+              style={{ fontSize: '12px', height: 28, padding: '0 12px', flexShrink: 0 }}
+            >
+              {it.asistencia_confirmada ? '✓ Llegó' : 'Marcar que llegó'}
+            </button>
+          </div>
+        ))}
+        {inscriptos.length === 0 && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>Todavía no hay inscriptos para esta carrera.</div>}
+      </div>
+    </div>
+  )
+}
+
 // ─── REVISIÓN ADMIN ──────────────────────────────────────────────────────────
 // La IA resuelve la gran mayoría sola (validado / rechazado en el intento 1).
 // Acá solo llegan los casos que necesitan ojo humano:
@@ -302,9 +393,12 @@ function FlamaPoints() {
 
     const enviadasIds = new Set((env || []).map(e => e.carrera_id))
     // Habilitada para pedir Flama Points desde el horario de INICIO de la carrera
-    // (no recién al día siguiente) — por eso se usa yaEmpezo(fecha, hora).
+    // (no recién al día siguiente) y solo dentro del plazo de reclamo.
     const elegibles = (parts || [])
-      .filter(p => p.carrera && p.carrera.flama_points && yaEmpezo(p.carrera.fecha, p.carrera.hora) && !enviadasIds.has(p.carrera_id))
+      .filter(p => p.carrera && p.carrera.flama_points
+        && yaEmpezo(p.carrera.fecha, p.carrera.hora)
+        && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
+        && !enviadasIds.has(p.carrera_id))
       .map(p => ({ ...p.carrera }))
       .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
 
@@ -448,6 +542,7 @@ function FlamaPoints() {
         <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Sumá puntos corriendo</span>
       </div>
 
+      {isAdmin && <CarreraActual />}
       {isAdmin && <RevisionAdmin />}
 
       {/* Explicación */}
@@ -459,6 +554,10 @@ function FlamaPoints() {
         Una IA revisa la foto al toque: si los confirma, los puntos se acreditan en el momento. Si no logra
         confirmarlos, tenés <strong style={{ color: 'var(--text)' }}>una segunda oportunidad</strong> para volver a
         subir la foto — y si tampoco se puede confirmar esa vez, el profe lo revisa a mano y da el veredicto final.
+        <br /><br />
+        ⚠️ <strong style={{ color: 'var(--text)' }}>Es obligatorio cargar la foto si querés sumar tus puntos</strong> — tenés{' '}
+        <strong style={{ color: 'var(--text)' }}>hasta {PLAZO_RECLAMO_DIAS} días después de la carrera</strong> para hacerlo.
+        Pasado ese plazo, ya no se puede reclamar.
       </div>
 
       {/* Total */}
@@ -603,7 +702,10 @@ export default function Mas({ ventasDisponibles = 0 }) {
       ])
       const enviadasIds = new Set((env || []).map(e => e.carrera_id))
       const cantidad = (parts || [])
-        .filter(p => p.carrera && p.carrera.flama_points && yaEmpezo(p.carrera.fecha, p.carrera.hora) && !enviadasIds.has(p.carrera_id))
+        .filter(p => p.carrera && p.carrera.flama_points
+          && yaEmpezo(p.carrera.fecha, p.carrera.hora)
+          && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
+          && !enviadasIds.has(p.carrera_id))
         .length
       if (activo) setFlamaPendientes(cantidad)
     }
