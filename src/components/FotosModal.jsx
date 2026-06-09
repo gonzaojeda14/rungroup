@@ -178,9 +178,9 @@ export default function FotosModal({ carrera, onClose }) {
 
   return (
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'var(--bg)', display: 'flex', flexDirection: 'column', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', paddingTop: 'max(14px, env(safe-area-inset-top))', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: '15px' }}>{carrera.nombre}</div>
             <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{fotos.length} foto{fotos.length !== 1 ? 's' : ''}</div>
