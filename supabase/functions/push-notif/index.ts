@@ -192,24 +192,33 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
     if (authErr || !user) return json({ error: 'Token inválido' }, 401)
 
-    // Construir query de suscripciones
-    let query = supabase
-      .from('push_subscriptions')
-      .select('user_id, subscription, profiles!inner(email)')
+    // Resolver user_ids según el modo
+    let targetUserIds: string[] | null = null // null = todos
 
     if (TESTING_MODE) {
-      query = query.eq('profiles.email', TEST_EMAIL)
       console.log(`[push-notif] TESTING_MODE — solo a ${TEST_EMAIL}`)
+      const { data: prof } = await supabase
+        .from('profiles').select('id').eq('email', TEST_EMAIL)
+      targetUserIds = (prof || []).map(p => p.id)
     } else if (user_ids?.length) {
-      query = query.in('user_id', user_ids)
+      targetUserIds = user_ids
     } else if (emails?.length) {
-      query = query.in('profiles.email', emails)
+      const { data: prof } = await supabase
+        .from('profiles').select('id').in('email', emails)
+      targetUserIds = (prof || []).map(p => p.id)
     } else if (!all) {
       return json({ error: 'Especificar user_ids, emails o all=true' }, 400)
     }
 
-    const { data: subs, error: dbErr } = await query
+    // Buscar suscripciones
+    let subsQuery = supabase.from('push_subscriptions').select('user_id, subscription')
+    if (targetUserIds !== null) subsQuery = subsQuery.in('user_id', targetUserIds)
+
+    const { data: subs, error: dbErr } = await subsQuery
     if (dbErr) return json({ error: dbErr.message }, 500)
+
+    // Escribir en notif_payload para que el SW muestre el mensaje correcto
+    await supabase.from('notif_payload').upsert({ id: 1, titulo: title, contenido: body, tipo: 'push' })
 
     const payload = { title, body, url }
     const results = await Promise.allSettled(

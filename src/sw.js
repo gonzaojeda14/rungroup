@@ -26,14 +26,20 @@ async function mostrarNotificacion() {
     const data = await res.json()
     const payload = data?.[0]
     const esPlan = payload?.tipo === 'plan'
-    const title = esPlan ? '¡A entrenar! 💪' : 'Nuevo aviso 📢'
-    const body = esPlan ? 'Ya está el nuevo plan semanal.' : (payload?.titulo || 'Tocá para ver el aviso.')
+    const esPush = payload?.tipo === 'push'
+    const title = esPush ? (payload?.titulo || 'Flama Run')
+                : esPlan ? '¡A entrenar! 💪'
+                : 'Nuevo aviso 📢'
+    const body  = esPush ? (payload?.contenido || 'Tocá para ver.')
+                : esPlan ? 'Ya está el nuevo plan semanal.'
+                : (payload?.titulo || 'Tocá para ver el aviso.')
+    const url   = payload?.url || '/novedades'
     return self.registration.showNotification(title, {
       body,
       icon: '/icon-notif.png',
       badge: '/badge-f.png',
       vibrate: [200, 100, 200],
-      data: { url: '/novedades' }
+      data: { url }
     })
   } catch {
     return self.registration.showNotification('Flama Run', {
