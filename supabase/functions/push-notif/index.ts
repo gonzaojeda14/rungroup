@@ -189,8 +189,12 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
-    if (authErr || !user) return json({ error: 'Token inválido' }, 401)
+    // Aceptar también llamadas internas con la service role key (ej: notif-7dias)
+    const esLlamadaInterna = token === SERVICE_ROLE_KEY
+    if (!esLlamadaInterna) {
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+      if (authErr || !user) return json({ error: 'Token inválido' }, 401)
+    }
 
     // Resolver user_ids según el modo
     let targetUserIds: string[] | null = null // null = todos

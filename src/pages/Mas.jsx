@@ -709,7 +709,7 @@ function FlamaPoints() {
     <div className="page">
       <div className="page-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
         <h2>Flamitas</h2>
-        <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Sumá puntos corriendo</span>
+        <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Sumá puntos corriendo o acompañando</span>
       </div>
 
       {isAdmin && AUTOMATIZACION_IA_ACTIVA && <CarreraActual />}

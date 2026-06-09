@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatFecha, formatTelefonoWA, transferenciaCerrada } from '../lib/utils'
+import { notificar } from '../lib/push'
 
 function calcularHorasLimite(fechaCarrera) {
   if (!fechaCarrera) return 24
@@ -80,6 +81,12 @@ export default function Ventas() {
         rechazados: yaRechazados,
         estado: 'ofertada',
       }).eq('id', venta.id)
+      notificar(
+        '🎉 ¡Hay un cupo disponible para vos!',
+        `Alguien liberó su inscripción en ${venta.carrera?.nombre || 'una carrera'}. Entrá antes de que se agote.`,
+        '/mas',
+        { user_ids: [siguiente.user_id] }
+      )
     } else {
       await supabase.from('ventas_inscripciones').update({
         ofertado_a: null,
@@ -179,6 +186,15 @@ export default function Ventas() {
       setError('Error al publicar: ' + insertError.message)
       setSaving(false)
       return
+    }
+
+    if (primero) {
+      notificar(
+        '🎉 ¡Hay un cupo disponible para vos!',
+        `Alguien liberó su inscripción en ${carrera?.nombre || 'una carrera'}. Entrá antes de que se agote.`,
+        '/mas',
+        { user_ids: [primero.user_id] }
+      )
     }
 
     setForm({ carrera_id: '', distancia: '', precio: '', nota: '' })

@@ -2,12 +2,18 @@ import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import ConfirmModal from './ConfirmModal'
+import { notificar } from '../lib/push'
+
+// Dedup: 1 notificación por (tagged_user, carrera, tagger) cada 2hs.
+// Persiste en sesión de página, se resetea al recargar.
+const notifFotosLog = {} // { 'userId:carreraId:taggerId': timestamp }
+const NOTIF_FOTOS_COOLDOWN = 2 * 60 * 60 * 1000 // 2 horas
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
 export default function FotosModal({ carrera, onClose }) {
-  const { isAdmin, user } = useAuth()
+  const { isAdmin, user, profile } = useAuth()
   const [fotos, setFotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -65,6 +71,19 @@ export default function FotosModal({ carrera, onClose }) {
     } else {
       await supabase.from('foto_tags').insert({ foto_id: fotoAmpliada.id, user_id: perfil.id, etiquetado_por: user.id })
       setTagsFoto(tags => [...tags, { user_id: perfil.id, nombre: perfil.nombre }])
+
+      // Notificar al etiquetado — dedup 2hs por (tagged, carrera, tagger)
+      const key = `${perfil.id}:${carrera.id}:${user.id}`
+      const ahora = Date.now()
+      if (ahora - (notifFotosLog[key] || 0) > NOTIF_FOTOS_COOLDOWN) {
+        notifFotosLog[key] = ahora
+        notificar(
+          '📸 ¡Te etiquetaron en fotos!',
+          `${profile?.nombre || 'Alguien'} te etiquetó en fotos de ${carrera.nombre}.`,
+          '/carreras',
+          { user_ids: [perfil.id] }
+        )
+      }
     }
     setGuardandoTag(g => { const { [perfil.id]: _, ...resto } = g; return resto })
   }
