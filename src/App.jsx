@@ -62,6 +62,18 @@ function Shell() {
   const [rawFlamaPoints, setRawFlamaPoints] = useState(null)
   const totalFlamaPoints = rawFlamaPoints === null ? null : rawFlamaPoints + (profile?.bonus_perfil_otorgado ? 5 : 0)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
+  const [nuevaVersion, setNuevaVersion] = useState(false)
+
+  // Detecta cuando el SW activa una nueva versión y muestra banner de actualización
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const hadController = !!navigator.serviceWorker.controller
+    const handleControllerChange = () => {
+      if (hadController) setNuevaVersion(true)
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange)
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange)
+  }, [])
 
   useEffect(() => {
     const observer = new MutationObserver(() => setModoClaro(document.body.classList.contains('light')))
@@ -169,6 +181,27 @@ function Shell() {
 
   return (
     <div className="shell">
+      {nuevaVersion && (
+        <div style={{
+          position: 'fixed', bottom: 72, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9999, background: '#1e293b', border: '1px solid rgba(96,165,250,0.4)',
+          borderRadius: '12px', padding: '12px 16px',
+          display: 'flex', alignItems: 'center', gap: '12px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.4)', whiteSpace: 'nowrap',
+        }}>
+          <span style={{ fontSize: '13px', color: '#f1f5f9' }}>🆕 Nueva versión disponible</span>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: '#3b82f6', border: 'none', borderRadius: '8px',
+              color: '#fff', fontSize: '13px', fontWeight: 600,
+              padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            Actualizar
+          </button>
+        </div>
+      )}
       <header className="topbar">
         <div className="topbar-logo">
           <FlamaLogo height={28} light={modoClaro} />
