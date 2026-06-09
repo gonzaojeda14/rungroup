@@ -10,7 +10,7 @@ export async function notificar(title, body, url = '/', targets = {}) {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/push-notif`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,4 +48,33 @@ export async function suscribirPush() {
 
   const existing = await reg.pushManager.getSubscription()
   if (existing) {
-    await gu
+    await guardarSuscripcion(existing)
+    return existing
+  }
+
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  })
+
+  await guardarSuscripcion(sub)
+  return sub
+}
+
+async function guardarSuscripcion(sub) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No hay usuario autenticado')
+
+  const endpoint = sub.toJSON().endpoint
+
+  // Borramos la suscripción anterior del mismo endpoint si existe, y reinsertamos
+  await supabase.from('push_subscriptions')
+    .delete()
+    .eq('user_id', user.id)
+    .filter('subscription->>endpoint', 'eq', endpoint)
+
+  const { error } = await supabase.from('push_subscriptions')
+    .insert({ user_id: user.id, subscription: sub.toJSON() })
+
+  if (error) throw error
+}
