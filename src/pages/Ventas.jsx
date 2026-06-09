@@ -157,7 +157,7 @@ export default function Ventas() {
 
     const { data: espera } = await supabase
       .from('participaciones')
-      .select('user_id, updated_at')
+      .select('user_id, updated_at, distancia_elegida')
       .eq('carrera_id', form.carrera_id)
       .eq('estado', 'Lista de espera')
       .neq('user_id', user.id)

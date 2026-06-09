@@ -69,7 +69,9 @@ Deno.serve(async (req) => {
         }),
       })
 
-      const result = await res.json()
+      const resultText = await res.text()
+      console.log(`[notif-7dias] push-notif status: ${res.status}, body: ${resultText}`)
+      const result = JSON.parse(resultText)
       console.log(`[notif-7dias] ${carrera.nombre}: ${result.sent ?? 0} enviadas`)
       totalEnviadas += result.sent ?? 0
     }

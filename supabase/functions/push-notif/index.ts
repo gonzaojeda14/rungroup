@@ -22,7 +22,7 @@ const TESTING_MODE      = (Deno.env.get('PUSH_TESTING_MODE') ?? 'true').toLowerC
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, apikey',
+  'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, apikey, x-internal-key',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -189,8 +189,9 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
-    // Aceptar también llamadas internas con la service role key (ej: notif-7dias)
-    const esLlamadaInterna = token === SERVICE_ROLE_KEY
+    // Aceptar también llamadas internas (ej: notif-7dias) via header x-internal-key
+    const internalKey = req.headers.get('x-internal-key')
+    const esLlamadaInterna = token === SERVICE_ROLE_KEY || internalKey === SERVICE_ROLE_KEY
     if (!esLlamadaInterna) {
       const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
       if (authErr || !user) return json({ error: 'Token inválido' }, 401)
