@@ -40,7 +40,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
     setLoading(true)
     const [{ data: parts }, { data: cert }, { data: puntos }] = await Promise.all([
       supabase.from('participaciones')
-        .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha, tipo)')
+        .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha)')
         .eq('user_id', corredor.id)
         .neq('estado', 'Pendiente')
         .order('created_at', { ascending: false }),
