@@ -498,7 +498,6 @@ function FlamaPoints() {
   const [subiendo, setSubiendo] = useState(false)
   const [toast, setToast] = useState('')
   const [tieneRecord, setTieneRecord] = useState(false)
-  const [reclamandoBonus, setReclamandoBonus] = useState(false)
   const [introAbierto, setIntroAbierto] = useState(false)
   const inputRef = useRef(null)
 
@@ -524,7 +523,17 @@ function FlamaPoints() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id),
     ])
-    setTieneRecord((recordCount || 0) > 0)
+    const tieneRec = (recordCount || 0) > 0
+    setTieneRecord(tieneRec)
+
+    // Acreditación automática del beneficio de perfil completo:
+    // si se cumplen las dos condiciones y todavía no se otorgó, se acredita solo.
+    if (!profile?.bonus_perfil_otorgado && tieneRec && profile?.certificado_url) {
+      supabase.from('profiles')
+        .update({ bonus_perfil_otorgado: true })
+        .eq('id', user.id)
+        .then(() => refreshProfile())
+    }
 
     const enviadasIds = new Set((env || []).map(e => e.carrera_id))
     // Habilitada para pedir Flama Points desde el horario de INICIO de la carrera
@@ -648,20 +657,6 @@ function FlamaPoints() {
     setSubiendo(false)
   }
 
-  async function reclamarBonus() {
-    setReclamandoBonus(true)
-    const { error } = await supabase.from('profiles')
-      .update({ bonus_perfil_otorgado: true })
-      .eq('id', user.id)
-    if (error) {
-      avisar('❌ Error al reclamar el bono')
-    } else {
-      await refreshProfile()
-      avisar('✅ ¡Listo! Sumaste 5 Flamitas por completar tu perfil')
-    }
-    setReclamandoBonus(false)
-  }
-
   const totalPuntos = envios.filter(e => e.estado === 'validado').reduce((acc, e) => acc + (e.puntos || 0), 0)
     + (profile?.bonus_perfil_otorgado ? 5 : 0)
 
@@ -738,42 +733,10 @@ function FlamaPoints() {
             Los puntos se acreditan al instante. Tenés hasta {PLAZO_RECLAMO_DIAS} días post-carrera para cargar la foto.
             <br /><br />
             <strong style={{ color: 'var(--text)' }}>Por perfil completo (única vez):</strong><br />
-            💎 Cargá tu <strong style={{ color: 'var(--text)' }}>certificado médico</strong> y al menos un <strong style={{ color: 'var(--text)' }}>récord personal</strong> en "Mi perfil" → <strong style={{ color: 'var(--text)' }}>+5 Flamitas</strong> de una sola vez.
+            💎 Cargá tu <strong style={{ color: 'var(--text)' }}>certificado médico</strong> y al menos un <strong style={{ color: 'var(--text)' }}>récord personal</strong> en "Mi perfil" → <strong style={{ color: 'var(--text)' }}>+5 Flamitas</strong> de forma automática.
           </div>
         )}
       </div>
-
-      {/* Bono: perfil completo */}
-      {(() => {
-        const bonusOtorgado = !!profile?.bonus_perfil_otorgado
-        const tieneCert = !!profile?.certificado_url
-        const condicionesMet = tieneCert && tieneRecord
-        return (
-          <div className="card" style={{ marginBottom: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: bonusOtorgado ? 0 : '10px' }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '14px' }}>Perfil completo</div>
-                <div style={{ fontSize: '12px', color: 'var(--text2)' }}>Bono único · +5 Flamitas</div>
-              </div>
-              {bonusOtorgado ? (
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#4ade80', whiteSpace: 'nowrap' }}>✅ +5 acreditados</span>
-              ) : condicionesMet ? (
-                <button className="btn-accent" style={{ fontSize: '12px', height: 32, padding: '0 14px', flexShrink: 0 }} onClick={reclamarBonus} disabled={reclamandoBonus}>
-                  {reclamandoBonus ? '...' : '💎 Reclamar +5'}
-                </button>
-              ) : (
-                <span style={{ fontSize: '12px', color: 'var(--text2)', fontStyle: 'italic' }}>Pendiente</span>
-              )}
-            </div>
-            {!bonusOtorgado && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: 'var(--text2)' }}>
-                <span>{tieneCert ? '✅' : '⬜'} Certificado médico cargado</span>
-                <span>{tieneRecord ? '✅' : '⬜'} Al menos un récord personal cargado</span>
-              </div>
-            )}
-          </div>
-        )
-      })()}
 
       {/* Total */}
       <div className="card" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -914,6 +877,32 @@ function FlamaPoints() {
       {pendientes.length === 0 && envios.length === 0 && (
         <div className="empty-state">Todavía no participaste de carreras como "Inscripto" o "Stand Flama". ¡Cuando arranque una en la que estés anotado/a así, vas a poder cargar tu foto acá!</div>
       )}
+
+      {/* Beneficio único: perfil completo — al fondo porque es un one-shot */}
+      {(() => {
+        const bonusOtorgado = !!profile?.bonus_perfil_otorgado
+        const tieneCert = !!profile?.certificado_url
+        return (
+          <div className="card" style={{ marginTop: '6px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: bonusOtorgado ? 0 : '10px' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '14px' }}>Perfil completo</div>
+                <div style={{ fontSize: '12px', color: 'var(--text2)' }}>Beneficio único · +5 Flamitas</div>
+              </div>
+              {bonusOtorgado
+                ? <span style={{ fontSize: '13px', fontWeight: 700, color: '#4ade80', whiteSpace: 'nowrap' }}>✅ +5 acreditados</span>
+                : <span style={{ fontSize: '12px', color: 'var(--text2)', fontStyle: 'italic' }}>Pendiente</span>
+              }
+            </div>
+            {!bonusOtorgado && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: 'var(--text2)' }}>
+                <span>{tieneCert ? '✅' : '⬜'} Certificado médico cargado</span>
+                <span>{tieneRecord ? '✅' : '⬜'} Al menos un récord personal cargado</span>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {toast && (
         <div style={{ position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', boxShadow: '0 4px 16px rgba(0,0,0,0.3)', zIndex: 100, maxWidth: '90%', textAlign: 'center' }}>
