@@ -301,7 +301,7 @@ function Shell() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
-                {(ventasDisponibles) > 9 ? '9+' : (ventasDisponibles)}
+                {(ventasDisponibles + flamaPendientes) > 9 ? '9+' : (ventasDisponibles + flamaPendientes)}
               </span>
             )}
           </div>
