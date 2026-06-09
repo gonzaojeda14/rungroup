@@ -365,33 +365,6 @@ export default function MiPerfil() {
         </form>
       </div>
 
-      {/* LESIONES / MOLESTIAS */}
-      <div className="card" style={{ marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Lesiones / molestias</h3>
-        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px', lineHeight: 1.4 }}>
-          Si tenés alguna lesión o molestia, contanos brevemente para que el equipo lo tenga en cuenta. Solo lo van a poder ver los profes.
-        </div>
-        <form onSubmit={handleGuardarLesion}>
-          <div className="form-grid">
-            <div className="field full">
-              <label>Detalle</label>
-              <input value={lesion} onChange={e => setLesion(e.target.value)} placeholder="Ej: molestia en la rodilla derecha" maxLength={200} />
-            </div>
-          </div>
-          {msgLesion && <div className={msgLesion.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgLesion}</div>}
-          <div className="form-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
-            <button type="submit" className="btn-primary" disabled={savingLesion || lesion.trim() === lesionGuardada}>
-              {savingLesion ? 'Guardando...' : 'Guardar'}
-            </button>
-            {lesionGuardada && (
-              <button type="button" className="btn-ghost" onClick={handleBorrarLesion} disabled={savingLesion}>
-                Quitar
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
       {/* CERTIFICADO MÉDICO */}
       <div className="card" style={{ marginBottom: '12px' }}>
         <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Certificado médico</h3>
@@ -463,6 +436,36 @@ export default function MiPerfil() {
           <button type="submit" className="btn-primary">Guardar contacto</button>
         </form>
       </div>
+
+      {/* LESIONES / MOLESTIAS */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Lesiones / molestias</h3>
+        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px', lineHeight: 1.4 }}>
+          Si tenés alguna lesión o molestia, contanos brevemente para que el equipo lo tenga en cuenta. Solo lo van a poder ver los profes.
+        </div>
+        <form onSubmit={handleGuardarLesion}>
+          <div className="form-grid">
+            <div className="field full">
+              <label>Detalle</label>
+              <input value={lesion} onChange={e => setLesion(e.target.value)} placeholder="Ej: molestia en la rodilla derecha" maxLength={200} />
+            </div>
+          </div>
+          {msgLesion && <div className={msgLesion.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgLesion}</div>}
+          <div className="form-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+            <button type="submit" className="btn-primary" disabled={savingLesion || lesion.trim() === lesionGuardada}>
+              {savingLesion ? 'Guardando...' : 'Guardar'}
+            </button>
+            {lesionGuardada && (
+              <button type="button" className="btn-ghost" onClick={handleBorrarLesion} disabled={savingLesion}>
+                Quitar
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* RECORDS PERSONALES */}
+      <RecordsPersonales />
 
       {/* NOTIFICACIONES */}
       <div className="card" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -550,9 +553,6 @@ export default function MiPerfil() {
       {fotosCarrera && (
         <FotosModal carrera={fotosCarrera} onClose={() => setFotosCarrera(null)} />
       )}
-
-      {/* RECORDS PERSONALES */}
-      <RecordsPersonales />
 
       {/* CAMBIAR CONTRASEÑA */}
       <div className="card" style={{ marginBottom: '12px' }}>
