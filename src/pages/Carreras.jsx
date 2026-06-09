@@ -1201,4 +1201,82 @@ export default function Carreras() {
             <div style={{
               position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
               background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '10px 1
+              color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
+              fontSize: '13px', fontWeight: 500, zIndex: 10,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)', whiteSpace: 'nowrap',
+            }}>
+              {toast}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {fotoAmpliada && (
+        <div
+          onClick={() => setFotoAmpliada(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <img
+            src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')}
+            alt=""
+            style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }}
+          />
+          <a
+            href={fotoAmpliada.cloudinary_url}
+            download target="_blank" rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{ marginTop: 10, padding: '8px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 13, textDecoration: 'none' }}
+          >
+            ⬇ Descargar original
+          </a>
+        </div>
+      )}
+
+      {confirmarEliminarFoto && (
+        <ConfirmModal
+          mensaje="¿Eliminar esta foto?"
+          onConfirm={() => eliminarFoto(confirmarEliminarFoto)}
+          onCancel={() => setConfirmarEliminarFoto(null)}
+        />
+      )}
+
+      {confirmarEliminarCarrera && (
+        <ConfirmModal
+          mensaje="¿Eliminar esta carrera?"
+          onConfirm={() => handleDelete(confirmarEliminarCarrera)}
+          onCancel={() => setConfirmarEliminarCarrera(null)}
+        />
+      )}
+
+      {confirmarBorrarTodas && (
+        <ConfirmModal
+          mensaje={`¿Borrar las ${fotos.length} fotos de ${fotosModal?.nombre}? Esta acción no se puede deshacer.`}
+          onConfirm={borrarTodasLasFotos}
+          onCancel={() => setConfirmarBorrarTodas(false)}
+        />
+      )}
+
+      {confirmarBorrarSeleccion && (
+        <ConfirmModal
+          mensaje={`¿Borrar ${seleccionadas.size} foto${seleccionadas.size !== 1 ? 's' : ''} seleccionada${seleccionadas.size !== 1 ? 's' : ''}?`}
+          onConfirm={borrarSeleccionadas}
+          onCancel={() => setConfirmarBorrarSeleccion(false)}
+        />
+      )}
+
+      {toast && !fotosModal && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
+          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
+          fontSize: '13px', fontWeight: 500, zIndex: 999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          animation: 'fadeIn .2s ease',
+        }}>
+          ✅ {toast}
+        </div>
+      )}
+    </div>
+  )
+}
