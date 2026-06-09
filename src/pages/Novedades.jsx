@@ -284,13 +284,16 @@ export default function Novedades() {
                 <input value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Plan semana 23/06" />
               </div>
               <div className="field" style={{ marginBottom: '10px' }}>
-                <label>Archivo (DOCX o PDF) *</label>
+                <label>Archivo *</label>
                 <label className="file-upload-label">
                   <input type="file" accept=".docx,.pdf,.doc" onChange={e => setArchivo(e.target.files[0])} style={{ display: 'none' }} />
                   <span className="file-upload-btn">
                     {archivo ? `✅ ${archivo.name}` : '📎 Seleccionar archivo'}
                   </span>
                 </label>
+                <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '6px' }}>
+                  Recomendamos subir en formato <strong>PDF</strong> — se abre directo en el celular sin necesidad de otra app. Los DOCX también funcionan pero pueden pedir seleccionar una app para abrirse.
+                </div>
               </div>
             </>
           )}
