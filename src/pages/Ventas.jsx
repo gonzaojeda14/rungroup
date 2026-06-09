@@ -98,8 +98,18 @@ export default function Ventas() {
   }, [])
 
   const fetchAll = useCallback(async () => {
+    const { data: inscriptas } = await supabase
+      .from('participaciones')
+      .select('carrera_id')
+      .eq('user_id', user.id)
+      .eq('estado', 'Inscripto')
+
+    const carreraIdsInscripto = (inscriptas || []).map(p => p.carrera_id)
+
     const [{ data: cars }, { data: vsRaw }] = await Promise.all([
-      supabase.from('carreras').select('id, nombre, fecha, distancias, distancia').gte('fecha', new Date().toISOString().split('T')[0]).order('fecha'),
+      carreraIdsInscripto.length
+        ? supabase.from('carreras').select('id, nombre, fecha, distancias, distancia').in('id', carreraIdsInscripto).gte('fecha', new Date().toISOString().split('T')[0]).order('fecha')
+        : Promise.resolve({ data: [] }),
       supabase.from('ventas_inscripciones')
         .select('*, carrera:carreras(nombre, fecha, hora)')
         .in('estado', ['disponible', 'ofertada', 'contactada'])
