@@ -112,9 +112,9 @@ function Shell() {
     async function calcularFlamaPendientes() {
       const [{ data: parts }, { data: env }] = await Promise.all([
         supabase.from('participaciones')
-          .select('carrera_id, carrera:carreras(id, fecha, hora, flama_points)')
+          .select('carrera_id, carrera:carreras(id, fecha, hora, flama_points, es_prueba)')
           .eq('user_id', user.id)
-          .eq('estado', 'Inscripto'),
+          .in('estado', ['Inscripto', 'Stand Flama']),
         supabase.from('puntos_carreras')
           .select('carrera_id')
           .eq('user_id', user.id),
@@ -122,6 +122,7 @@ function Shell() {
       const enviadasIds = new Set((env || []).map(e => e.carrera_id))
       const cantidad = (parts || [])
         .filter(p => p.carrera && p.carrera.flama_points
+          && (!p.carrera.es_prueba || isAdmin)
           && yaEmpezo(p.carrera.fecha, p.carrera.hora)
           && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
           && !enviadasIds.has(p.carrera_id))
@@ -134,7 +135,7 @@ function Shell() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'participaciones', filter: `user_id=eq.${user.id}` }, calcularFlamaPendientes)
       .subscribe()
     return () => { activo = false; supabase.removeChannel(channel) }
-  }, [user])
+  }, [user, isAdmin])
 
   useEffect(() => {
     if (!user) return
