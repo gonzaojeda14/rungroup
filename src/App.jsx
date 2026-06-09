@@ -217,6 +217,8 @@ function Shell() {
           <Route path="/ventas" element={<Ventas />} />
           <Route path="/mas" element={<Mas ventasDisponibles={ventasDisponibles} />} />
           <Route path="/novedades" element={<Novedades />} />
+          <Route path="/registro" element={<Navigate to="/carreras" replace />} />
+          <Route path="*" element={<Navigate to="/carreras" replace />} />
         </Routes>
       </main>
 
