@@ -28,6 +28,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
   const [loading, setLoading] = useState(true)
   const [extra, setExtra] = useState({})
   const [bloqueado, setBloqueado] = useState(corredor.activo === false)
+  const [totalFlamitas, setTotalFlamitas] = useState(null)
 
   const hoy = new Date().toISOString().split('T')[0]
 
@@ -37,19 +38,25 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
 
   async function fetchDatos() {
     setLoading(true)
-    const [{ data: parts }, { data: cert }] = await Promise.all([
+    const [{ data: parts }, { data: cert }, { data: puntos }] = await Promise.all([
       supabase.from('participaciones')
         .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha, tipo)')
         .eq('user_id', corredor.id)
         .neq('estado', 'Pendiente')
         .order('created_at', { ascending: false }),
       supabase.from('profiles')
-        .select('certificado_url, certificado_fecha, fecha_nacimiento, telefono, lesion_actual')
+        .select('certificado_url, certificado_fecha, fecha_nacimiento, telefono, lesion_actual, bonus_perfil_otorgado')
         .eq('id', corredor.id)
-        .single()
+        .single(),
+      supabase.from('puntos_carreras')
+        .select('puntos')
+        .eq('user_id', corredor.id)
+        .eq('estado', 'validado'),
     ])
     setParticipaciones(parts || [])
     setExtra(cert || {})
+    const base = (puntos || []).reduce((acc, r) => acc + (r.puntos || 0), 0)
+    setTotalFlamitas(base + (cert?.bonus_perfil_otorgado ? 5 : 0))
 
     if (cert?.certificado_url) {
       if (cert.certificado_url.startsWith('http')) {
@@ -140,6 +147,14 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
             )}
           </div>
         </div>
+
+        {/* FLAMITAS */}
+        {totalFlamitas !== null && (
+          <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text2)' }}>Flamitas acumuladas</span>
+            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--accent)' }}>💎 {totalFlamitas}</span>
+          </div>
+        )}
 
         {/* CERTIFICADO */}
         <div className="card">

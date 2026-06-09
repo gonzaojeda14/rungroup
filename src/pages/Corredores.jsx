@@ -18,7 +18,21 @@ export default function Corredores() {
   const [perfilAbierto, setPerfilAbierto] = useState(null)
   const [confirmarBloquear, setConfirmarBloquear] = useState(null) // corredor a bloquear
 
-  useEffect(() => { fetchCorredores(); fetchBugs() }, [])
+  const [flamitasMap, setFlamitasMap] = useState({}) // { user_id: totalPuntos }
+
+  useEffect(() => { fetchCorredores(); fetchBugs(); fetchFlamitas() }, [])
+
+  async function fetchFlamitas() {
+    const { data } = await supabase
+      .from('puntos_carreras')
+      .select('user_id, puntos')
+      .eq('estado', 'validado')
+    const map = {}
+    for (const r of data || []) {
+      map[r.user_id] = (map[r.user_id] || 0) + (r.puntos || 0)
+    }
+    setFlamitasMap(map)
+  }
 
   async function fetchBugs() {
     const { data } = await supabase
@@ -149,6 +163,12 @@ export default function Corredores() {
             {c.role === 'admin' && <span className="badge green">Admin</span>}
             {c.role !== 'admin' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {(() => {
+                  const total = (flamitasMap[c.id] || 0) + (c.bonus_perfil_otorgado ? 5 : 0)
+                  return total > 0 ? (
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', whiteSpace: 'nowrap' }}>💎 {total}</span>
+                  ) : null
+                })()}
                 {c.lesion_actual && (
                   <span title="Tiene una lesión o molestia cargada" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: '50%', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', flexShrink: 0 }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v8M8 12h8"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
