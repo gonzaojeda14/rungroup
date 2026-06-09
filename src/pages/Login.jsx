@@ -4,6 +4,13 @@ import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import PasswordInput from '../components/PasswordInput'
 
+const MAX_INTENTOS = 3
+const LOCK_KEY = 'login_bloqueado'
+
+function getBloqueado() {
+  try { return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null') } catch { return null }
+}
+
 export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
@@ -13,13 +20,16 @@ export default function Login() {
       navigate('/registro')
     }
   }, [])
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [intentos, setIntentos] = useState(() => getBloqueado()?.intentos || 0)
+  const bloqueado = intentos >= MAX_INTENTOS
 
   // Recuperar contraseña
-  const [showRecuperar, setShowRecuperar] = useState(false)
+  const [showRecuperar, setShowRecuperar] = useState(bloqueado)
   const [emailRecuperar, setEmailRecuperar] = useState('')
   const [recuperarLoading, setRecuperarLoading] = useState(false)
   const [recuperarDone, setRecuperarDone] = useState(false)
@@ -30,7 +40,18 @@ export default function Login() {
     setLoading(true)
     setError('')
     const err = await signIn(email, password)
-    if (err) setError('Email o contraseña incorrectos')
+    if (err) {
+      const nuevos = intentos + 1
+      setIntentos(nuevos)
+      localStorage.setItem(LOCK_KEY, JSON.stringify({ intentos: nuevos }))
+      if (nuevos >= MAX_INTENTOS) {
+        setShowRecuperar(true)
+      } else {
+        setError(`Email o contraseña incorrectos. Intentos restantes: ${MAX_INTENTOS - nuevos}`)
+      }
+    } else {
+      localStorage.removeItem(LOCK_KEY)
+    }
     setLoading(false)
   }
 
@@ -44,6 +65,8 @@ export default function Login() {
     if (err) {
       setRecuperarError('No se pudo enviar el correo. Verificá el email.')
     } else {
+      localStorage.removeItem(LOCK_KEY)
+      setIntentos(0)
       setRecuperarDone(true)
     }
     setRecuperarLoading(false)
@@ -145,6 +168,16 @@ export default function Login() {
             Olvidé mi contraseña
           </button>
         </form>
+        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text2)' }}>¿No tenés cuenta? </span>
+          <button
+            type="button"
+            onClick={() => navigate('/registro')}
+            style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+          >
+            Registrarme
+          </button>
+        </div>
       </div>
     </div>
   )

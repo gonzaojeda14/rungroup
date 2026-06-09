@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './lib/auth'
 import { supabase } from './lib/supabase'
@@ -161,7 +161,11 @@ function Shell() {
     </div>
   )
 
-  if (!user) return <Login />
+  if (!user) {
+    const path = window.location.pathname
+    if (path === '/registro') return <Register />
+    return <Login />
+  }
 
   return (
     <div className="shell">
