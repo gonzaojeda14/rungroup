@@ -512,7 +512,7 @@ function FlamaPoints() {
   async function fetchTodo() {
     const [{ data: parts }, { data: env }, { count: recordCount }] = await Promise.all([
       supabase.from('participaciones')
-        .select('carrera_id, estado, carrera:carreras(id, nombre, fecha, hora, distancia, tipo, flama_points)')
+        .select('carrera_id, estado, carrera:carreras(id, nombre, fecha, hora, distancia, tipo, flama_points, es_prueba)')
         .eq('user_id', user.id)
         .in('estado', ['Inscripto', 'Stand Flama']),
       supabase.from('puntos_carreras')
@@ -541,6 +541,7 @@ function FlamaPoints() {
     // Para "Inscripto" y "Stand Flama" — cada uno con su propia foto y puntaje.
     const elegibles = (parts || [])
       .filter(p => p.carrera && p.carrera.flama_points
+        && (!p.carrera.es_prueba || isAdmin)
         && yaEmpezo(p.carrera.fecha, p.carrera.hora)
         && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
         && !enviadasIds.has(p.carrera_id))
@@ -730,7 +731,8 @@ function FlamaPoints() {
             <strong style={{ color: 'var(--text)' }}>Por carreras:</strong><br />
             🏅 <strong style={{ color: 'var(--text)' }}>Inscripto</strong> — subí foto con dorsal (y medalla si tenés) → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_INSCRIPTO} Flamitas</strong><br />
             🧉 <strong style={{ color: 'var(--text)' }}>Stand Flama</strong> — subí foto del stand o el aliento → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_STAND_FLAMA} Flamita</strong><br />
-            Los puntos se acreditan al instante. Tenés hasta {PLAZO_RECLAMO_DIAS} días post-carrera para cargar la foto.
+            Los puntos se acreditan al instante. Tenés hasta {PLAZO_RECLAMO_DIAS} días post-carrera para cargar la foto.<br />
+            <span style={{ color: 'var(--text)', fontStyle: 'italic' }}>Comenzará a contar desde el Circuito de las Estaciones (Invierno).</span>
             <br /><br />
             <strong style={{ color: 'var(--text)' }}>Por perfil completo (única vez):</strong><br />
             💎 Cargá tu <strong style={{ color: 'var(--text)' }}>certificado médico</strong> y al menos un <strong style={{ color: 'var(--text)' }}>récord personal</strong> en "Mi perfil" → <strong style={{ color: 'var(--text)' }}>+5 Flamitas</strong> de forma automática.
@@ -998,8 +1000,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
                 {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
               </span>
             )}
-            {/* TEMP: notif de Flama Points desactivada hasta que el apartado esté listo para todos. Reactivar quitando "&& false" */}
-            {false && t === 'Flamitas' && isAdmin && flamaPendientes > 0 && (
+            {t === 'Flamitas' && flamaPendientes > 0 && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: '4px', verticalAlign: 'middle',
@@ -1017,7 +1018,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       {/* Contenido */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'Alianzas' && <Alianzas />}
-        {tab === 'Flamitas' && (isAdmin ? <FlamaPoints /> : <FlamaPointsProximamente />)}
+        {tab === 'Flamitas' && <FlamaPoints />}
         {tab === 'Inscripciones' && <Ventas />}
       </div>
     </div>

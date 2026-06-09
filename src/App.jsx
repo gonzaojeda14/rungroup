@@ -290,8 +290,7 @@ function Shell() {
           </svg>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <span>Flama</span>
-            {/* TEMP: Flama Points notifs desactivadas hasta que el apartado esté listo para todos. Reactivar sumando + flamaPendientes de nuevo */}
-            {(ventasDisponibles) > 0 && (
+            {(ventasDisponibles + flamaPendientes) > 0 && (
               <span style={{
                 position: 'absolute', top: -4, right: -14,
                 minWidth: 14, height: 14, padding: '0 3px',
