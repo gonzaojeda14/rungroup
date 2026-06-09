@@ -37,7 +37,7 @@ export default function Corredores() {
   async function fetchBugs() {
     const { data } = await supabase
       .from('bug_reports')
-      .select('*, profiles(nombre)')
+      .select('*')
       .order('created_at', { ascending: false })
     setBugs(data || [])
   }
@@ -203,7 +203,7 @@ export default function Corredores() {
               <div key={b.id} className="card" style={{ borderLeft: b.estado === 'resuelto' ? '3px solid rgba(74,222,128,0.4)' : '3px solid rgba(251,191,36,0.4)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                   <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '2px' }}>{b.profiles?.nombre}</div>
+
                     <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{new Date(b.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
                   </div>
                   <span style={{
