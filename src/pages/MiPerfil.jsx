@@ -15,6 +15,8 @@ const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 export default function MiPerfil() {
   const { user, profile } = useAuth()
   const [form, setForm] = useState({ nombre: '', fechaNacimiento: '', telefono: '' })
+  const [emergencia, setEmergencia] = useState({ nombre: '', telefono: '' })
+  const [msgEmergencia, setMsgEmergencia] = useState('')
   const [certInfo, setCertInfo] = useState({ url: null, fecha: null })
   const [certFile, setCertFile] = useState(null)
   const [avatarUrl, setAvatarUrl] = useState(null)
@@ -132,6 +134,7 @@ export default function MiPerfil() {
         telefono: data.telefono || '',
       })
       setCertInfo({ url: data.certificado_url || null, fecha: data.certificado_fecha || null })
+      setEmergencia({ nombre: data.emergencia_nombre || '', telefono: data.emergencia_telefono || '' })
       setAvatarUrl(data.avatar_url || null)
       setLesion(data.lesion_actual || '')
       setLesionGuardada(data.lesion_actual || '')
@@ -184,6 +187,16 @@ export default function MiPerfil() {
     if (!error) setForm(prev => ({ ...prev, nombre }))
     setMsg(error ? 'Error al guardar' : '✅ Datos actualizados')
     setSaving(false)
+  }
+
+  async function handleSaveEmergencia(e) {
+    e.preventDefault()
+    setMsgEmergencia('')
+    const { error } = await supabase.from('profiles').update({
+      emergencia_nombre: emergencia.nombre.trim() || null,
+      emergencia_telefono: emergencia.telefono.trim() || null,
+    }).eq('id', user.id)
+    setMsgEmergencia(error ? 'Error al guardar' : '✅ Guardado')
   }
 
   async function handleGuardarLesion(e) {
@@ -432,6 +445,23 @@ export default function MiPerfil() {
         >
           {savingCert ? 'Subiendo...' : certInfo.url ? 'Renovar certificado' : 'Subir certificado'}
         </button>
+      </div>
+
+      {/* CONTACTO DE EMERGENCIA */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Contacto de emergencia</h3>
+        <form onSubmit={handleSaveEmergencia}>
+          <div className="field" style={{ marginBottom: '10px' }}>
+            <label>Nombre</label>
+            <input value={emergencia.nombre} onChange={e => setEmergencia({ ...emergencia, nombre: e.target.value })} placeholder="Ej: María García" />
+          </div>
+          <div className="field" style={{ marginBottom: '10px' }}>
+            <label>Teléfono</label>
+            <input type="tel" value={emergencia.telefono} onChange={e => setEmergencia({ ...emergencia, telefono: e.target.value })} placeholder="+54 11 1234-5678" />
+          </div>
+          {msgEmergencia && <div className={msgEmergencia.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginBottom: '10px' }}>{msgEmergencia}</div>}
+          <button type="submit" className="btn-primary">Guardar contacto</button>
+        </form>
       </div>
 
       {/* NOTIFICACIONES */}

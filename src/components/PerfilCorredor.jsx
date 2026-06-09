@@ -45,7 +45,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
         .neq('estado', 'Pendiente')
         .order('created_at', { ascending: false }),
       supabase.from('profiles')
-        .select('certificado_url, certificado_fecha, fecha_nacimiento, telefono, lesion_actual, bonus_perfil_otorgado')
+        .select('certificado_url, certificado_fecha, fecha_nacimiento, telefono, lesion_actual, bonus_perfil_otorgado, emergencia_nombre, emergencia_telefono')
         .eq('id', corredor.id)
         .single(),
       supabase.from('puntos_carreras')
@@ -177,6 +177,34 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
             )}
           </div>
         </div>
+
+        {/* CONTACTO DE EMERGENCIA */}
+        {(extra.emergencia_nombre || extra.emergencia_telefono) && (
+          <div className="card">
+            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Contacto de emergencia</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {extra.emergencia_nombre && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: 'var(--text2)' }}>Nombre</span>
+                  <span style={{ fontWeight: 500 }}>{extra.emergencia_nombre}</span>
+                </div>
+              )}
+              {extra.emergencia_telefono && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px' }}>
+                  <span style={{ color: 'var(--text2)' }}>Teléfono</span>
+                  <a
+                    href={`https://wa.me/${formatTelefonoWA(extra.emergencia_telefono)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ade80', fontWeight: 500, textDecoration: 'none' }}
+                  >
+                    {extra.emergencia_telefono}
+                    <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor"><path d="M16 2C8.28 2 2 8.28 2 16c0 2.44.65 4.73 1.79 6.72L2 30l7.47-1.76A13.93 13.93 0 0 0 16 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm0 25.5c-2.2 0-4.27-.6-6.04-1.64l-.43-.26-4.43 1.04 1.07-4.3-.28-.45A11.45 11.45 0 0 1 4.5 16C4.5 9.6 9.6 4.5 16 4.5S27.5 9.6 27.5 16 22.4 27.5 16 27.5zm6.27-8.57c-.34-.17-2.02-1-2.34-1.11-.32-.11-.55-.17-.78.17-.23.34-.9 1.11-1.1 1.34-.2.23-.4.26-.74.09-.34-.17-1.44-.53-2.74-1.69-1.01-.9-1.7-2.01-1.9-2.35-.2-.34-.02-.52.15-.69.15-.15.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.09-.17-.78-1.88-1.07-2.57-.28-.67-.57-.58-.78-.59h-.67c-.23 0-.6.09-.91.43-.32.34-1.2 1.17-1.2 2.86s1.23 3.32 1.4 3.55c.17.23 2.42 3.7 5.87 5.19.82.35 1.46.56 1.96.72.82.26 1.57.22 2.16.13.66-.1 2.02-.82 2.31-1.62.28-.8.28-1.48.2-1.62-.09-.14-.32-.23-.66-.4z"/></svg>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* LESIONES / MOLESTIAS */}
         {extra.lesion_actual && (
