@@ -31,7 +31,7 @@ export default function FotosModal({ carrera, onClose }) {
   const [guardandoTag, setGuardandoTag] = useState({})
   const fotoInputRef = useRef()
 
-  useState(() => {
+  useEffect(() => {
     cargarFotos()
   }, [])
 

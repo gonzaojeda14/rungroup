@@ -7,11 +7,13 @@ import PasswordInput from '../components/PasswordInput'
 export default function Register() {
   const navigate = useNavigate()
   const params = new URLSearchParams(window.location.search)
-
-  // Si viene con ?code=, lo persistimos para cuando abran la PWA después
   const codeFromUrl = params.get('code')
-  if (codeFromUrl) localStorage.setItem('invite_code', codeFromUrl)
   const savedCode = localStorage.getItem('invite_code') || ''
+
+  // Persistir el código de invitación en un effect, no durante el render
+  useEffect(() => {
+    if (codeFromUrl) localStorage.setItem('invite_code', codeFromUrl)
+  }, [codeFromUrl])
 
   const [form, setForm] = useState({
     nombre: '',
@@ -53,8 +55,8 @@ export default function Register() {
       setError('El teléfono parece inválido. Ingresá entre 8 y 15 dígitos.')
       return
     }
-    if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+    if (form.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres')
       return
     }
     setSaving(true)

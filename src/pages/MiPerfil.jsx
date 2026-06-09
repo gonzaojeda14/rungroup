@@ -114,7 +114,11 @@ export default function MiPerfil() {
 
   async function eliminarCuenta() {
     setEliminandoCuenta(true)
-    await supabase.from('profiles').delete().eq('id', user.id)
+    // Soft-delete: desactivar perfil en lugar de borrar el row.
+    // Si se borrara solo el row de profiles, el usuario de auth seguiría
+    // existiendo y podría volver a iniciar sesión (el trigger recrearía el perfil).
+    // Con activo:false, auth.jsx lo cierra automáticamente en el próximo login.
+    await supabase.from('profiles').update({ activo: false }).eq('id', user.id)
     await supabase.auth.signOut()
   }
 

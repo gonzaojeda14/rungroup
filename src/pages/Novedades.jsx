@@ -186,6 +186,16 @@ export default function Novedades() {
 
   const [planesUrls, setPlanesUrls] = useState({}) // { archivo_url: signedUrl }
 
+  function abrirArchivo(archivoUrl) {
+    const url = planesUrls[archivoUrl]
+    if (!url) return
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      window.location.href = url
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   const planes = itemsVisibles.filter(i => i.tipo === 'plan')
   const planesRecientes = planes.slice(0, 4)
   const planesAnteriores = planes.slice(4)

@@ -231,10 +231,17 @@ export default function Ventas() {
   // El VENDEDOR confirma que se vendió
   async function handleConfirmarVenta(venta) {
     await supabase.from('ventas_inscripciones').update({ estado: 'vendida' }).eq('id', venta.id)
-    await supabase.from('participaciones')
-      .update({ estado: 'Inscripto' })
-      .eq('carrera_id', venta.carrera_id)
-      .eq('user_id', venta.ofertado_a)
+    // Marcar al comprador como Inscripto y al vendedor como No voy
+    await Promise.all([
+      supabase.from('participaciones')
+        .update({ estado: 'Inscripto' })
+        .eq('carrera_id', venta.carrera_id)
+        .eq('user_id', venta.ofertado_a),
+      supabase.from('participaciones')
+        .update({ estado: 'No voy' })
+        .eq('carrera_id', venta.carrera_id)
+        .eq('user_id', venta.vendedor_id),
+    ])
     fetchAll()
   }
 

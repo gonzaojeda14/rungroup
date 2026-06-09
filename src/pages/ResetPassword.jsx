@@ -11,6 +11,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
+  const [linkExpirado, setLinkExpirado] = useState(false)
 
   // Supabase pone el token en el hash de la URL al llegar desde el link
   useEffect(() => {
@@ -19,7 +20,9 @@ export default function ResetPassword() {
         setSessionReady(true)
       }
     })
-    return () => subscription.unsubscribe()
+    // Si en 15 segundos no llega el evento, el link expiró o es inválido
+    const timeout = setTimeout(() => setLinkExpirado(true), 15000)
+    return () => { subscription.unsubscribe(); clearTimeout(timeout) }
   }, [])
 
   async function handleSubmit(e) {
@@ -56,7 +59,19 @@ export default function ResetPassword() {
     return (
       <div className="login-wrapper">
         <div className="login-card" style={{ textAlign: 'center' }}>
-          <p style={{ color: 'var(--text2)', fontSize: '14px' }}>Verificando link...</p>
+          {linkExpirado ? (
+            <>
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>⚠️</div>
+              <p style={{ color: '#f87171', fontSize: '14px', marginBottom: '20px' }}>
+                El link expiró o ya fue usado. Pedí uno nuevo.
+              </p>
+              <button className="btn-primary" onClick={() => navigate('/')}>
+                Volver al login
+              </button>
+            </>
+          ) : (
+            <p style={{ color: 'var(--text2)', fontSize: '14px' }}>Verificando link...</p>
+          )}
         </div>
       </div>
     )
