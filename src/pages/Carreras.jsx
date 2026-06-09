@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { formatFechaHora, yaEmpezo } from '../lib/utils'
+import { notificar } from '../lib/push'
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
@@ -183,6 +184,13 @@ export default function Carreras() {
       await supabase.from('carreras').update(payload).eq('id', editId)
     } else {
       await supabase.from('carreras').insert([payload])
+      // Notificar a todos que hay una nueva carrera
+      notificar(
+        '🏃 ¡Nueva carrera disponible!',
+        `Se publicó "${payload.nombre}". ¡Anotate!`,
+        '/carreras',
+        { all: true },
+      )
     }
     setForm(EMPTY)
     setEditId(null)
@@ -266,6 +274,7 @@ export default function Carreras() {
 
   async function updateEstado(carreraId, estado) {
     const noVoy = estado === 'No voy'
+    const prevEstado = participaciones.find(p => p.carrera_id === carreraId)?.estado
     const distanciaElegida = noVoy ? null : (distanciasSeleccionadas[carreraId] || null)
     if (noVoy) setDistanciasSeleccionadas(prev => { const n = { ...prev }; delete n[carreraId]; return n })
     await supabase.from('participaciones')
@@ -277,6 +286,26 @@ export default function Carreras() {
       if (exists) return prev.map(p => p.carrera_id === carreraId ? { ...p, estado } : p)
       return [...prev, { carrera_id: carreraId, estado }]
     })
+
+    // Si se liberó un cupo (era Inscripto y ahora no), notificar al primero en lista de espera
+    if (prevEstado === 'Inscripto' && estado !== 'Inscripto') {
+      const { data: espera } = await supabase
+        .from('participaciones')
+        .select('user_id, created_at')
+        .eq('carrera_id', carreraId)
+        .eq('estado', 'Lista de espera')
+        .order('created_at', { ascending: true })
+        .limit(1)
+      if (espera?.[0]) {
+        const carrera = carreras.find(c => c.id === carreraId)
+        notificar(
+          '🎉 ¡Hay un cupo disponible para vos!',
+          `Se liberó un cupo en ${carrera?.nombre ?? 'una carrera'}. ¡Anotate antes de que se llene!`,
+          '/carreras',
+          { user_ids: [espera[0].user_id] },
+        )
+      }
+    }
   }
 
   async function abrirFotos(carrera) {
@@ -390,6 +419,24 @@ export default function Carreras() {
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
+  }
+
+  async function notificarFlamitas(carrera) {
+    const { data: parts } = await supabase
+      .from('participaciones')
+      .select('user_id')
+      .eq('carrera_id', carrera.id)
+      .in('estado', ['Inscripto', 'Stand Flama'])
+    const user_ids = (parts || []).map(p => p.user_id)
+    if (user_ids.length === 0) { setToast('⚠️ No hay inscriptos para notificar'); setTimeout(() => setToast(''), 2500); return }
+    const ok = await notificar(
+      '💎 ¡Ya podés sumar tus Flamitas!',
+      `Subí tu foto de ${carrera.nombre} antes de que pasen 7 días.`,
+      '/mas',
+      { user_ids },
+    )
+    setToast(ok ? '✅ Notificación enviada' : '❌ Error al enviar')
+    setTimeout(() => setToast(''), 2500)
   }
 
   async function toggleInscriptos(carreraId) {
@@ -940,6 +987,21 @@ export default function Carreras() {
                 </div>
               </div>
 
+              {/* Botón admin: notificar Flamitas */}
+              {isAdmin && c.flama_points && (
+                <button
+                  onClick={() => notificarFlamitas(c)}
+                  style={{
+                    marginTop: '8px', width: '100%', padding: '7px',
+                    background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)',
+                    borderRadius: '8px', color: '#a78bfa', fontSize: '12px',
+                    cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600,
+                  }}
+                >
+                  💎 Notificar Flamitas disponibles
+                </button>
+              )}
+
               {/* Quiénes van */}
               {(() => {
                 const abierto = inscriptosAbiertos[c.id]
@@ -1139,82 +1201,4 @@ export default function Carreras() {
             <div style={{
               position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
               background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-              fontSize: '13px', fontWeight: 500, zIndex: 10,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.4)', whiteSpace: 'nowrap',
-            }}>
-              {toast}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Lightbox */}
-      {fotoAmpliada && (
-        <div
-          onClick={() => setFotoAmpliada(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-        >
-          <img
-            src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')}
-            alt=""
-            style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: 8, objectFit: 'contain' }}
-          />
-          <a
-            href={fotoAmpliada.cloudinary_url}
-            download target="_blank" rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            style={{ marginTop: 10, padding: '8px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 13, textDecoration: 'none' }}
-          >
-            ⬇ Descargar original
-          </a>
-        </div>
-      )}
-
-      {confirmarEliminarFoto && (
-        <ConfirmModal
-          mensaje="¿Eliminar esta foto?"
-          onConfirm={() => eliminarFoto(confirmarEliminarFoto)}
-          onCancel={() => setConfirmarEliminarFoto(null)}
-        />
-      )}
-
-      {confirmarEliminarCarrera && (
-        <ConfirmModal
-          mensaje="¿Eliminar esta carrera?"
-          onConfirm={() => handleDelete(confirmarEliminarCarrera)}
-          onCancel={() => setConfirmarEliminarCarrera(null)}
-        />
-      )}
-
-      {confirmarBorrarTodas && (
-        <ConfirmModal
-          mensaje={`¿Borrar las ${fotos.length} fotos de ${fotosModal?.nombre}? Esta acción no se puede deshacer.`}
-          onConfirm={borrarTodasLasFotos}
-          onCancel={() => setConfirmarBorrarTodas(false)}
-        />
-      )}
-
-      {confirmarBorrarSeleccion && (
-        <ConfirmModal
-          mensaje={`¿Borrar ${seleccionadas.size} foto${seleccionadas.size !== 1 ? 's' : ''} seleccionada${seleccionadas.size !== 1 ? 's' : ''}?`}
-          onConfirm={borrarSeleccionadas}
-          onCancel={() => setConfirmarBorrarSeleccion(false)}
-        />
-      )}
-
-      {toast && !fotosModal && (
-        <div style={{
-          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-          fontSize: '13px', fontWeight: 500, zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease',
-        }}>
-          ✅ {toast}
-        </div>
-      )}
-    </div>
-  )
-}
+              color: '#f1f5f9', padding: '10px 1

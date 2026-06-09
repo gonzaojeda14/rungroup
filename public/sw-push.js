@@ -1,13 +1,21 @@
 self.addEventListener('push', event => {
-  const title = 'Flama Run'
-  const body = 'Hay una nueva novedad. Tocá para ver.'
-  const url = '/novedades'
+  let data = {}
+  try {
+    data = event.data?.json() || {}
+  } catch {
+    data = { body: event.data?.text() || '' }
+  }
+
+  const title = data.title || 'Flama Run'
+  const body  = data.body  || 'Hay una novedad. Tocá para ver.'
+  const url   = data.url   || '/'
+
   event.waitUntil(
     self.registration.showNotification(title, {
-      body: body || '',
-      icon: '/icon-192.png',
+      body,
+      icon:  '/icon-192.png',
       badge: '/icon-192.png',
-      data: { url: url || '/' },
+      data:  { url },
     })
   )
 })
@@ -17,9 +25,4 @@ self.addEventListener('notificationclick', event => {
   const url = event.notification.data?.url || '/'
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      const existing = list.find(c => c.url.includes(self.location.origin))
-      if (existing) { existing.focus(); existing.navigate(url) }
-      else clients.openWindow(url)
-    })
-  )
-})
+      const existing = list.find(c => c.url.includes(self.
