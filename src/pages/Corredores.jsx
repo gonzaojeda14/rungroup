@@ -167,7 +167,7 @@ export default function Corredores() {
             {c.role !== 'admin' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {(() => {
-                  const total = (flamitasMap[c.id] || 0) + (c.bonus_perfil_otorgado ? 5 : 0)
+                  const total = flamitasMap[c.id] || 0
                   return total > 0 ? (
                     <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', whiteSpace: 'nowrap' }}>💎 {total}</span>
                   ) : null
