@@ -119,7 +119,7 @@ export default function Participaciones() {
   async function fetchMisCarreras() {
     const [{ data: parts }, { data: tcs }] = await Promise.all([
       supabase.from('participaciones')
-        .select('estado, distancia_elegida, feedback, feedback_nota, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo)')
+        .select('estado, distancia_elegida, feedback, feedback_nota, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo, tipo_actividad, calzado)')
         .eq('user_id', user.id)
         .neq('estado', 'Pendiente'),
       supabase.from('tiempos_carreras')
@@ -369,7 +369,8 @@ export default function Participaciones() {
                           <span className="tag">📏 {p.distancia_elegida || p.carrera?.distancia}</span>
                         )}
                         {p.carrera?.lugar && <span className="tag">📍 {p.carrera.lugar}</span>}
-                        {p.carrera?.tipo && <span className="tag" style={{ background: p.carrera.tipo === 'Trail' ? 'rgba(251,146,60,0.15)' : 'rgba(96,165,250,0.15)', color: p.carrera.tipo === 'Trail' ? '#fb923c' : '#60a5fa', border: `1px solid ${p.carrera.tipo === 'Trail' ? 'rgba(251,146,60,0.3)' : 'rgba(96,165,250,0.3)'}`, fontWeight: 600 }}>{p.carrera.tipo}</span>}
+                        {(!p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera') && p.carrera?.tipo && <span className="tag" style={{ background: p.carrera.tipo === 'Trail' ? 'rgba(251,146,60,0.15)' : 'rgba(96,165,250,0.15)', color: p.carrera.tipo === 'Trail' ? '#fb923c' : '#60a5fa', border: `1px solid ${p.carrera.tipo === 'Trail' ? 'rgba(251,146,60,0.3)' : 'rgba(96,165,250,0.3)'}`, fontWeight: 600 }}>{p.carrera.tipo}</span>}
+                        {p.carrera?.tipo_actividad === 'entrenamiento' && p.carrera?.calzado && <span className="tag" style={{ background: p.carrera.calzado === 'Trail' ? 'rgba(251,146,60,0.15)' : 'rgba(96,165,250,0.15)', color: p.carrera.calzado === 'Trail' ? '#fb923c' : '#60a5fa', border: `1px solid ${p.carrera.calzado === 'Trail' ? 'rgba(251,146,60,0.3)' : 'rgba(96,165,250,0.3)'}`, fontWeight: 600 }}>👟 {p.carrera.calzado}</span>}
                       </div>
                     </div>
 
@@ -401,7 +402,7 @@ export default function Participaciones() {
                     )}
                   </div>
 
-                  {pasada && p.estado === 'Inscripto' && (
+                  {pasada && p.estado === 'Inscripto' && (!p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera') && (
                     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
                       <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '8px' }}>
                         ¿Cómo estuvo la carrera?
@@ -458,8 +459,8 @@ export default function Participaciones() {
                     </button>
                   )}
 
-                  {/* Tiempo de carrera */}
-                  {pasada && p.estado === 'Inscripto' && (() => {
+                  {/* Tiempo de carrera — solo para carreras */}
+                  {pasada && p.estado === 'Inscripto' && (!p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera') && (() => {
                     const dist = p.distancia_elegida || p.carrera?.distancia
                     if (!dist) return null
                     const key = `${p.carrera.id}_${dist}`

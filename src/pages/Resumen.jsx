@@ -168,7 +168,7 @@ export default function Resumen() {
           ) : (
             <StatsRow counts={c.counts} total={c.total} />
           )}
-          {c.feedbacks?.length > 0 && (
+          {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.feedbacks?.length > 0 && (
             <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px' }}>
                 Feedback post-carrera

@@ -62,6 +62,17 @@ export function AuthProvider({ children }) {
       setLoading(false)
       return
     }
+    // Auto-acreditar bonus de perfil completo si califica y no está seteado aún
+    if (data && !data.bonus_perfil_otorgado && data.certificado_url) {
+      const { count } = await supabase
+        .from('records_personales')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+      if ((count || 0) > 0) {
+        await supabase.from('profiles').update({ bonus_perfil_otorgado: true }).eq('id', userId)
+        data.bonus_perfil_otorgado = true
+      }
+    }
     setProfile(data)
     setLoading(false)
   }

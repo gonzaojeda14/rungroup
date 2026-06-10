@@ -38,7 +38,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
 
   async function fetchDatos() {
     setLoading(true)
-    const [{ data: parts }, { data: cert }, { data: puntos }] = await Promise.all([
+    const [{ data: parts }, { data: cert }, { data: puntos }, { count: recordCount }] = await Promise.all([
       supabase.from('participaciones')
         .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha)')
         .eq('user_id', corredor.id)
@@ -52,11 +52,20 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
         .select('puntos')
         .eq('user_id', corredor.id)
         .eq('estado', 'validado'),
+      supabase.from('records_personales')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', corredor.id),
     ])
     setParticipaciones(parts || [])
     setExtra(cert || {})
     const base = (puntos || []).reduce((acc, r) => acc + (r.puntos || 0), 0)
-    setTotalFlamitas(base + (cert?.bonus_perfil_otorgado ? 5 : 0))
+    const tieneRec = (recordCount || 0) > 0
+    const calificaBonus = tieneRec && !!cert?.certificado_url
+    setTotalFlamitas(base + (calificaBonus ? 5 : 0))
+    // Si califica pero el flag no está seteado, corregirlo en la DB
+    if (calificaBonus && !cert?.bonus_perfil_otorgado) {
+      supabase.from('profiles').update({ bonus_perfil_otorgado: true }).eq('id', corredor.id)
+    }
 
     if (cert?.certificado_url) {
       if (cert.certificado_url.startsWith('http')) {
