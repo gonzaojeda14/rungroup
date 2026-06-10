@@ -886,6 +886,12 @@ export default function Carreras() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     {c.destacada && <span style={{ fontSize: '15px', lineHeight: 1 }}>⭐</span>}
                     <h3 style={{ margin: 0 }}>{c.nombre}</h3>
+                    {c.tipo_actividad === 'evento' && (
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}>🎉 Evento</span>
+                    )}
+                    {c.tipo_actividad === 'entrenamiento' && (
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}>💪 Entrenamiento</span>
+                    )}
                   </div>
                   <div className="race-meta">
                     {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
