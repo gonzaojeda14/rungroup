@@ -1195,6 +1195,7 @@ export default function Carreras() {
 
           {/* Barra de progreso */}
           {uploading && (
+            <div style={{ height: '3px', background: 'var(--border)', flexShrink: 0 }}>
               <div style={{ height: '100%', width: `${progreso}%`, background: 'var(--accent)', transition: 'width 0.3s' }} />
             </div>
           )}
