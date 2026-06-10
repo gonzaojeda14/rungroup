@@ -57,7 +57,7 @@ function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
   )
 }
 
-const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false }
+const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false, tipo_actividad: 'carrera', calzado: '' }
 
 const INSTRUCTIVO_RUNNING_TEAM = `1. Entrar a EntryFee.com.ar con tu usuario y contraseña.
 2. Ir a la solapa GRUPO.
@@ -164,7 +164,8 @@ export default function Carreras() {
   async function handleSave(e) {
     e.preventDefault()
     setSaving(true)
-    const distanciasArr = form.distancias
+    const esCarrera = (form.tipo_actividad || 'carrera') === 'carrera'
+    const distanciasArr = esCarrera && form.distancias
       ? form.distancias.split(',').map(d => d.trim()).filter(Boolean)
       : []
     const payload = {
@@ -172,25 +173,29 @@ export default function Carreras() {
       fecha: form.fecha || null,
       hora: form.hora || null,
       lugar: form.lugar || null,
-      link: form.link || null,
-      codigo: form.running_team ? null : (form.codigo || null),
-      running_team: form.running_team || false,
-      flama_points: form.flama_points || false,
-      tipo: form.tipo || null,
+      tipo_actividad: form.tipo_actividad || 'carrera',
+      calzado: form.tipo_actividad === 'entrenamiento' ? (form.calzado || null) : null,
+      link: esCarrera ? (form.link || null) : null,
+      codigo: esCarrera && !form.running_team ? (form.codigo || null) : null,
+      running_team: esCarrera ? (form.running_team || false) : false,
+      flama_points: esCarrera ? (form.flama_points || false) : false,
+      tipo: esCarrera ? (form.tipo || null) : null,
       distancias: distanciasArr,
-      distancia: distanciasArr[0] || null,
+      distancia: esCarrera ? (distanciasArr[0] || null) : null,
     }
     if (editId) {
       await supabase.from('carreras').update(payload).eq('id', editId)
     } else {
       await supabase.from('carreras').insert([payload])
-      // Notificar a todos que hay una nueva carrera
-      notificar(
-        '🏃 ¡Nueva carrera disponible!',
-        `Se publicó "${payload.nombre}". ¡Anotate!`,
-        '/carreras',
-        { all: true },
-      )
+      // Notificar a todos que hay una nueva carrera (solo para carreras)
+      if (esCarrera) {
+        notificar(
+          '🏃 ¡Nueva carrera disponible!',
+          `Se publicó "${payload.nombre}". ¡Anotate!`,
+          '/carreras',
+          { all: true },
+        )
+      }
     }
     setForm(EMPTY)
     setEditId(null)
@@ -211,6 +216,8 @@ export default function Carreras() {
       tipo: c.tipo || '',
       running_team: c.running_team || false,
       flama_points: c.flama_points || false,
+      tipo_actividad: c.tipo_actividad || 'carrera',
+      calzado: c.calzado || '',
     })
     setEditId(c.id)
     setShowForm(true)
@@ -287,23 +294,31 @@ export default function Carreras() {
       return [...prev, { carrera_id: carreraId, estado }]
     })
 
+    // Actualizar lista de inscriptos si está abierta
+    if (inscriptosAbiertos[carreraId] && inscriptosAbiertos[carreraId] !== 'loading') {
+      refreshInscriptos(carreraId)
+    }
+
     // Si se liberó un cupo (era Inscripto y ahora no), notificar al primero en lista de espera
+    // Solo aplica a carreras (eventos/entrenamientos no tienen lista de espera)
     if (prevEstado === 'Inscripto' && estado !== 'Inscripto') {
-      const { data: espera } = await supabase
-        .from('participaciones')
-        .select('user_id, created_at')
-        .eq('carrera_id', carreraId)
-        .eq('estado', 'Lista de espera')
-        .order('created_at', { ascending: true })
-        .limit(1)
-      if (espera?.[0]) {
-        const carrera = carreras.find(c => c.id === carreraId)
-        notificar(
-          '🎉 ¡Hay un cupo disponible para vos!',
-          `Se liberó un cupo en ${carrera?.nombre ?? 'una carrera'}. ¡Anotate antes de que se llene!`,
-          '/carreras',
-          { user_ids: [espera[0].user_id] },
-        )
+      const carreraObj = carreras.find(c => c.id === carreraId)
+      if (!carreraObj || (carreraObj.tipo_actividad || 'carrera') === 'carrera') {
+        const { data: espera } = await supabase
+          .from('participaciones')
+          .select('user_id, created_at')
+          .eq('carrera_id', carreraId)
+          .eq('estado', 'Lista de espera')
+          .order('created_at', { ascending: true })
+          .limit(1)
+        if (espera?.[0]) {
+          notificar(
+            '🎉 ¡Hay un cupo disponible para vos!',
+            `Se liberó un cupo en ${carreraObj?.nombre ?? 'una carrera'}. ¡Anotate antes de que se llene!`,
+            '/carreras',
+            { user_ids: [espera[0].user_id] },
+          )
+        }
       }
     }
   }
@@ -439,12 +454,7 @@ export default function Carreras() {
     setTimeout(() => setToast(''), 2500)
   }
 
-  async function toggleInscriptos(carreraId) {
-    if (inscriptosAbiertos[carreraId]) {
-      setInscriptosAbiertos(prev => { const n = { ...prev }; delete n[carreraId]; return n })
-      return
-    }
-    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: 'loading' }))
+  async function refreshInscriptos(carreraId) {
     const { data: parts } = await supabase
       .from('participaciones')
       .select('user_id')
@@ -458,6 +468,15 @@ export default function Carreras() {
       .in('id', userIds)
     const ordenados = (perfiles || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
     setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: ordenados }))
+  }
+
+  async function toggleInscriptos(carreraId) {
+    if (inscriptosAbiertos[carreraId]) {
+      setInscriptosAbiertos(prev => { const n = { ...prev }; delete n[carreraId]; return n })
+      return
+    }
+    setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: 'loading' }))
+    await refreshInscriptos(carreraId)
   }
 
   function getDistancias(c) {
@@ -506,12 +525,34 @@ export default function Carreras() {
       {isAdmin && showForm && !editId && (
         <form ref={formRef} className="card form-card" onSubmit={handleSave}>
           <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>
-            {editId ? 'Editar carrera' : 'Nueva carrera'}
+            {form.tipo_actividad === 'evento' ? 'Nuevo evento' : form.tipo_actividad === 'entrenamiento' ? 'Nuevo entrenamiento' : 'Nueva carrera'}
           </h3>
+          {/* Selector de tipo de actividad */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            {[['carrera', '🏃 Carrera'], ['evento', '🎉 Evento'], ['entrenamiento', '💪 Entrenamiento']].map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setForm({ ...EMPTY, tipo_actividad: val })}
+                style={{
+                  padding: '6px 14px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer',
+                  fontFamily: 'inherit', border: form.tipo_actividad === val ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                  background: form.tipo_actividad === val ? 'rgba(255,45,45,0.1)' : 'var(--bg3)',
+                  color: form.tipo_actividad === val ? 'var(--accent)' : 'var(--text2)',
+                  fontWeight: form.tipo_actividad === val ? 600 : 400,
+                }}
+              >{label}</button>
+            ))}
+          </div>
           <div className="form-grid">
             <div className="field">
               <label>Nombre *</label>
-              <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="21K Buenos Aires" required />
+              <input
+                value={form.nombre}
+                onChange={e => setForm({ ...form, nombre: e.target.value })}
+                placeholder={form.tipo_actividad === 'entrenamiento' ? 'Entrenamiento trail' : form.tipo_actividad === 'evento' ? 'Cena de fin de año' : '21K Buenos Aires'}
+                required
+              />
             </div>
             <div className="field">
               <label>Fecha</label>
@@ -522,80 +563,94 @@ export default function Carreras() {
               <input type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} />
             </div>
             <div className="field">
-              <label>Distancia(s)</label>
-              <input
-                value={form.distancias}
-                onChange={e => setForm({ ...form, distancias: e.target.value })}
-                onBlur={e => {
-                  const valor = e.target.value.split(',').map(d => {
-                    const t = d.trim()
-                    if (!t) return ''
-                    return /k$/i.test(t) ? t.toUpperCase() : `${t}K`
-                  }).filter(Boolean).join(', ')
-                  setForm(f => ({ ...f, distancias: valor }))
-                }}
-                placeholder="5, 10, 21"
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>Separar con comas si hay varias · La K se agrega sola</span>
-            </div>
-            <div className="field">
-              <label>Tipo</label>
-              <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
-                <option value="">— Sin especificar —</option>
-                <option value="Trail">Trail</option>
-                <option value="Calle">Calle</option>
-              </select>
-            </div>
-            <div className="field">
               <label>Lugar</label>
               <input value={form.lugar} onChange={e => setForm({ ...form, lugar: e.target.value })} placeholder="Parque Tres de Febrero" />
             </div>
-            <div className="field">
-              <label>Código de descuento</label>
-              <input
-                value={form.codigo}
-                onChange={e => setForm({ ...form, codigo: e.target.value })}
-                placeholder="FLAMA20"
-                disabled={form.running_team}
-                style={{ opacity: form.running_team ? 0.4 : 1 }}
-              />
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
-                onClick={() => setForm({ ...form, running_team: !form.running_team, codigo: '' })}
-              >
-                <div style={{
-                  width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
-                  background: form.running_team ? 'var(--accent)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
-                }}>
-                  {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+            {form.tipo_actividad === 'entrenamiento' && (
+              <div className="field">
+                <label>Calzado a llevar</label>
+                <select value={form.calzado} onChange={e => setForm({ ...form, calzado: e.target.value })}>
+                  <option value="">— Sin especificar —</option>
+                  <option value="Trail">Trail</option>
+                  <option value="Calle">Calle</option>
+                </select>
+              </div>
+            )}
+            {(!form.tipo_actividad || form.tipo_actividad === 'carrera') && (
+              <>
+                <div className="field">
+                  <label>Distancia(s)</label>
+                  <input
+                    value={form.distancias}
+                    onChange={e => setForm({ ...form, distancias: e.target.value })}
+                    onBlur={e => {
+                      const valor = e.target.value.split(',').map(d => {
+                        const t = d.trim()
+                        if (!t) return ''
+                        return /k$/i.test(t) ? t.toUpperCase() : `${t}K`
+                      }).filter(Boolean).join(', ')
+                      setForm(f => ({ ...f, distancias: valor }))
+                    }}
+                    placeholder="5, 10, 21"
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>Separar con comas si hay varias · La K se agrega sola</span>
                 </div>
-                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
-              </label>
-            </div>
-            <div className="field">
-              <label>Flamitas</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
-                onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
-              >
-                <div style={{
-                  width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
-                  background: form.flama_points ? 'var(--accent)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
-                }}>
-                  {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                <div className="field">
+                  <label>Tipo</label>
+                  <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
+                    <option value="">— Sin especificar —</option>
+                    <option value="Trail">Trail</option>
+                    <option value="Calle">Calle</option>
+                  </select>
                 </div>
-                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flamitas</span>
-              </label>
-            </div>
-            <div className="field full">
-              <label>Link de inscripción</label>
-              <input value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} placeholder="https://..." />
-            </div>
+                <div className="field">
+                  <label>Código de descuento</label>
+                  <input
+                    value={form.codigo}
+                    onChange={e => setForm({ ...form, codigo: e.target.value })}
+                    placeholder="FLAMA20"
+                    disabled={form.running_team}
+                    style={{ opacity: form.running_team ? 0.4 : 1 }}
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                    onClick={() => setForm({ ...form, running_team: !form.running_team, codigo: '' })}
+                  >
+                    <div style={{
+                      width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
+                      background: form.running_team ? 'var(--accent)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
+                    }}>
+                      {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
+                  </label>
+                </div>
+                <div className="field">
+                  <label>Flamitas</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                    onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
+                  >
+                    <div style={{
+                      width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
+                      background: form.flama_points ? 'var(--accent)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
+                    }}>
+                      {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flamitas</span>
+                  </label>
+                </div>
+                <div className="field full">
+                  <label>Link de inscripción</label>
+                  <input value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} placeholder="https://..." />
+                </div>
+              </>
+            )}
           </div>
           <div className="form-actions">
             <button type="button" className="btn-ghost" onClick={handleCancelForm}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Guardando...' : editId ? 'Guardar cambios' : 'Crear carrera'}
+              {saving ? 'Guardando...' : form.tipo_actividad === 'evento' ? 'Crear evento' : form.tipo_actividad === 'entrenamiento' ? 'Crear entrenamiento' : 'Crear carrera'}
             </button>
           </div>
         </form>
@@ -724,7 +779,9 @@ export default function Carreras() {
           if (editId === c.id && showForm) {
             return (
               <form key={c.id} ref={formRef} className="card form-card" onSubmit={handleSave}>
-                <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>Editar carrera</h3>
+                <h3 style={{ marginBottom: '0.75rem', fontSize: '14px', fontWeight: 600 }}>
+                  {form.tipo_actividad === 'evento' ? 'Editar evento' : form.tipo_actividad === 'entrenamiento' ? 'Editar entrenamiento' : 'Editar carrera'}
+                </h3>
                 <div className="form-grid">
                   <div className="field">
                     <label>Nombre *</label>
@@ -739,53 +796,67 @@ export default function Carreras() {
                     <input type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} />
                   </div>
                   <div className="field">
-                    <label>Distancia(s)</label>
-                    <input value={form.distancias} onChange={e => setForm({ ...form, distancias: e.target.value })} placeholder="5K, 10K" />
-                    <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>Separar con comas si hay varias</span>
-                  </div>
-                  <div className="field">
-                    <label>Tipo</label>
-                    <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
-                      <option value="">— Sin especificar —</option>
-                      <option value="Trail">Trail</option>
-                      <option value="Calle">Calle</option>
-                    </select>
-                  </div>
-                  <div className="field">
                     <label>Lugar</label>
                     <input value={form.lugar} onChange={e => setForm({ ...form, lugar: e.target.value })} placeholder="Parque Tres de Febrero" />
                   </div>
-                  <div className="field">
-                    <label>Código de descuento</label>
-                    <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="FLAMA20" disabled={form.running_team} style={{ opacity: form.running_team ? 0.4 : 1 }} />
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
-                      onClick={() => setForm({ ...form, running_team: !form.running_team, codigo: '' })}
-                    >
-                      <div style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0, background: form.running_team ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
-                        {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  {form.tipo_actividad === 'entrenamiento' && (
+                    <div className="field">
+                      <label>Calzado a llevar</label>
+                      <select value={form.calzado} onChange={e => setForm({ ...form, calzado: e.target.value })}>
+                        <option value="">— Sin especificar —</option>
+                        <option value="Trail">Trail</option>
+                        <option value="Calle">Calle</option>
+                      </select>
+                    </div>
+                  )}
+                  {(!form.tipo_actividad || form.tipo_actividad === 'carrera') && (
+                    <>
+                      <div className="field">
+                        <label>Distancia(s)</label>
+                        <input value={form.distancias} onChange={e => setForm({ ...form, distancias: e.target.value })} placeholder="5K, 10K" />
+                        <span style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>Separar con comas si hay varias</span>
                       </div>
-                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
-                    </label>
-                  </div>
-                  <div className="field">
-                    <label>Flamitas</label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
-                      onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
-                    >
-                      <div style={{
-                        width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
-                        background: form.flama_points ? 'var(--accent)' : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
-                      }}>
-                        {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      <div className="field">
+                        <label>Tipo</label>
+                        <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
+                          <option value="">— Sin especificar —</option>
+                          <option value="Trail">Trail</option>
+                          <option value="Calle">Calle</option>
+                        </select>
                       </div>
-                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flamitas</span>
-                    </label>
-                  </div>
-                  <div className="field full">
-                    <label>Link de inscripción</label>
-                    <input value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} placeholder="https://..." />
-                  </div>
+                      <div className="field">
+                        <label>Código de descuento</label>
+                        <input value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="FLAMA20" disabled={form.running_team} style={{ opacity: form.running_team ? 0.4 : 1 }} />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                          onClick={() => setForm({ ...form, running_team: !form.running_team, codigo: '' })}
+                        >
+                          <div style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0, background: form.running_team ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+                            {form.running_team && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                          </div>
+                          <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Agregar tutorial de Descuento Club de Corredores</span>
+                        </label>
+                      </div>
+                      <div className="field">
+                        <label>Flamitas</label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', width: 'fit-content' }}
+                          onClick={() => setForm({ ...form, flama_points: !form.flama_points })}
+                        >
+                          <div style={{
+                            width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0,
+                            background: form.flama_points ? 'var(--accent)' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
+                          }}>
+                            {form.flama_points && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                          </div>
+                          <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Habilitar para sumar Flamitas</span>
+                        </label>
+                      </div>
+                      <div className="field full">
+                        <label>Link de inscripción</label>
+                        <input value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} placeholder="https://..." />
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="form-actions">
                   <button type="button" className="btn-ghost" onClick={handleCancelForm}>Cancelar</button>
@@ -818,7 +889,7 @@ export default function Carreras() {
                   </div>
                   <div className="race-meta">
                     {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
-                    {dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
+                    {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
                     {c.lugar && (
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.lugar)}`}
@@ -828,8 +899,9 @@ export default function Carreras() {
                         onClick={e => e.stopPropagation()}
                       >📍 {c.lugar}</a>
                     )}
-                    {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
-                    {c.running_team && (
+                    {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
+                    {c.tipo_actividad === 'entrenamiento' && c.calzado && <span className="tag" style={{ background: TIPO_COLOR[c.calzado] + '22', color: TIPO_COLOR[c.calzado], border: `1px solid ${TIPO_COLOR[c.calzado]}44`, fontWeight: 600 }}>👟 {c.calzado}</span>}
+                    {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.running_team && (
                       <span
                         className="tag code-tag"
                         style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
@@ -838,7 +910,7 @@ export default function Carreras() {
                         🏃 Descuento Club de Corredores <span style={{ opacity: 0.6, fontSize: '10px' }}>ⓘ</span>
                       </span>
                     )}
-                    {!c.running_team && c.codigo && (() => {
+                    {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && !c.running_team && c.codigo && (() => {
                       const esCupon = /^\S+$/.test(c.codigo.trim())
                       return esCupon ? (
                         <span
@@ -967,25 +1039,39 @@ export default function Carreras() {
                 </div>
               )}
 
-              <div className="race-estado-section">
-                <div className="race-estado-label">
-                  Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
-                  {distSeleccionada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
-                  {carreraPasada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '11px' }}> · ya no se puede modificar (la carrera ya pasó)</span>}
+              {(c.tipo_actividad === 'evento' || c.tipo_actividad === 'entrenamiento') ? (
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    className={`estado-btn ${estado === 'Inscripto' ? 'active' : ''}`}
+                    style={estado === 'Inscripto' ? { borderColor: '#4ade80', color: '#4ade80', background: '#4ade8022' } : {}}
+                    onClick={() => !carreraPasada && updateEstado(c.id, estado === 'Inscripto' ? 'No voy' : 'Inscripto')}
+                    disabled={carreraPasada}
+                  >
+                    {estado === 'Inscripto' ? '✓ Voy' : 'Voy'}
+                  </button>
+                  {carreraPasada && <span style={{ color: 'var(--text2)', fontSize: '11px' }}>ya terminó</span>}
                 </div>
-                <div className="estado-buttons" style={carreraPasada ? { opacity: 0.35, pointerEvents: 'none' } : {}}>
-                  {ESTADOS.map(e => (
-                    <EstadoBtnConInfo
-                      key={e}
-                      label={e}
-                      info={ESTADO_INFO[e]}
-                      activo={estado === e}
-                      color={ESTADO_COLOR[e]}
-                      onClick={() => updateEstado(c.id, e)}
-                    />
-                  ))}
+              ) : (
+                <div className="race-estado-section">
+                  <div className="race-estado-label">
+                    Mi estado: <span style={{ color: ESTADO_COLOR[estado], fontWeight: 600 }}>{estado}</span>
+                    {distSeleccionada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
+                    {carreraPasada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '11px' }}> · ya no se puede modificar (la carrera ya pasó)</span>}
+                  </div>
+                  <div className="estado-buttons" style={carreraPasada ? { opacity: 0.35, pointerEvents: 'none' } : {}}>
+                    {ESTADOS.map(e => (
+                      <EstadoBtnConInfo
+                        key={e}
+                        label={e}
+                        info={ESTADO_INFO[e]}
+                        activo={estado === e}
+                        color={ESTADO_COLOR[e]}
+                        onClick={() => updateEstado(c.id, e)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Botón admin: notificar Flamitas */}
               {isAdmin && c.flama_points && (
@@ -1109,7 +1195,6 @@ export default function Carreras() {
 
           {/* Barra de progreso */}
           {uploading && (
-            <div style={{ height: 3, background: 'var(--bg3)', flexShrink: 0 }}>
               <div style={{ height: '100%', width: `${progreso}%`, background: 'var(--accent)', transition: 'width 0.3s' }} />
             </div>
           )}
