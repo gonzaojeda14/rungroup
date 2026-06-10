@@ -48,7 +48,7 @@ export default function Novedades() {
     const { data, error } = await supabase
       .from('novedades')
       .select('*')
-      .order('publicar_en', { ascending: false, nullsFirst: true })
+      .order('created_at', { ascending: false })
     if (error) console.error('Error al cargar novedades:', error)
 
     // Resolver datos del autor por separado (no hay relación FK directa para el embed de Supabase)
@@ -389,7 +389,7 @@ export default function Novedades() {
                       Abrir →
                     </button>
                   )}
-                  {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>✕</button>}
+                  {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>🗑️</button>}
                 </div>
               </div>
             ))}
@@ -410,7 +410,7 @@ export default function Novedades() {
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {p.archivo_url && <button onClick={() => abrirArchivo(p.archivo_url)} className="btn-ghost" style={{ height: 32, fontSize: 12, padding: '0 12px' }}>Abrir →</button>}
-                      {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>✕</button>}
+                      {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(p.id)}>🗑️</button>}
                     </div>
                   </div>
                 ))}
@@ -439,7 +439,7 @@ export default function Novedades() {
                       }
                     </div>
                   </div>
-                  {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(a.id)}>✕</button>}
+                  {isAdmin && <button className="btn-icon danger" onClick={() => setConfirmarEliminar(a.id)}>🗑️</button>}
                 </div>
                 {a.contenido && (
                   <div style={{ fontSize: '14px', color: 'var(--text)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
