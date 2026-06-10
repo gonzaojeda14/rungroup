@@ -23,13 +23,16 @@ export default function Corredores() {
   useEffect(() => { fetchCorredores(); fetchBugs(); fetchFlamitas() }, [])
 
   async function fetchFlamitas() {
-    const { data } = await supabase
-      .from('puntos_carreras')
-      .select('user_id, puntos')
-      .eq('estado', 'validado')
+    const [{ data: puntos }, { data: perfiles }] = await Promise.all([
+      supabase.from('puntos_carreras').select('user_id, puntos').eq('estado', 'validado'),
+      supabase.from('profiles').select('id, bonus_perfil_otorgado'),
+    ])
     const map = {}
-    for (const r of data || []) {
+    for (const r of puntos || []) {
       map[r.user_id] = (map[r.user_id] || 0) + (r.puntos || 0)
+    }
+    for (const p of perfiles || []) {
+      if (p.bonus_perfil_otorgado) map[p.id] = (map[p.id] || 0) + 5
     }
     setFlamitasMap(map)
   }
