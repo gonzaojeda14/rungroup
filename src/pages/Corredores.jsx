@@ -22,6 +22,27 @@ export default function Corredores() {
 
   useEffect(() => { fetchCorredores(); fetchBugs(); fetchFlamitas() }, [])
 
+  function abrirPerfil(corredor) {
+    history.pushState({ perfil: corredor.id }, '')
+    setPerfilAbierto(corredor)
+  }
+
+  function cerrarPerfil() {
+    // Si hay estado de perfil en el historial, retroceder dispara popstate que limpia el state.
+    // Si no (ej: usuario abrió directo desde link), simplemente limpiar.
+    if (history.state?.perfil) {
+      history.back()
+    } else {
+      setPerfilAbierto(null)
+    }
+  }
+
+  useEffect(() => {
+    function onPopState() { setPerfilAbierto(null) }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   async function fetchFlamitas() {
     const [{ data: puntos }, { data: perfiles }, { data: records }] = await Promise.all([
       supabase.from('puntos_carreras').select('user_id, puntos').eq('estado', 'validado'),
@@ -155,7 +176,7 @@ export default function Corredores() {
             const nombre = c.nombre?.toLowerCase() || ''
             return palabras.every(p => nombre.includes(p))
           }).map(c => (
-          <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' }} onClick={() => c.role !== 'admin' && setPerfilAbierto(c)}>
+          <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' }} onClick={() => c.role !== 'admin' && abrirPerfil(c)}>
             <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0 }}>
               {c.avatar_url
                 ? <img src={c.avatar_url} alt={c.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -191,7 +212,7 @@ export default function Corredores() {
       {perfilAbierto && (
         <PerfilCorredor
           corredor={perfilAbierto}
-          onClose={() => setPerfilAbierto(null)}
+          onClose={cerrarPerfil}
           onToggleAcceso={(id, bloqueado) => {
             setCorredores(prev => prev.map(c => c.id === id ? { ...c, activo: bloqueado ? false : true } : c))
           }}
