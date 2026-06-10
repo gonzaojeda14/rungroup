@@ -89,9 +89,9 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
   const ultimasCarreras = participaciones.filter(p => p.carrera?.fecha && p.carrera.fecha < hoy).slice(0, 5)
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', paddingTop: 'max(14px, env(safe-area-inset-top))', borderBottom: '1px solid var(--border)', flexShrink: 0, position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 10 }}>
         <button onClick={onClose} className="btn-ghost" style={{ height: 34, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
           Volver
