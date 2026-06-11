@@ -753,4 +753,56 @@ export default function MiPerfil() {
             onClick={() => setConfirmarEliminarCuenta(true)}
             style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
           >
- 
+            Eliminar mi cuenta
+          </button>
+        ) : (
+          <div style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: '10px', padding: '14px' }}>
+            <p style={{ fontSize: '13px', color: '#f87171', marginBottom: '12px', fontWeight: 600 }}>
+              ¿Estás seguro? No hay vuelta atrás.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={eliminarCuenta} disabled={eliminandoCuenta}
+                style={{ background: '#f87171', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                {eliminandoCuenta ? 'Eliminando...' : 'Sí, eliminar'}
+              </button>
+              <button onClick={() => setConfirmarEliminarCuenta(false)} className="btn-ghost" style={{ fontSize: '13px' }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      </>}
+
+      {/* ESTADÍSTICAS TAB */}
+      {tab === 'estadisticas' && (() => {
+        const inscriptas = statsParticipaciones.filter(p => p.estado === 'Inscripto')
+        const carreras = inscriptas.filter(p => !p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera')
+        const eventosEntrenos = inscriptas.filter(p => p.carrera?.tipo_actividad === 'evento' || p.carrera?.tipo_actividad === 'entrenamiento')
+        const kmTotales = inscriptas.reduce((s, p) => s + (parseFloat(p.distancia_elegida) || 0), 0)
+        return (
+          <>
+            <RecordsPersonales />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+              {[
+                { label: 'Carreras', value: carreras.length, icon: '🏅' },
+                { label: 'Eventos / Entrenos', value: eventosEntrenos.length, icon: '🏃' },
+                { label: 'Kilómetros totales', value: kmTotales > 0 ? `${kmTotales.toFixed(0)} km` : '—', icon: '📏' },
+                { label: 'Flamitas ganadas', value: statsFlamitas > 0 ? `💎 ${statsFlamitas}` : '—', icon: null },
+              ].map(({ label, value, icon }) => (
+                <div key={label} className="card" style={{ textAlign: 'center', padding: '16px 10px' }}>
+                  {icon && <div style={{ fontSize: '22px', marginBottom: '6px' }}>{icon}</div>}
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>{value}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )
+      })()}
+
+    </div>
+  )
+}
