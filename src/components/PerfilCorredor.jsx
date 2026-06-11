@@ -143,6 +143,21 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
 
       {!loading && <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+        {/* CUMPLEAÑOS */}
+        {extra.fecha_nacimiento && (() => {
+          const hoy = new Date()
+          const parts = extra.fecha_nacimiento.split('-')
+          if (parseInt(parts[1]) === hoy.getMonth() + 1 && parseInt(parts[2]) === hoy.getDate()) {
+            return (
+              <div style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.04))', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '22px' }}>🎂</span>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#fbbf24' }}>¡Hoy es su cumpleaños!</span>
+              </div>
+            )
+          }
+          return null
+        })()}
+
         {/* DATOS DE CONTACTO */}
         <div className="card">
           <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Contacto</h3>

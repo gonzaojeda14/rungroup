@@ -5,6 +5,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 
+function esCumpleaños(fecha_nacimiento) {
+  if (!fecha_nacimiento) return false
+  const hoy = new Date()
+  const parts = fecha_nacimiento.split('-')
+  return parseInt(parts[1]) === hoy.getMonth() + 1 && parseInt(parts[2]) === hoy.getDate()
+}
+
 export default function Corredores() {
   const { isAdmin } = useAuth()
   const [corredores, setCorredores] = useState([])
@@ -184,7 +191,7 @@ export default function Corredores() {
               }
             </div>
             <div style={{ flex: 1 }}>
-              <div className="runner-name">{c.nombre}</div>
+              <div className="runner-name">{c.nombre}{esCumpleaños(c.fecha_nacimiento) && ' 🎂'}</div>
               <div className="runner-email">{c.email}</div>
             </div>
             {c.role === 'admin' && <span className="badge green">Admin</span>}
