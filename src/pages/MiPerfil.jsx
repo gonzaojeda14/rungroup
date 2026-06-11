@@ -355,10 +355,10 @@ export default function MiPerfil() {
       <div className="page-header"><h2>Mi perfil</h2></div>
 
       {/* TABS */}
-      <div className="filtro-group" style={{ marginBottom: '12px' }}>
-        <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => cambiarTab('datos')}>Datos</button>
-        <button className={`filtro-btn ${tab === 'salud' ? 'active' : ''}`} onClick={() => cambiarTab('salud')}>Salud</button>
-        <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => cambiarTab('estadisticas')}>Estadísticas</button>
+      <div className="filtro-group" style={{ marginBottom: '12px', display: 'flex' }}>
+        <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => cambiarTab('datos')} style={{ flex: 1 }}>Datos</button>
+        <button className={`filtro-btn ${tab === 'salud' ? 'active' : ''}`} onClick={() => cambiarTab('salud')} style={{ flex: 1 }}>Salud</button>
+        <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => cambiarTab('estadisticas')} style={{ flex: 1 }}>Estadísticas</button>
       </div>
 
       {tab === 'datos' && <>
