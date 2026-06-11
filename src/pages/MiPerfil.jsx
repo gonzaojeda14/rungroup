@@ -355,7 +355,8 @@ export default function MiPerfil() {
 
       {/* TABS */}
       <div className="filtro-group" style={{ marginBottom: '12px' }}>
-        <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => setTab('datos')}>Datos personales</button>
+        <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => setTab('datos')}>Datos</button>
+        <button className={`filtro-btn ${tab === 'salud' ? 'active' : ''}`} onClick={() => setTab('salud')}>Salud</button>
         <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => setTab('estadisticas')}>Estadísticas</button>
       </div>
 
@@ -441,151 +442,6 @@ export default function MiPerfil() {
             </button>
           </div>
         </form>
-      </div>
-
-      {/* CERTIFICADO MÉDICO */}
-      <div className="card" style={{ marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Certificado médico</h3>
-
-        {certVencido && (
-          <div style={{
-            background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)',
-            borderRadius: '8px', padding: '10px 14px', marginBottom: '12px',
-            color: '#f87171', fontSize: '13px'
-          }}>
-            ⚠️ Tu certificado está vencido. Por favor subí uno nuevo correspondiente a {thisYear}.
-          </div>
-        )}
-
-        {certInfo.url && !certVencido && (
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
-              Subido el {formatFecha(certInfo.fecha)} · Válido hasta el 31/12/{certAnio}
-            </div>
-            {certSignedUrl && (
-              <a href={certSignedUrl} target="_blank" rel="noopener noreferrer" className="race-link">
-                Ver certificado →
-              </a>
-            )}
-          </div>
-        )}
-
-        {!certInfo.url && !certVencido && (
-          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
-            No tenés un certificado cargado todavía.
-          </div>
-        )}
-
-        <div className="field" style={{ marginBottom: '10px' }}>
-          <label>{certInfo.url ? 'Renovar certificado (JPG o PDF)' : 'Subir certificado (JPG o PDF)'}</label>
-          <label className="file-upload-label">
-            <input type="file" accept=".jpg,.jpeg,.pdf" onChange={handleFile} style={{ display: 'none' }} />
-            <span className="file-upload-btn">
-              {certFile ? `✅ ${certFile.name}` : '📎 Seleccionar archivo'}
-            </span>
-          </label>
-          <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Máx. 10MB</span>
-        </div>
-
-        {msgCert && <div className={msgCert.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginBottom: '10px' }}>{msgCert}</div>}
-
-        <button
-          className="btn-primary"
-          onClick={handleSubirCert}
-          disabled={!certFile || savingCert}
-        >
-          {savingCert ? 'Subiendo...' : certInfo.url ? 'Renovar certificado' : 'Subir certificado'}
-        </button>
-      </div>
-
-      {/* CONTACTO DE EMERGENCIA */}
-      <div className="card" style={{ marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Contacto de emergencia</h3>
-        <form onSubmit={handleSaveEmergencia}>
-          <div className="field" style={{ marginBottom: '10px' }}>
-            <label>Nombre</label>
-            <input value={emergencia.nombre} onChange={e => setEmergencia({ ...emergencia, nombre: e.target.value })} placeholder="Ej: María García" />
-          </div>
-          <div className="field" style={{ marginBottom: '10px' }}>
-            <label>Teléfono</label>
-            <input type="tel" value={emergencia.telefono} onChange={e => setEmergencia({ ...emergencia, telefono: e.target.value })} placeholder="+54 11 1234-5678" />
-          </div>
-          {msgEmergencia && <div className={msgEmergencia.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginBottom: '10px' }}>{msgEmergencia}</div>}
-          <button type="submit" className="btn-primary">Guardar contacto</button>
-        </form>
-      </div>
-
-      {/* LESIONES / MOLESTIAS */}
-      <div className="card" style={{ marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Lesiones / molestias</h3>
-        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px', lineHeight: 1.4 }}>
-          Si tenés alguna lesión o molestia, contanos brevemente para que el equipo lo tenga en cuenta. Solo lo van a poder ver los profes.
-        </div>
-        <form onSubmit={handleGuardarLesion}>
-          <div className="form-grid">
-            <div className="field full">
-              <label>Detalle</label>
-              <input value={lesion} onChange={e => setLesion(e.target.value)} placeholder="Ej: molestia en la rodilla derecha" maxLength={200} />
-            </div>
-          </div>
-          {msgLesion && <div className={msgLesion.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgLesion}</div>}
-          <div className="form-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
-            <button type="submit" className="btn-primary" disabled={savingLesion || lesion.trim() === lesionGuardada}>
-              {savingLesion ? 'Guardando...' : 'Guardar'}
-            </button>
-            {lesionGuardada && (
-              <button type="button" className="btn-ghost" onClick={handleBorrarLesion} disabled={savingLesion}>
-                Quitar
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* METAS PERSONALES */}
-      <div className="card" style={{ marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>🎯 Metas personales</h3>
-        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px' }}>Escribí tus objetivos de entrenamiento o carrera.</div>
-        {metas.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-            {metas.map(m => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: m.estado === 'cumplida' ? 'rgba(74,222,128,0.06)' : 'var(--bg3)', borderRadius: '8px', padding: '8px 10px', opacity: m.estado === 'cumplida' ? 0.75 : 1 }}>
-                <span style={{ flex: 1, fontSize: '13px', lineHeight: 1.5, textDecoration: m.estado === 'cumplida' ? 'line-through' : 'none', color: m.estado === 'cumplida' ? '#4ade80' : 'var(--text)' }}>
-                  {m.estado === 'cumplida' && '✓ '}{m.texto}
-                </span>
-                {m.estado === 'activa' && (
-                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                    <button
-                      onClick={() => resolverMeta(m.id, 'cumplida')}
-                      title="Cumplida"
-                      style={{ background: 'rgba(74,222,128,0.15)', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '2px 7px', borderRadius: '6px', fontFamily: 'inherit' }}
-                    >✓ Cumplida</button>
-                    <button
-                      onClick={() => resolverMeta(m.id, 'descartada')}
-                      title="Descartar"
-                      style={{ background: 'rgba(248,113,113,0.12)', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '2px 7px', borderRadius: '6px', fontFamily: 'inherit' }}
-                    >✕ Descartar</button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            value={nuevaMeta}
-            onChange={e => setNuevaMeta(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && agregarMeta()}
-            placeholder="Ej: Correr 21K en menos de 2hs"
-            style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '8px 10px', fontSize: '13px', fontFamily: 'inherit' }}
-          />
-          <button
-            onClick={agregarMeta}
-            disabled={!nuevaMeta.trim() || savingMeta}
-            className="btn-primary"
-            style={{ padding: '0 14px', fontSize: '13px', height: 36, flexShrink: 0 }}
-          >+ Agregar</button>
-        </div>
       </div>
 
       {/* NOTIFICACIONES */}
@@ -784,6 +640,88 @@ export default function MiPerfil() {
 
       </>}
 
+      {/* SALUD TAB */}
+      {tab === 'salud' && <>
+
+        {/* CERTIFICADO MÉDICO */}
+        <div className="card" style={{ marginBottom: '12px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Certificado médico</h3>
+          {certVencido && (
+            <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px', color: '#f87171', fontSize: '13px' }}>
+              ⚠️ Tu certificado está vencido. Por favor subí uno nuevo correspondiente a {thisYear}.
+            </div>
+          )}
+          {certInfo.url && !certVencido && (
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
+                Subido el {formatFecha(certInfo.fecha)} · Válido hasta el 31/12/{certAnio}
+              </div>
+              {certSignedUrl && (
+                <a href={certSignedUrl} target="_blank" rel="noopener noreferrer" className="race-link">Ver certificado →</a>
+              )}
+            </div>
+          )}
+          {!certInfo.url && !certVencido && (
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>No tenés un certificado cargado todavía.</div>
+          )}
+          <div className="field" style={{ marginBottom: '10px' }}>
+            <label>{certInfo.url ? 'Renovar certificado (JPG o PDF)' : 'Subir certificado (JPG o PDF)'}</label>
+            <label className="file-upload-label">
+              <input type="file" accept=".jpg,.jpeg,.pdf" onChange={handleFile} style={{ display: 'none' }} />
+              <span className="file-upload-btn">{certFile ? `✅ ${certFile.name}` : '📎 Seleccionar archivo'}</span>
+            </label>
+            <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Máx. 10MB</span>
+          </div>
+          {msgCert && <div className={msgCert.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginBottom: '10px' }}>{msgCert}</div>}
+          <button className="btn-primary" onClick={handleSubirCert} disabled={!certFile || savingCert}>
+            {savingCert ? 'Subiendo...' : certInfo.url ? 'Renovar certificado' : 'Subir certificado'}
+          </button>
+        </div>
+
+        {/* LESIONES / MOLESTIAS */}
+        <div className="card" style={{ marginBottom: '12px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Lesiones / molestias</h3>
+          <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px', lineHeight: 1.4 }}>
+            Si tenés alguna lesión o molestia, contanos brevemente para que el equipo lo tenga en cuenta. Solo lo van a poder ver los profes.
+          </div>
+          <form onSubmit={handleGuardarLesion}>
+            <div className="form-grid">
+              <div className="field full">
+                <label>Detalle</label>
+                <input value={lesion} onChange={e => setLesion(e.target.value)} placeholder="Ej: molestia en la rodilla derecha" maxLength={200} />
+              </div>
+            </div>
+            {msgLesion && <div className={msgLesion.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginTop: '10px' }}>{msgLesion}</div>}
+            <div className="form-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+              <button type="submit" className="btn-primary" disabled={savingLesion || lesion.trim() === lesionGuardada}>
+                {savingLesion ? 'Guardando...' : 'Guardar'}
+              </button>
+              {lesionGuardada && (
+                <button type="button" className="btn-ghost" onClick={handleBorrarLesion} disabled={savingLesion}>Quitar</button>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* CONTACTO DE EMERGENCIA */}
+        <div className="card" style={{ marginBottom: '12px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Contacto de emergencia</h3>
+          <form onSubmit={handleSaveEmergencia}>
+            <div className="field" style={{ marginBottom: '10px' }}>
+              <label>Nombre</label>
+              <input value={emergencia.nombre} onChange={e => setEmergencia({ ...emergencia, nombre: e.target.value })} placeholder="Ej: María García" />
+            </div>
+            <div className="field" style={{ marginBottom: '10px' }}>
+              <label>Teléfono</label>
+              <input type="tel" value={emergencia.telefono} onChange={e => setEmergencia({ ...emergencia, telefono: e.target.value })} placeholder="+54 11 1234-5678" />
+            </div>
+            {msgEmergencia && <div className={msgEmergencia.startsWith('✅') ? 'success-msg' : 'error-msg'} style={{ marginBottom: '10px' }}>{msgEmergencia}</div>}
+            <button type="submit" className="btn-primary">Guardar contacto</button>
+          </form>
+        </div>
+
+      </>}
+
       {/* ESTADÍSTICAS TAB */}
       {tab === 'estadisticas' && (() => {
         const hoy = new Date().toISOString().split('T')[0]
@@ -797,6 +735,39 @@ export default function MiPerfil() {
         }, 0)
         return (
           <>
+            {/* METAS PERSONALES */}
+            <div className="card" style={{ marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>🎯 Metas personales</h3>
+              <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px' }}>Escribí tus objetivos de entrenamiento o carrera.</div>
+              {metas.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                  {metas.map(m => (
+                    <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: m.estado === 'cumplida' ? 'rgba(74,222,128,0.06)' : 'var(--bg3)', borderRadius: '8px', padding: '8px 10px', opacity: m.estado === 'cumplida' ? 0.75 : 1 }}>
+                      <span style={{ flex: 1, fontSize: '13px', lineHeight: 1.5, textDecoration: m.estado === 'cumplida' ? 'line-through' : 'none', color: m.estado === 'cumplida' ? '#4ade80' : 'var(--text)' }}>
+                        {m.estado === 'cumplida' && '✓ '}{m.texto}
+                      </span>
+                      {m.estado === 'activa' && (
+                        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                          <button onClick={() => resolverMeta(m.id, 'cumplida')} title="Cumplida" style={{ background: 'rgba(74,222,128,0.15)', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '2px 7px', borderRadius: '6px', fontFamily: 'inherit' }}>✓ Cumplida</button>
+                          <button onClick={() => resolverMeta(m.id, 'descartada')} title="Descartar" style={{ background: 'rgba(248,113,113,0.12)', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '2px 7px', borderRadius: '6px', fontFamily: 'inherit' }}>✕ Descartar</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  value={nuevaMeta}
+                  onChange={e => setNuevaMeta(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && agregarMeta()}
+                  placeholder="Ej: Correr 21K en menos de 2hs"
+                  style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '8px 10px', fontSize: '13px', fontFamily: 'inherit' }}
+                />
+                <button onClick={agregarMeta} disabled={!nuevaMeta.trim() || savingMeta} className="btn-primary" style={{ padding: '0 14px', fontSize: '13px', height: 36, flexShrink: 0 }}>+ Agregar</button>
+              </div>
+            </div>
+
             <RecordsPersonales />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
