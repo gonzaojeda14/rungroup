@@ -99,7 +99,8 @@ export default function Resumen() {
         mal: feedbacks.filter(p => p.feedback === 'mal').map(p => ({ ...p, nombre: p.profiles?.nombre })),
       }
 
-      return { ...c, counts, total: ps.length, dists, multiDist, porDistancia, feedbacks, porFeedback }
+      const total = ESTADOS.reduce((sum, e) => sum + (counts[e] || 0), 0)
+      return { ...c, counts, total, dists, multiDist, porDistancia, feedbacks, porFeedback }
     })
     setCarreras(enriched)
     setLoading(false)
@@ -156,7 +157,7 @@ export default function Resumen() {
               <h3 style={{ margin: '0 0 4px 0' }}>{c.nombre}</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 {c.fecha && <span className="tag">📅 {formatFecha(c.fecha)}</span>}
-                {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
+                {c.tipo && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
               </div>
             </div>
             <span className="summary-total">
