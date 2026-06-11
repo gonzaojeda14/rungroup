@@ -7,11 +7,11 @@ const ESTADOS = ['Inscripto', 'Quizás', 'No voy', 'Lista de espera', 'Pendiente
 const COLORS = { 'Inscripto': '#4ade80', 'Quizás': '#fbbf24', 'Lista de espera': '#60a5fa', 'No voy': '#f87171', 'Pendiente': '#94a3b8' }
 const TIPO_COLOR = { 'Trail': '#fb923c', 'Calle': '#60a5fa' }
 
-function StatsRow({ counts, total }) {
+function StatsRow({ counts, total, estados = ESTADOS }) {
   return (
     <>
       <div className="summary-stats">
-        {ESTADOS.map(e => (
+        {estados.map(e => (
           <div key={e} className="stat-item">
             <div className="stat-num" style={{ color: COLORS[e] }}>{counts[e] || 0}</div>
             <div className="stat-lbl">{e}</div>
@@ -20,7 +20,7 @@ function StatsRow({ counts, total }) {
       </div>
       {total > 0 && (
         <div className="progress-track">
-          {ESTADOS.filter(e => counts[e] > 0).map(e => (
+          {estados.filter(e => counts[e] > 0).map(e => (
             <div
               key={e}
               className="progress-seg"
@@ -54,10 +54,15 @@ export default function Resumen() {
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')
     const { data: partsRaw } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id')
-    const { data: tc } = await supabase
+    const { data: tcRaw } = await supabase
       .from('tiempos_carreras')
-      .select('carrera_id, distancia, tiempo_segundos, tiempo_texto, user_id, profiles(nombre)')
-    setTiempos(tc || [])
+      .select('carrera_id, distancia, tiempo_segundos, tiempo_texto, user_id')
+    const tcUserIds = [...new Set((tcRaw || []).map(t => t.user_id))]
+    const { data: tcPerfiles } = tcUserIds.length
+      ? await supabase.from('profiles').select('id, nombre').in('id', tcUserIds)
+      : { data: [] }
+    const tcPerfilesMap = Object.fromEntries((tcPerfiles || []).map(p => [p.id, p]))
+    setTiempos((tcRaw || []).map(t => ({ ...t, profiles: tcPerfilesMap[t.user_id] || null })))
     const userIds = [...new Set((partsRaw || []).map(p => p.user_id))]
     const { data: perfiles } = userIds.length
       ? await supabase.from('profiles').select('id, nombre').in('id', userIds)
@@ -157,23 +162,30 @@ export default function Resumen() {
             <span className="summary-total">{c.total} corredores</span>
           </div>
 
-          {c.multiDist ? (
-            <>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px' }}>General</div>
-              <StatsRow counts={c.counts} total={c.total} />
-              {c.porDistancia.filter(pd => pd.total > 0).map((pd, i) => (
-                <div key={pd.distancia} style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>📏 {pd.distancia}</span>
-                    <span>{pd.total} eligieron</span>
+          {(() => {
+            const esEvento = c.tipo_actividad === 'evento' || c.tipo_actividad === 'entrenamiento'
+            const estadosVista = esEvento ? ['Inscripto', 'Pendiente'] : ESTADOS
+            const totalVista = esEvento
+              ? (c.counts['Inscripto'] || 0) + (c.counts['Pendiente'] || 0)
+              : c.total
+            return c.multiDist && !esEvento ? (
+              <>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px' }}>General</div>
+                <StatsRow counts={c.counts} total={c.total} estados={estadosVista} />
+                {c.porDistancia.filter(pd => pd.total > 0).map((pd) => (
+                  <div key={pd.distancia} style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>📏 {pd.distancia}</span>
+                      <span>{pd.total} eligieron</span>
+                    </div>
+                    <StatsRow counts={pd.counts} total={pd.total} estados={estadosVista} />
                   </div>
-                  <StatsRow counts={pd.counts} total={pd.total} />
-                </div>
-              ))}
-            </>
-          ) : (
-            <StatsRow counts={c.counts} total={c.total} />
-          )}
+                ))}
+              </>
+            ) : (
+              <StatsRow counts={c.counts} total={totalVista} estados={estadosVista} />
+            )
+          })()}
           {/* Ranking de tiempos — solo carreras pasadas con tiempos cargados */}
           {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && (() => {
             const today = new Date().toISOString().split('T')[0]
