@@ -187,13 +187,6 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
             </div>
           </div>
 
-          {totalFlamitas !== null && totalFlamitas > 0 && (
-            <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text2)' }}>Flamitas acumuladas</span>
-              <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--accent)' }}>💎 {totalFlamitas}</span>
-            </div>
-          )}
-
           {proximasCarreras.length > 0 && (
             <div className="card">
               <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Próximas carreras</h3>
