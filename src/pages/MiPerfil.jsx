@@ -40,6 +40,11 @@ export default function MiPerfil() {
   const [mostrarSelectorFotos, setMostrarSelectorFotos] = useState(false)
   const [fotosCarrera, setFotosCarrera] = useState(null)
 
+  // Metas personales
+  const [metas, setMetas] = useState([])
+  const [nuevaMeta, setNuevaMeta] = useState('')
+  const [savingMeta, setSavingMeta] = useState(false)
+
   // Bugs
   const [bugs, setBugs] = useState([])
   // Eliminar cuenta
@@ -55,6 +60,7 @@ export default function MiPerfil() {
     fetchProfile()
     fetchBugs()
     fetchCarrerasFotos()
+    fetchMetas()
     // Verificar si ya hay suscripción push activa en este dispositivo
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.ready.then(reg => {
@@ -72,6 +78,33 @@ export default function MiPerfil() {
     const carreras = (data || [])
       .filter(c => yaEmpezo(c.fecha, c.hora))
     setCarrerasFotos(carreras)
+  }
+
+  async function fetchMetas() {
+    const { data } = await supabase.from('metas_personales')
+      .select('id, texto, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+    setMetas(data || [])
+  }
+
+  async function agregarMeta() {
+    const texto = nuevaMeta.trim()
+    if (!texto) return
+    setSavingMeta(true)
+    const { data, error } = await supabase.from('metas_personales')
+      .insert([{ user_id: user.id, texto }])
+      .select().single()
+    if (!error && data) {
+      setMetas(prev => [...prev, data])
+      setNuevaMeta('')
+    }
+    setSavingMeta(false)
+  }
+
+  async function eliminarMeta(id) {
+    await supabase.from('metas_personales').delete().eq('id', id)
+    setMetas(prev => prev.filter(m => m.id !== id))
   }
 
   async function fetchBugs() {
@@ -467,6 +500,40 @@ export default function MiPerfil() {
 
       {/* RECORDS PERSONALES */}
       <RecordsPersonales />
+
+      {/* METAS PERSONALES */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>🎯 Metas personales</h3>
+        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '14px' }}>Escribí tus objetivos de entrenamiento o carrera.</div>
+        {metas.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+            {metas.map(m => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: 'var(--bg3)', borderRadius: '8px', padding: '8px 10px' }}>
+                <span style={{ flex: 1, fontSize: '13px', lineHeight: 1.5 }}>{m.texto}</span>
+                <button
+                  onClick={() => eliminarMeta(m.id)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+                >✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input
+            value={nuevaMeta}
+            onChange={e => setNuevaMeta(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && agregarMeta()}
+            placeholder="Ej: Correr 21K en menos de 2hs"
+            style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '8px 10px', fontSize: '13px', fontFamily: 'inherit' }}
+          />
+          <button
+            onClick={agregarMeta}
+            disabled={!nuevaMeta.trim() || savingMeta}
+            className="btn-primary"
+            style={{ padding: '0 14px', fontSize: '13px', height: 36, flexShrink: 0 }}
+          >+ Agregar</button>
+        </div>
+      </div>
 
       {/* NOTIFICACIONES */}
       <div className="card" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

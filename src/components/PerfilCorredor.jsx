@@ -29,6 +29,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
   const [extra, setExtra] = useState({})
   const [bloqueado, setBloqueado] = useState(corredor.activo === false)
   const [totalFlamitas, setTotalFlamitas] = useState(null)
+  const [metas, setMetas] = useState([])
 
   const hoy = new Date().toISOString().split('T')[0]
 
@@ -75,6 +76,12 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
         if (data?.signedUrl) setCertUrl(data.signedUrl)
       }
     }
+
+    const { data: metasData } = await supabase.from('metas_personales')
+      .select('id, texto')
+      .eq('user_id', corredor.id)
+      .order('created_at', { ascending: true })
+    setMetas(metasData || [])
 
     setLoading(false)
   }
@@ -268,6 +275,21 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
 
         {/* RECORDS PERSONALES */}
         <RecordsPersonales userId={corredor.id} />
+
+        {/* METAS PERSONALES */}
+        {metas.length > 0 && (
+          <div className="card">
+            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Metas personales</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {metas.map(m => (
+                <div key={m.id} style={{ fontSize: '14px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                  <span style={{ color: 'var(--accent)', marginTop: '2px', flexShrink: 0 }}>🎯</span>
+                  <span>{m.texto}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>}
     </div>

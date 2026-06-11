@@ -159,7 +159,11 @@ export default function Resumen() {
                 {c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
               </div>
             </div>
-            <span className="summary-total">{c.total} corredores</span>
+            <span className="summary-total">
+              {(c.tipo_actividad === 'evento' || c.tipo_actividad === 'entrenamiento')
+                ? (c.counts['Inscripto'] || 0) + (c.counts['Pendiente'] || 0)
+                : c.total} corredores
+            </span>
           </div>
 
           {(() => {
