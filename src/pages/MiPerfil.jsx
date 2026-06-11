@@ -775,7 +775,7 @@ export default function MiPerfil() {
                 { label: 'Carreras', value: carreras.length, icon: '🏅' },
                 { label: 'Eventos / Entrenos', value: eventosEntrenos.length, icon: '🏃' },
                 { label: 'Kilómetros totales', value: kmTotales > 0 ? `${kmTotales.toFixed(0)} km` : '—', icon: '📏' },
-                { label: 'Flamitas ganadas', value: statsFlamitas > 0 ? `💎 ${statsFlamitas}` : '—', icon: null },
+                { label: 'Flamitas ganadas', value: statsFlamitas > 0 ? statsFlamitas : '—', icon: '💎' },
               ].map(({ label, value, icon }) => (
                 <div key={label} className="card" style={{ textAlign: 'center', padding: '16px 10px' }}>
                   {icon && <div style={{ fontSize: '22px', marginBottom: '6px' }}>{icon}</div>}

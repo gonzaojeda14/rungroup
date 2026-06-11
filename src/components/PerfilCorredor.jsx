@@ -320,7 +320,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
                   { label: 'Carreras', value: carreras.length, icon: '🏅' },
                   { label: 'Eventos / Entrenos', value: eventosEntrenos.length, icon: '🏃' },
                   { label: 'Kilómetros totales', value: kmTotales > 0 ? `${kmTotales.toFixed(0)} km` : '—', icon: '📏' },
-                  { label: 'Flamitas ganadas', value: totalFlamitas > 0 ? `💎 ${totalFlamitas}` : '—', icon: null },
+                  { label: 'Flamitas ganadas', value: totalFlamitas > 0 ? totalFlamitas : '—', icon: '💎' },
                 ].map(({ label, value, icon }) => (
                   <div key={label} className="card" style={{ textAlign: 'center', padding: '14px 10px' }}>
                     {icon && <div style={{ fontSize: '20px', marginBottom: '4px' }}>{icon}</div>}
