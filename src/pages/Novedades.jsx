@@ -18,6 +18,7 @@ function tiempoAtras(fecha) {
 export default function Novedades() {
   const { isAdmin, user, marcarAvisosLeidos, profile } = useAuth()
   const [items, setItems] = useState([])
+  const [cumpleañeros, setCumpleañeros] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [tipo, setTipo] = useState('anuncio')
@@ -36,6 +37,7 @@ export default function Novedades() {
 
   useEffect(() => {
     fetchNovedades()
+    fetchCumpleaños()
     marcarAvisosLeidos()
     suscribirPush().catch(() => {})
     const channel = supabase.channel('novedades-rt')
@@ -43,6 +45,17 @@ export default function Novedades() {
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [])
+
+  async function fetchCumpleaños() {
+    const hoy = new Date()
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0')
+    const dd = String(hoy.getDate()).padStart(2, '0')
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, nombre, avatar_url')
+      .like('fecha_nacimiento', `%-${mm}-${dd}`)
+    setCumpleañeros(data || [])
+  }
 
   async function fetchNovedades() {
     const { data, error } = await supabase
@@ -348,6 +361,23 @@ export default function Novedades() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* CUMPLEAÑOS */}
+      {cumpleañeros.length > 0 && (
+        <div className="card" style={{ marginBottom: '16px', background: 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.03))', border: '1px solid rgba(251,191,36,0.25)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '28px', lineHeight: 1 }}>🎂</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: '#fbbf24', marginBottom: '2px' }}>
+                ¡Hoy es el cumple de {cumpleañeros.map(c => c.nombre).join(' y ')}!
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text2)' }}>
+                Mandales un saludo 🎉
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* PLANES SEMANALES */}
