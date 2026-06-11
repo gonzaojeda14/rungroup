@@ -233,7 +233,7 @@ export default function Carreras() {
   async function fetchAll() {
     const [{ data: cars }, { data: parts }] = await Promise.all([
       supabase.from('carreras').select('*').order('fecha', { ascending: true }),
-      supabase.from('participaciones').select('carrera_id, estado, distancia_elegida').eq('user_id', user.id)
+      supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, transferido').eq('user_id', user.id)
     ])
     setCarreras(cars || [])
     setParticipaciones(parts || [])
@@ -570,9 +570,9 @@ export default function Carreras() {
   }
 
   async function realizarTransferencia(carreraId, originalUserId, nuevoUserId, nuevoNombre) {
-    // 1. Original → No voy
+    // 1. Original → No voy + transferido
     await supabase.from('participaciones')
-      .update({ estado: 'No voy', distancia_elegida: null, updated_at: new Date().toISOString() })
+      .update({ estado: 'No voy', distancia_elegida: null, transferido: true, updated_at: new Date().toISOString() })
       .eq('carrera_id', carreraId).eq('user_id', originalUserId)
 
     // 2. Nuevo → Inscripto (upsert por si no tenía participacion)
@@ -585,7 +585,7 @@ export default function Carreras() {
     // 3. Actualizar estado local si es el usuario actual quien transfiere
     if (originalUserId === user.id) {
       setParticipaciones(prev =>
-        prev.map(p => p.carrera_id === carreraId ? { ...p, estado: 'No voy', distancia_elegida: null } : p)
+        prev.map(p => p.carrera_id === carreraId ? { ...p, estado: 'No voy', distancia_elegida: null, transferido: true } : p)
       )
       setDistanciasSeleccionadas(prev => { const n = { ...prev }; delete n[carreraId]; return n })
     }
@@ -1009,6 +1009,7 @@ export default function Carreras() {
 
           const part = participaciones.find(p => p.carrera_id === c.id)
           const estado = part?.estado || 'Pendiente'
+          const fueTransferido = !!part?.transferido
           // Una vez que la carrera ya arrancó, no se puede modificar el estado
           // de participación — habilitar eso permitiría, por ejemplo, marcarse
           // "Inscripto" después y subir fotos pidiendo Flama Points de una
@@ -1203,7 +1204,7 @@ export default function Carreras() {
                     {distSeleccionada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '12px' }}> · {distSeleccionada}</span>}
                     {carreraPasada && <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '11px' }}> · ya no se puede modificar (la carrera ya pasó)</span>}
                   </div>
-                  <div className="estado-buttons" style={carreraPasada ? { opacity: 0.35, pointerEvents: 'none' } : {}}>
+                  <div className="estado-buttons" style={(carreraPasada || fueTransferido) ? { opacity: 0.35, pointerEvents: 'none' } : {}}>
                     {ESTADOS.map(e => (
                       <EstadoBtnConInfo
                         key={e}
@@ -1215,6 +1216,9 @@ export default function Carreras() {
                       />
                     ))}
                   </div>
+                  {fueTransferido && !carreraPasada && (
+                    <span style={{ color: 'var(--text2)', fontWeight: 400, fontSize: '11px' }}>transferiste tu lugar — no podés reinscribirte</span>
+                  )}
                   {estado === 'Inscripto' && !carreraPasada && (
                     <button
                       onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: user.id })}
