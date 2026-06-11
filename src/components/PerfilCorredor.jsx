@@ -78,8 +78,9 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
     }
 
     const { data: metasData } = await supabase.from('metas_personales')
-      .select('id, texto')
+      .select('id, texto, estado')
       .eq('user_id', corredor.id)
+      .in('estado', ['activa', 'cumplida'])
       .order('created_at', { ascending: true })
     setMetas(metasData || [])
 
@@ -282,9 +283,9 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
             <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Metas personales</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {metas.map(m => (
-                <div key={m.id} style={{ fontSize: '14px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <span style={{ color: 'var(--accent)', marginTop: '2px', flexShrink: 0 }}>🎯</span>
-                  <span>{m.texto}</span>
+                <div key={m.id} style={{ fontSize: '13px', display: 'flex', alignItems: 'flex-start', gap: '8px', opacity: m.estado === 'cumplida' ? 0.75 : 1 }}>
+                  <span style={{ flexShrink: 0, marginTop: '1px' }}>{m.estado === 'cumplida' ? '✅' : '🎯'}</span>
+                  <span style={{ textDecoration: m.estado === 'cumplida' ? 'line-through' : 'none', color: m.estado === 'cumplida' ? '#4ade80' : 'var(--text)' }}>{m.texto}</span>
                 </div>
               ))}
             </div>
