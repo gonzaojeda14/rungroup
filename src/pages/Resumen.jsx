@@ -53,7 +53,7 @@ export default function Resumen() {
 
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')
-    const { data: partsRaw } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id')
+    const { data: partsRaw } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id').range(0, 4999)
     const { data: tcRaw } = await supabase
       .from('tiempos_carreras')
       .select('carrera_id, distancia, tiempo_segundos, tiempo_texto, user_id')
