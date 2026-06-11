@@ -140,6 +140,90 @@ function TransferenciaModal({ carreraId, carreraNombre, originalUserId, onConfir
   )
 }
 
+function SugerenciaModal({ onClose, onSend, userId }) {
+  const [form, setForm] = useState({ nombre: '', fecha: '', link: '', lugar: '', tipo: 'calle', distancias: '' })
+  const [enviando, setEnviando] = useState(false)
+  const [enviado, setEnviado] = useState(false)
+
+  async function enviar(e) {
+    e.preventDefault()
+    if (!form.nombre.trim()) return
+    setEnviando(true)
+    const { error } = await supabase.from('carreras_sugeridas').insert([{
+      user_id: userId,
+      nombre: form.nombre.trim(),
+      fecha: form.fecha || null,
+      link: form.link.trim() || null,
+      lugar: form.lugar.trim() || null,
+      tipo: form.tipo,
+      distancias: form.distancias.trim() || null,
+    }])
+    setEnviando(false)
+    if (!error) { setEnviado(true); onSend?.() }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '16px' }} onClick={onClose}>
+      <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '20px', maxWidth: '420px', width: '100%', maxHeight: '88vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ fontWeight: 700, fontSize: '15px' }}>Sugerí una carrera</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        </div>
+        {enviado ? (
+          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '14px', color: 'var(--text2)', lineHeight: 1.6 }}>
+            <div style={{ fontSize: '32px', marginBottom: '10px' }}>🙌</div>
+            <div>¡Gracias por la sugerencia!</div>
+            <div style={{ fontSize: '12px', marginTop: '6px' }}>El admin la va a revisar pronto.</div>
+            <button onClick={onClose} className="btn-primary" style={{ marginTop: '18px' }}>Cerrar</button>
+          </div>
+        ) : (
+          <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Nombre *</label>
+              <input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} placeholder="Ej: 10K del Río" required
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '9px 12px', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Fecha</label>
+              <input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))}
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '9px 12px', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Lugar</label>
+              <input value={form.lugar} onChange={e => setForm(p => ({ ...p, lugar: e.target.value }))} placeholder="Ej: Parque Tres de Febrero"
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '9px 12px', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Distancias (separadas por coma)</label>
+              <input value={form.distancias} onChange={e => setForm(p => ({ ...p, distancias: e.target.value }))} placeholder="Ej: 5K, 10K, 21K"
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '9px 12px', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Tipo</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {['calle', 'trail'].map(t => (
+                  <button key={t} type="button" onClick={() => setForm(p => ({ ...p, tipo: t }))}
+                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--border)', background: form.tipo === t ? 'rgba(74,222,128,0.1)' : 'var(--bg)', color: form.tipo === t ? '#4ade80' : 'var(--text2)', fontFamily: 'inherit', fontSize: '13px', cursor: 'pointer', borderColor: form.tipo === t ? 'rgba(74,222,128,0.4)' : 'var(--border)', fontWeight: form.tipo === t ? 600 : 400 }}>
+                    {t === 'calle' ? '🏙 Calle' : '🌲 Trail'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '4px' }}>Link de inscripción</label>
+              <input value={form.link} onChange={e => setForm(p => ({ ...p, link: e.target.value }))} placeholder="https://..."
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '9px 12px', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+            </div>
+            <button type="submit" className="btn-primary" disabled={!form.nombre.trim() || enviando} style={{ marginTop: '4px' }}>
+              {enviando ? 'Enviando...' : 'Enviar sugerencia'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false, tipo_actividad: 'carrera', calzado: '' }
 
 const INSTRUCTIVO_RUNNING_TEAM = `1. Entrar a EntryFee.com.ar con tu usuario y contraseña.
@@ -190,6 +274,9 @@ export default function Carreras() {
   const [inscriptosAbiertos, setInscriptosAbiertos] = useState({}) // carreraId -> [perfiles] | 'loading'
   const [inscriptosExpandidos, setInscriptosExpandidos] = useState({}) // carreraId -> bool
   const [transferenciaModal, setTransferenciaModal] = useState(null) // { carreraId, carreraNombre, originalUserId }
+  const [sugerenciaModal, setSugerenciaModal] = useState(false)
+  const [sugerencias, setSugerencias] = useState([]) // solo admin
+  const [sugerenciasAbierto, setSugerenciasAbierto] = useState(false)
 
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
@@ -243,6 +330,42 @@ export default function Carreras() {
     })
     setDistanciasSeleccionadas(distMap)
     setLoading(false)
+    if (isAdmin) fetchSugerencias()
+  }
+
+  async function fetchSugerencias() {
+    const { data } = await supabase
+      .from('carreras_sugeridas')
+      .select('*, profiles(nombre)')
+      .eq('estado', 'pendiente')
+      .order('created_at', { ascending: false })
+    setSugerencias(data || [])
+  }
+
+  async function publicarSugerencia(s) {
+    const distanciasArr = s.distancias
+      ? s.distancias.split(',').map(d => d.trim()).filter(Boolean)
+      : []
+    const { error } = await supabase.from('carreras').insert([{
+      nombre: s.nombre,
+      fecha: s.fecha || null,
+      link: s.link || null,
+      lugar: s.lugar || null,
+      tipo: s.tipo || 'Calle',
+      distancias: distanciasArr,
+      tipo_actividad: 'carrera',
+    }])
+    if (error) { setToast('❌ Error al publicar'); setTimeout(() => setToast(''), 2500); return }
+    await supabase.from('carreras_sugeridas').update({ estado: 'publicada' }).eq('id', s.id)
+    setSugerencias(prev => prev.filter(x => x.id !== s.id))
+    fetchAll()
+    setToast('✅ Carrera publicada')
+    setTimeout(() => setToast(''), 3000)
+  }
+
+  async function descartarSugerencia(id) {
+    await supabase.from('carreras_sugeridas').update({ estado: 'descartada' }).eq('id', id)
+    setSugerencias(prev => prev.filter(x => x.id !== id))
   }
 
   async function handleSave(e) {
@@ -660,6 +783,54 @@ export default function Carreras() {
           </button>
         )}
       </div>
+
+      {/* Panel de sugerencias — solo admin */}
+      {isAdmin && sugerencias.length > 0 && (
+        <div className="card" style={{ marginBottom: '14px' }}>
+          <button
+            onClick={() => setSugerenciasAbierto(v => !v)}
+            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text)' }}>
+              💡 Sugerencias ({sugerencias.length})
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--text2)' }}>{sugerenciasAbierto ? '▲' : '▼'}</span>
+          </button>
+          {sugerenciasAbierto && (
+            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {sugerencias.map(s => (
+                <div key={s.id} style={{ background: 'var(--bg3)', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '14px' }}>{s.nombre}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text2)', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {s.fecha && <span>📅 {s.fecha}</span>}
+                    {s.lugar && <span>📍 {s.lugar}</span>}
+                    {s.distancias && <span>🏃 {s.distancias}</span>}
+                    {s.tipo && <span>{s.tipo === 'trail' ? '🌲' : '🏙'} {s.tipo}</span>}
+                    {s.link && <a href={s.link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>🔗 Link</a>}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
+                    Sugerida por {s.profiles?.nombre || 'un usuario'}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button
+                      onClick={() => publicarSugerencia(s)}
+                      style={{ flex: 1, padding: '7px', background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      ✓ Publicar
+                    </button>
+                    <button
+                      onClick={() => descartarSugerencia(s.id)}
+                      style={{ padding: '7px 14px', background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {isAdmin && showForm && !editId && (
         <form ref={formRef} className="card form-card" onSubmit={handleSave}>
@@ -1323,6 +1494,25 @@ export default function Carreras() {
           )
         })}
       </div>
+
+      {/* Botón sugerir carrera — usuarios no admin */}
+      {!isAdmin && (
+        <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
+          <button
+            onClick={() => setSugerenciaModal(true)}
+            style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: '3px' }}
+          >
+            ¿Falta alguna? Sugerí una carrera
+          </button>
+        </div>
+      )}
+
+      {sugerenciaModal && (
+        <SugerenciaModal
+          userId={user.id}
+          onClose={() => setSugerenciaModal(false)}
+        />
+      )}
 
       {/* Modal fotos — movido a Historial */}
       {fotosModal && false && (
