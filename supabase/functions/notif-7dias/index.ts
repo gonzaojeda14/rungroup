@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
     const { data: carreras, error: errCar } = await supabase
       .from('carreras')
       .select('id, nombre, fecha')
+      .eq('tipo_actividad', 'carrera')
       .gte('fecha', desde.toISOString().split('T')[0])
       .lte('fecha', hasta.toISOString().split('T')[0])
 
@@ -51,9 +52,8 @@ Deno.serve(async (req) => {
 
       if (!participaciones?.length) continue
 
-      const userIds = participaciones.map(p => p.user_id)
+      const userIds = participaciones.map((p: any) => p.user_id)
 
-      // Llamar a push-notif con la service role key como Bearer
       const res = await fetch(PUSH_NOTIF_URL, {
         method: 'POST',
         headers: {

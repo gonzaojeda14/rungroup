@@ -3,6 +3,7 @@ import Ventas from './Ventas'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { yaEmpezo, enVentanaPreAprobacion, dentroDePlazo } from '../lib/utils'
+import { notificar } from '../lib/push'
 
 const PLAZO_RECLAMO_DIAS = 7
 
@@ -378,6 +379,17 @@ function RevisionAdmin() {
       revisado_at: new Date().toISOString(),
       revisado_por: user.id,
     }).eq('id', id)
+    if (estado === 'validado') {
+      const item = items.find(i => i.id === id)
+      if (item) {
+        notificar(
+          '💎 ¡Flamitas acreditados!',
+          `Sumaste ${item.puntos} Flamita${item.puntos === 1 ? '' : 's'} por ${item.carrera?.nombre ?? 'tu carrera'}. ¡Seguí así!`,
+          '/mas',
+          { user_ids: [item.user_id] },
+        )
+      }
+    }
     setProcesando(prev => { const n = { ...prev }; delete n[id]; return n })
   }
 
@@ -648,6 +660,14 @@ function FlamaPoints() {
         avisar('📸 Solicitud enviada — la estamos revisando')
       } else {
         avisar(`✅ ¡Listo! Sumaste ${puntos} Flamita${puntos === 1 ? '' : 's'}`)
+        // Aprobación inmediata — notificar al mismo usuario (llega como confirmación)
+        const nombreCarrera = accion?.carrera?.nombre ?? ''
+        notificar(
+          '💎 ¡Flamitas acreditados!',
+          `Sumaste ${puntos} Flamita${puntos === 1 ? '' : 's'} por ${nombreCarrera}. ¡Seguí así!`,
+          '/mas',
+          { user_ids: [user.id] },
+        )
       }
       setAccion(null)
       setArchivo(null)

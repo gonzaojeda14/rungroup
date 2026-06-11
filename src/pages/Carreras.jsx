@@ -187,11 +187,25 @@ export default function Carreras() {
       await supabase.from('carreras').update(payload).eq('id', editId)
     } else {
       await supabase.from('carreras').insert([payload])
-      // Notificar a todos que hay una nueva carrera (solo para carreras)
+      // Notificar a todos según el tipo de actividad
       if (esCarrera) {
         notificar(
           '🏃 ¡Nueva carrera disponible!',
           `Se publicó "${payload.nombre}". ¡Anotate!`,
+          '/carreras',
+          { all: true },
+        )
+      } else if (payload.tipo_actividad === 'evento') {
+        notificar(
+          '🎉 ¡Nuevo evento!',
+          `Se publicó "${payload.nombre}". ¡Confirmá si vas!`,
+          '/carreras',
+          { all: true },
+        )
+      } else if (payload.tipo_actividad === 'entrenamiento') {
+        notificar(
+          '💪 ¡Nuevo entrenamiento!',
+          `Se publicó "${payload.nombre}". ¡Confirmá si vas!`,
           '/carreras',
           { all: true },
         )
@@ -450,6 +464,7 @@ export default function Carreras() {
       '/mas',
       { user_ids },
     )
+    if (ok) await supabase.from('carreras').update({ flamitas_notif_enviada: true }).eq('id', carrera.id)
     setToast(ok ? '✅ Notificación enviada' : '❌ Error al enviar')
     setTimeout(() => setToast(''), 2500)
   }
