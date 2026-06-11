@@ -1,7 +1,7 @@
 import PageLoader from '../components/PageLoader'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { formatFecha } from '../lib/utils'
+import { formatFecha, formatTelefonoWA } from '../lib/utils'
 
 const ESTADOS = ['Inscripto', 'Quizás', 'No voy', 'Lista de espera', 'Pendiente']
 const COLORS = { 'Inscripto': '#4ade80', 'Quizás': '#fbbf24', 'Lista de espera': '#60a5fa', 'No voy': '#f87171', 'Pendiente': '#94a3b8' }
@@ -65,7 +65,7 @@ export default function Resumen() {
     setTiempos((tcRaw || []).map(t => ({ ...t, profiles: tcPerfilesMap[t.user_id] || null })))
     const userIds = [...new Set((partsRaw || []).map(p => p.user_id))]
     const { data: perfiles } = userIds.length
-      ? await supabase.from('profiles').select('id, nombre').in('id', userIds)
+      ? await supabase.from('profiles').select('id, nombre, telefono').in('id', userIds)
       : { data: [] }
     const perfilesMap = Object.fromEntries((perfiles || []).map(p => [p.id, p]))
     const parts = (partsRaw || []).map(p => ({ ...p, profiles: perfilesMap[p.user_id] || null }))
@@ -95,8 +95,8 @@ export default function Resumen() {
       const feedbacks = ps.filter(p => p.feedback)
       const porFeedback = {
         excelente: feedbacks.filter(p => p.feedback === 'excelente'),
-        regular: feedbacks.filter(p => p.feedback === 'regular').map(p => ({ ...p, nombre: p.profiles?.nombre })),
-        mal: feedbacks.filter(p => p.feedback === 'mal').map(p => ({ ...p, nombre: p.profiles?.nombre })),
+        regular: feedbacks.filter(p => p.feedback === 'regular').map(p => ({ ...p, nombre: p.profiles?.nombre, telefono: p.profiles?.telefono })),
+        mal: feedbacks.filter(p => p.feedback === 'mal').map(p => ({ ...p, nombre: p.profiles?.nombre, telefono: p.profiles?.telefono })),
       }
 
       const total = ESTADOS.reduce((sum, e) => sum + (counts[e] || 0), 0)
@@ -259,9 +259,21 @@ export default function Resumen() {
                       <div key={key} style={{ background: color + '11', border: `1px solid ${color}33`, borderRadius: '8px', padding: '8px 12px' }}>
                         <div style={{ fontSize: '11px', color, fontWeight: 600, marginBottom: '6px' }}>{emoji} Hablar con:</div>
                         {c.porFeedback[key].map((p, i) => (
-                          <div key={i} style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: p.feedback_nota ? '2px' : '0' }}>
-                            • {p.nombre || '—'}
-                            {p.feedback_nota && <span style={{ color: 'var(--text2)' }}> — "{p.feedback_nota}"</span>}
+                          <div key={i} style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>• {p.nombre || '—'}</span>
+                              {p.telefono && (
+                                <a
+                                  href={`https://wa.me/${formatTelefonoWA(p.telefono)}`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', color: '#4ade80', flexShrink: 0 }}
+                                  title={`Escribir a ${p.nombre} por WhatsApp`}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 32 32" fill="currentColor"><path d="M16 2C8.28 2 2 8.28 2 16c0 2.44.65 4.73 1.79 6.72L2 30l7.47-1.76A13.93 13.93 0 0 0 16 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm0 25.5c-2.2 0-4.27-.6-6.04-1.64l-.43-.26-4.43 1.04 1.07-4.3-.28-.45A11.45 11.45 0 0 1 4.5 16C4.5 9.6 9.6 4.5 16 4.5S27.5 9.6 27.5 16 22.4 27.5 16 27.5zm6.27-8.57c-.34-.17-2.02-1-2.34-1.11-.32-.11-.55-.17-.78.17-.23.34-.9 1.11-1.1 1.34-.2.23-.4.26-.74.09-.34-.17-1.44-.53-2.74-1.69-1.01-.9-1.7-2.01-1.9-2.35-.2-.34-.02-.52.15-.69.15-.15.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.09-.17-.78-1.88-1.07-2.57-.28-.67-.57-.58-.78-.59h-.67c-.23 0-.6.09-.91.43-.32.34-1.2 1.17-1.2 2.86s1.23 3.32 1.4 3.55c.17.23 2.42 3.7 5.87 5.19.82.35 1.46.56 1.96.72.82.26 1.57.22 2.16.13.66-.1 2.02-.82 2.31-1.62.28-.8.28-1.48.2-1.62-.09-.14-.32-.23-.66-.4z"/></svg>
+                                </a>
+                              )}
+                            </div>
+                            {p.feedback_nota && <div style={{ color: 'var(--text2)', paddingLeft: '10px', fontStyle: 'italic' }}>"{p.feedback_nota}"</div>}
                           </div>
                         ))}
                       </div>
