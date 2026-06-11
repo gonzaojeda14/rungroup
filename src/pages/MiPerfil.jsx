@@ -66,14 +66,11 @@ export default function MiPerfil() {
   }, [])
 
   async function fetchCarrerasFotos() {
-    const { data } = await supabase.from('participaciones')
-      .select('carrera:carreras(id, nombre, fecha, hora)')
-      .eq('user_id', user.id)
-      .neq('estado', 'Pendiente')
+    const { data } = await supabase.from('carreras')
+      .select('id, nombre, fecha, hora')
+      .order('fecha', { ascending: false })
     const carreras = (data || [])
-      .map(p => p.carrera)
-      .filter(c => c && yaEmpezo(c.fecha, c.hora))
-      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
+      .filter(c => yaEmpezo(c.fecha, c.hora))
     setCarrerasFotos(carreras)
   }
 
@@ -533,7 +530,7 @@ export default function MiPerfil() {
           ¿Tenés fotos de alguna carrera? Subilas acá para que todos las puedan ver.
         </div>
         {carrerasFotos.length === 0 ? (
-          <div style={{ fontSize: '13px', color: 'var(--text2)' }}>Todavía no corriste ninguna carrera para subir fotos.</div>
+          <div style={{ fontSize: '13px', color: 'var(--text2)' }}>Todavía no hay carreras para subir fotos.</div>
         ) : !mostrarSelectorFotos ? (
           <button className="btn-primary" onClick={() => setMostrarSelectorFotos(true)}>Elegir carrera</button>
         ) : (
