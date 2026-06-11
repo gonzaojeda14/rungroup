@@ -687,16 +687,20 @@ export default function Carreras() {
   async function refreshInscriptos(carreraId) {
     const { data: parts } = await supabase
       .from('participaciones')
-      .select('user_id')
+      .select('user_id, estado')
       .eq('carrera_id', carreraId)
-      .eq('estado', 'Inscripto')
+      .in('estado', ['Inscripto', 'Stand Flama'])
     const userIds = (parts || []).map(p => p.user_id)
     if (userIds.length === 0) { setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: [] })); return }
     const { data: perfiles } = await supabase
       .from('profiles')
       .select('id, nombre, avatar_url')
       .in('id', userIds)
-    const ordenados = (perfiles || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
+    const estadoMap = {}
+    parts?.forEach(p => { estadoMap[p.user_id] = p.estado })
+    const ordenados = (perfiles || [])
+      .map(p => ({ ...p, estadoPart: estadoMap[p.id] }))
+      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
     setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: ordenados }))
   }
 
@@ -1427,14 +1431,17 @@ export default function Carreras() {
               {/* Quiénes van */}
               {(() => {
                 const abierto = inscriptosAbiertos[c.id]
-                const total = Array.isArray(abierto) ? abierto.length : null
+                const inscriptos = Array.isArray(abierto) ? abierto.filter(p => p.estadoPart === 'Inscripto') : []
+                const standFlama = Array.isArray(abierto) ? abierto.filter(p => p.estadoPart === 'Stand Flama') : []
+                const totalInscriptos = Array.isArray(abierto) ? inscriptos.length : null
+                const totalStand = Array.isArray(abierto) ? standFlama.length : null
                 return (
                   <div style={{ marginTop: '10px' }}>
                     <button
                       onClick={() => toggleInscriptos(c.id)}
                       style={{
                         width: '100%', padding: '8px',
-                        background: abierto ? 'var(--bg3)' : 'var(--bg3)',
+                        background: 'var(--bg3)',
                         border: '1px solid var(--border)',
                         borderRadius: abierto ? '8px 8px 0 0' : '8px',
                         color: 'var(--text2)', fontSize: '13px',
@@ -1442,7 +1449,11 @@ export default function Carreras() {
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       }}
                     >
-                      <span>👟 {abierto && total !== null ? `${total} inscripto${total !== 1 ? 's' : ''}` : 'Ver quiénes van'}</span>
+                      <span>
+                        👟 {totalInscriptos !== null
+                          ? `${totalInscriptos} inscripto${totalInscriptos !== 1 ? 's' : ''}${totalStand > 0 ? ` · ${totalStand} 🧉` : ''}`
+                          : 'Ver quiénes van'}
+                      </span>
                       <span style={{ fontSize: '11px' }}>{abierto ? '▲ Ocultar' : '▼'}</span>
                     </button>
                     {abierto && (
@@ -1454,33 +1465,46 @@ export default function Carreras() {
                         ) : (() => {
                           const PAGE = 8
                           const expandido = inscriptosExpandidos[c.id]
-                          const visibles = expandido ? abierto : abierto.slice(0, PAGE)
+                          const visiblesInsc = expandido ? inscriptos : inscriptos.slice(0, PAGE)
+                          const visiblesStand = expandido ? standFlama : standFlama.slice(0, Math.max(0, PAGE - inscriptos.length))
                           const hayMas = abierto.length > PAGE
+
+                          const renderFila = (p, i, esStand) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', opacity: esStand ? 0.75 : 1 }}>
+                              <div style={{
+                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                                background: esStand ? 'rgba(255,45,45,0.08)' : 'rgba(255,45,45,0.15)', overflow: 'hidden',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 10, fontWeight: 700, color: 'var(--accent)',
+                              }}>
+                                {p.avatar_url
+                                  ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                  : p.nombre?.[0]?.toUpperCase()
+                                }
+                              </div>
+                              <span style={{ flex: 1, color: esStand ? 'var(--text2)' : 'var(--text)' }}>{p.nombre}</span>
+                              {esStand && <span style={{ fontSize: '11px' }}>🧉</span>}
+                              {!esStand && isAdmin && p.id && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && (
+                                <button
+                                  onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: p.id })}
+                                  title="Transferir lugar"
+                                  style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '14px', cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }}
+                                >⇄</button>
+                              )}
+                            </div>
+                          )
+
                           return (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              {visibles.map((p, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                                  <div style={{
-                                    width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                    background: 'rgba(255,45,45,0.15)', overflow: 'hidden',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 10, fontWeight: 700, color: 'var(--accent)',
-                                  }}>
-                                    {p.avatar_url
-                                      ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                                      : p.nombre?.[0]?.toUpperCase()
-                                    }
+                              {visiblesInsc.map((p, i) => renderFila(p, i, false))}
+                              {visiblesStand.length > 0 && (
+                                <>
+                                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '4px', paddingTop: '6px', borderTop: '1px solid var(--border)' }}>
+                                    Stand Flama 🧉
                                   </div>
-                                  <span style={{ flex: 1 }}>{p.nombre}</span>
-                                  {isAdmin && p.id && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && (
-                                    <button
-                                      onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: p.id })}
-                                      title="Transferir lugar"
-                                      style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '14px', cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }}
-                                    >⇄</button>
-                                  )}
-                                </div>
-                              ))}
+                                  {visiblesStand.map((p, i) => renderFila(p, i, true))}
+                                </>
+                              )}
                               {hayMas && (
                                 <button
                                   onClick={() => setInscriptosExpandidos(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
