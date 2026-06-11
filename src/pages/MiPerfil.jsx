@@ -40,6 +40,13 @@ export default function MiPerfil() {
   const [mostrarSelectorFotos, setMostrarSelectorFotos] = useState(false)
   const [fotosCarrera, setFotosCarrera] = useState(null)
 
+  // Tabs
+  const [tab, setTab] = useState('datos')
+
+  // Stats
+  const [statsParticipaciones, setStatsParticipaciones] = useState([])
+  const [statsFlamitas, setStatsFlamitas] = useState(0)
+
   // Metas personales
   const [metas, setMetas] = useState([])
   const [nuevaMeta, setNuevaMeta] = useState('')
@@ -61,6 +68,7 @@ export default function MiPerfil() {
     fetchBugs()
     fetchCarrerasFotos()
     fetchMetas()
+    fetchStats()
     // Verificar si ya hay suscripción push activa en este dispositivo
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.ready.then(reg => {
@@ -110,6 +118,20 @@ export default function MiPerfil() {
     } else {
       setMetas(prev => prev.map(m => m.id === id ? { ...m, estado } : m))
     }
+  }
+
+  async function fetchStats() {
+    const { data: parts } = await supabase
+      .from('participaciones')
+      .select('estado, distancia_elegida, carrera:carreras(fecha, tipo_actividad)')
+      .eq('user_id', user.id)
+    setStatsParticipaciones(parts || [])
+    const { data: pts } = await supabase
+      .from('puntos_carreras')
+      .select('puntos')
+      .eq('user_id', user.id)
+      .eq('estado', 'validado')
+    setStatsFlamitas((pts || []).reduce((s, p) => s + (p.puntos || 0), 0))
   }
 
   async function fetchBugs() {
@@ -322,6 +344,14 @@ export default function MiPerfil() {
     <div className="page">
       <div className="page-header"><h2>Mi perfil</h2></div>
 
+      {/* TABS */}
+      <div className="filtro-group" style={{ marginBottom: '12px' }}>
+        <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => setTab('datos')}>Datos personales</button>
+        <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => setTab('estadisticas')}>Estadísticas</button>
+      </div>
+
+      {tab === 'datos' && <>
+
       {/* FOTO DE PERFIL */}
       <div className="card" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '16px' }}>
         <label style={{ cursor: 'pointer', flexShrink: 0 }}>
@@ -502,9 +532,6 @@ export default function MiPerfil() {
           </div>
         </form>
       </div>
-
-      {/* RECORDS PERSONALES */}
-      <RecordsPersonales />
 
       {/* METAS PERSONALES */}
       <div className="card" style={{ marginBottom: '12px' }}>
@@ -726,25 +753,4 @@ export default function MiPerfil() {
             onClick={() => setConfirmarEliminarCuenta(true)}
             style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            Eliminar mi cuenta
-          </button>
-        ) : (
-          <div style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: '10px', padding: '14px' }}>
-            <p style={{ fontSize: '13px', color: '#f87171', marginBottom: '12px', fontWeight: 600 }}>
-              ¿Estás seguro? No hay vuelta atrás.
-            </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={eliminarCuenta} disabled={eliminandoCuenta}
-                style={{ background: '#f87171', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
-                {eliminandoCuenta ? 'Eliminando...' : 'Sí, eliminar'}
-              </button>
-              <button onClick={() => setConfirmarEliminarCuenta(false)} className="btn-ghost" style={{ fontSize: '13px' }}>
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+ 
