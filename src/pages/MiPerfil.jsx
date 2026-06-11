@@ -742,14 +742,14 @@ export default function MiPerfil() {
               {metas.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                   {metas.map(m => (
-                    <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: m.estado === 'cumplida' ? 'rgba(74,222,128,0.06)' : 'var(--bg3)', borderRadius: '8px', padding: '8px 10px', opacity: m.estado === 'cumplida' ? 0.75 : 1 }}>
-                      <span style={{ flex: 1, fontSize: '13px', lineHeight: 1.5, textDecoration: m.estado === 'cumplida' ? 'line-through' : 'none', color: m.estado === 'cumplida' ? '#4ade80' : 'var(--text)' }}>
+                    <div key={m.id} style={{ background: m.estado === 'cumplida' ? 'rgba(74,222,128,0.06)' : 'var(--bg3)', borderRadius: '8px', padding: '8px 10px', opacity: m.estado === 'cumplida' ? 0.75 : 1 }}>
+                      <div style={{ fontSize: '13px', lineHeight: 1.5, textDecoration: m.estado === 'cumplida' ? 'line-through' : 'none', color: m.estado === 'cumplida' ? '#4ade80' : 'var(--text)', marginBottom: m.estado === 'activa' ? '6px' : 0 }}>
                         {m.estado === 'cumplida' && '✓ '}{m.texto}
-                      </span>
+                      </div>
                       {m.estado === 'activa' && (
-                        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                          <button onClick={() => resolverMeta(m.id, 'cumplida')} title="Cumplida" style={{ background: 'rgba(74,222,128,0.15)', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '2px 7px', borderRadius: '6px', fontFamily: 'inherit' }}>✓ Cumplida</button>
-                          <button onClick={() => resolverMeta(m.id, 'descartada')} title="Descartar" style={{ background: 'rgba(248,113,113,0.12)', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '2px 7px', borderRadius: '6px', fontFamily: 'inherit' }}>✕ Descartar</button>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={() => resolverMeta(m.id, 'cumplida')} style={{ background: 'rgba(74,222,128,0.15)', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '6px', fontFamily: 'inherit' }}>✓ Cumplida</button>
+                          <button onClick={() => resolverMeta(m.id, 'descartada')} style={{ background: 'rgba(248,113,113,0.12)', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '6px', fontFamily: 'inherit' }}>✕ Descartar</button>
                         </div>
                       )}
                     </div>
