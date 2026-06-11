@@ -384,7 +384,7 @@ function RevisionAdmin() {
       if (item) {
         notificar(
           '💎 ¡Flamitas acreditados!',
-          `Sumaste ${item.puntos} Flamita${item.puntos === 1 ? '' : 's'} por ${item.carrera?.nombre ?? 'tu carrera'}. ¡Seguí así!`,
+          `Sumaste ${item.puntos} Flamita${item.puntos === 1 ? '' : 's'} por ${item.carrera?.nombre ?? 'tu carrera'}. ¡Vamos por más!`,
           '/mas',
           { user_ids: [item.user_id] },
         )
@@ -507,6 +507,9 @@ function FlamaPoints() {
   const [accion, setAccion] = useState(null)
   const [archivo, setArchivo] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
+  const [fotoExistenteUrl, setFotoExistenteUrl] = useState(null) // URL de foto ya subida en "Ver fotos"
+  const [fotosCarrera, setFotosCarrera] = useState([])
+  const [mostrarFotosPicker, setMostrarFotosPicker] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
   const [toast, setToast] = useState('')
   const [tieneRecord, setTieneRecord] = useState(false)
@@ -590,12 +593,31 @@ function FlamaPoints() {
     setTimeout(() => setToast(''), 3000)
   }
 
+  async function abrirFotosPicker(carreraId) {
+    setMostrarFotosPicker(true)
+    const { data } = await supabase
+      .from('fotos_carreras')
+      .select('id, cloudinary_url')
+      .eq('carrera_id', carreraId)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    setFotosCarrera(data || [])
+  }
+
+  function seleccionarFotoExistente(url) {
+    setFotoExistenteUrl(url)
+    setFotoPreview(url)
+    setArchivo(null)
+    if (inputRef.current) inputRef.current.value = ''
+    setMostrarFotosPicker(false)
+  }
+
   // Sube la foto a Cloudinary, crea o actualiza la fila en `puntos_carreras`
   // (1 sola por corredor/carrera) y dispara la validación. No hay forma de
   // cancelar una vez enviada.
   async function enviar() {
     if (!accion) return
-    if (!archivo) {
+    if (!archivo && !fotoExistenteUrl) {
       avisar('⚠️ Te falta cargar la foto')
       return
     }
@@ -604,21 +626,28 @@ function FlamaPoints() {
     const esReintento = accion.tipo === 'reintento'
     const carrera = esReintento ? accion.envio.carrera : accion.carrera
     const carreraId = esReintento ? accion.envio.carrera_id : accion.carrera.id
-    // Tipo de participación con la que se solicita (define la foto pedida y el puntaje):
-    // para un envío nuevo viene de la carrera elegible; para un reintento, del envío original.
     const tipoParticipacion = esReintento ? accion.envio.tipo_participacion : accion.carrera._tipoParticipacion
     const puntos = tipoParticipacion === 'Stand Flama' ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO
-    const folder = `flamarun/puntos/${carrera?.nombre?.replace(/\s+/g, '_') || carreraId}`
-
-    const fd = new FormData()
-    fd.append('file', archivo)
-    fd.append('upload_preset', PRESET)
-    fd.append('folder', folder)
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!data.secure_url) throw new Error('No se pudo subir la imagen')
+      let fotoUrl, fotoPublicId
+
+      if (fotoExistenteUrl) {
+        // Usar foto ya subida — no re-uploadear
+        fotoUrl = fotoExistenteUrl
+        fotoPublicId = null
+      } else {
+        const folder = `flamarun/puntos/${carrera?.nombre?.replace(/\s+/g, '_') || carreraId}`
+        const fd = new FormData()
+        fd.append('file', archivo)
+        fd.append('upload_preset', PRESET)
+        fd.append('folder', folder)
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
+        const data = await res.json()
+        if (!data.secure_url) throw new Error('No se pudo subir la imagen')
+        fotoUrl = data.secure_url
+        fotoPublicId = data.public_id
+      }
 
       // Sin automatización por IA: el otorgamiento es inmediato al subir la foto.
       // Con automatización activa (uso futuro / otros grupos): queda pendiente de validación.
@@ -633,8 +662,8 @@ function FlamaPoints() {
           motivo: null,
           foto_url_anterior: previo.foto_url,
           foto_public_id_anterior: previo.foto_public_id,
-          foto_url: data.secure_url,
-          foto_public_id: data.public_id,
+          foto_url: fotoUrl,
+          foto_public_id: fotoPublicId,
         }).eq('id', previo.id)
         if (error) throw error
         envioId = previo.id
@@ -645,8 +674,8 @@ function FlamaPoints() {
           tipo_participacion: tipoParticipacion,
           puntos,
           intentos: 1,
-          foto_url: data.secure_url,
-          foto_public_id: data.public_id,
+          foto_url: fotoUrl,
+          foto_public_id: fotoPublicId,
           estado: estadoInicial,
         }).select('id').single()
         if (error) throw error
@@ -664,13 +693,15 @@ function FlamaPoints() {
         const nombreCarrera = accion?.carrera?.nombre ?? ''
         notificar(
           '💎 ¡Flamitas acreditados!',
-          `Sumaste ${puntos} Flamita${puntos === 1 ? '' : 's'} por ${nombreCarrera}. ¡Seguí así!`,
+          `Sumaste ${puntos} Flamita${puntos === 1 ? '' : 's'} por ${nombreCarrera}. ¡Vamos por más!`,
           '/mas',
           { user_ids: [user.id] },
         )
       }
       setAccion(null)
       setArchivo(null)
+      setFotoExistenteUrl(null)
+      setFotoPreview(null)
       fetchTodo()
     } catch (e) {
       avisar('❌ Error al enviar: ' + e.message)
@@ -706,12 +737,49 @@ function FlamaPoints() {
           {fotoPreview && (
             <img src={fotoPreview} alt="Vista previa de la foto" style={{ width: 56, height: 56, borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
           )}
-          <input ref={inputRef} type="file" accept="image/*"
-            onChange={e => setArchivo(e.target.files?.[0] || null)}
-            style={{ fontSize: '12px', color: 'var(--text2)', minWidth: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+            <input ref={inputRef} type="file" accept="image/*"
+              onChange={e => { setArchivo(e.target.files?.[0] || null); setFotoExistenteUrl(null) }}
+              style={{ fontSize: '12px', color: 'var(--text2)', minWidth: 0 }} />
+            <button
+              type="button"
+              onClick={() => abrirFotosPicker(accion.tipo === 'reintento' ? accion.envio.carrera_id : accion.carrera.id)}
+              style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '12px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
+            >
+              📂 Usar foto que ya subí
+            </button>
+          </div>
         </div>
-        {archivo && (
+        {fotoExistenteUrl && (
+          <div style={{ fontSize: '11px', color: '#4ade80', marginTop: '6px' }}>✅ Foto seleccionada de "Ver fotos"</div>
+        )}
+        {archivo && !fotoExistenteUrl && (
           <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '6px' }}>✅ Foto cargada: {archivo.name}</div>
+        )}
+
+        {/* Picker de fotos existentes */}
+        {mostrarFotosPicker && (
+          <div style={{ marginTop: '8px', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px', background: 'var(--bg)' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '8px', fontWeight: 600 }}>Tus fotos de esta carrera</div>
+            {fotosCarrera.length === 0 ? (
+              <div style={{ fontSize: '12px', color: 'var(--text2)' }}>No subiste fotos todavía en "Ver fotos"</div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                {fotosCarrera.map(f => (
+                  <img
+                    key={f.id}
+                    src={f.cloudinary_url.replace('/upload/', '/upload/w_200,q_auto/')}
+                    alt=""
+                    onClick={() => seleccionarFotoExistente(f.cloudinary_url)}
+                    style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '6px', cursor: 'pointer', border: fotoExistenteUrl === f.cloudinary_url ? '2px solid #4ade80' : '2px solid transparent' }}
+                  />
+                ))}
+              </div>
+            )}
+            <button type="button" onClick={() => setMostrarFotosPicker(false)} style={{ marginTop: '8px', background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+              Cerrar
+            </button>
+          </div>
         )}
       </div>
       <button className="btn-accent" disabled={subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
@@ -965,7 +1033,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
         supabase.from('participaciones')
           .select('carrera_id, carrera:carreras(id, fecha, hora, flama_points)')
           .eq('user_id', user.id)
-          .eq('estado', 'Inscripto'),
+          .in('estado', ['Inscripto', 'Stand Flama']),
         supabase.from('puntos_carreras')
           .select('carrera_id')
           .eq('user_id', user.id),
