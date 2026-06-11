@@ -52,9 +52,13 @@ export default function Novedades() {
     const dd = String(hoy.getDate()).padStart(2, '0')
     const { data } = await supabase
       .from('profiles')
-      .select('id, nombre, avatar_url')
-      .like('fecha_nacimiento', `%-${mm}-${dd}`)
-    setCumpleañeros(data || [])
+      .select('id, nombre, avatar_url, fecha_nacimiento')
+      .not('fecha_nacimiento', 'is', null)
+    const hoy_cumples = (data || []).filter(p => {
+      const parts = (p.fecha_nacimiento || '').split('-')
+      return parts[1] === mm && parts[2] === dd
+    })
+    setCumpleañeros(hoy_cumples)
   }
 
   async function fetchNovedades() {
