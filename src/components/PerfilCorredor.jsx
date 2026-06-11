@@ -160,10 +160,10 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
         })()}
 
         {/* TABS */}
-        <div className="filtro-group" style={{ marginBottom: '0' }}>
-          <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => setTab('datos')}>Datos</button>
-          <button className={`filtro-btn ${tab === 'salud' ? 'active' : ''}`} onClick={() => setTab('salud')}>Salud</button>
-          <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => setTab('estadisticas')}>Estadísticas</button>
+        <div className="filtro-group" style={{ marginBottom: '0', display: 'flex' }}>
+          <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => setTab('datos')} style={{ flex: 1 }}>Datos</button>
+          <button className={`filtro-btn ${tab === 'salud' ? 'active' : ''}`} onClick={() => setTab('salud')} style={{ flex: 1 }}>Salud</button>
+          <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => setTab('estadisticas')} style={{ flex: 1 }}>Estadísticas</button>
         </div>
 
         {/* TAB DATOS */}
