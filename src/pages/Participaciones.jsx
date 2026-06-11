@@ -365,7 +365,7 @@ export default function Participaciones() {
                         {p.carrera?.fecha && (
                           <span className="tag">📅 {formatFechaHora(p.carrera.fecha, p.carrera.hora)}</span>
                         )}
-                        {(p.distancia_elegida || p.carrera?.distancia) && (
+                        {(!p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera') && (p.distancia_elegida || p.carrera?.distancia) && (
                           <span className="tag">📏 {p.distancia_elegida || p.carrera?.distancia}</span>
                         )}
                         {p.carrera?.lugar && <span className="tag">📍 {p.carrera.lugar}</span>}
