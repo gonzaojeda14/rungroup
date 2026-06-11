@@ -1195,14 +1195,6 @@ export default function Carreras() {
                     {estado === 'Inscripto' ? '✓ Voy' : 'Voy'}
                   </button>
                   {carreraPasada && <span style={{ color: 'var(--text2)', fontSize: '11px' }}>ya terminó</span>}
-                  {estado === 'Inscripto' && !carreraPasada && (
-                    <button
-                      onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: user.id })}
-                      style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '12px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      ⇄ Transferir lugar
-                    </button>
-                  )}
                 </div>
               ) : (
                 <div className="race-estado-section">

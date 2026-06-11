@@ -728,11 +728,6 @@ function FlamaPoints() {
   const formulario = (
     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <div>
-        <label style={{ fontSize: '12px', color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>
-          {esStandFlama
-            ? 'Foto del Stand Flama / aliento al grupo — no hace falta dorsal ni medalla, ¡pero sí que se vea la buena onda! 🧉'
-            : 'Foto con tu dorsal y, si la tenés, tu medalla — selfie o que te la saquen, las dos valen'}
-        </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {fotoPreview && (
             <img src={fotoPreview} alt="Vista previa de la foto" style={{ width: 56, height: 56, borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
@@ -746,7 +741,7 @@ function FlamaPoints() {
               onClick={() => abrirFotosPicker(accion.tipo === 'reintento' ? accion.envio.carrera_id : accion.carrera.id)}
               style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '12px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
             >
-              📂 Usar foto que ya subí
+              📂 Usar foto que subí en la carrera
             </button>
           </div>
         </div>
@@ -785,11 +780,6 @@ function FlamaPoints() {
       <button className="btn-accent" disabled={subiendo} onClick={enviar} style={{ fontSize: '13px', height: 36 }}>
         {subiendo ? 'Enviando...' : `Enviar y sumar ${puntosAccion} ${puntosAccion === 1 ? 'Flamita' : 'Flamitas'}`}
       </button>
-      <div style={{ fontSize: '11px', color: 'var(--text2)' }}>
-        {esStandFlama
-          ? '⚠️ Una vez enviada no se puede cambiar — revisá que la foto se vea bien antes de mandarla.'
-          : '⚠️ Una vez enviada no se puede cambiar — revisá que se vea bien el dorsal (y la medalla, si la tenés) antes de mandarla.'}
-      </div>
     </div>
   )
 
@@ -814,13 +804,13 @@ function FlamaPoints() {
         </button>
         {introAbierto && (
           <div style={{ marginTop: '12px', fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6 }}>
-            Hay dos formas de sumar Flamitas:
+            Sumás Flamitas de dos formas:
             <br /><br />
             <strong style={{ color: 'var(--text)' }}>Por carreras:</strong><br />
-            🏅 <strong style={{ color: 'var(--text)' }}>Inscripto</strong> — subí foto con dorsal (y medalla si tenés) → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_INSCRIPTO} Flamitas</strong><br />
-            🧉 <strong style={{ color: 'var(--text)' }}>Stand Flama</strong> — subí foto del stand o el aliento → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_STAND_FLAMA} Flamita</strong><br />
-            Los puntos se acreditan al instante. Tenés hasta {PLAZO_RECLAMO_DIAS} días post-carrera para cargar la foto.<br />
-            <span style={{ color: 'var(--text)', fontStyle: 'italic' }}>Comenzará a contar desde el Circuito de las Estaciones (Invierno).</span>
+            🏅 <strong style={{ color: 'var(--text)' }}>Inscripto</strong> — subí una foto con tu dorsal o medalla → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_INSCRIPTO} Flamitas</strong><br />
+            🧉 <strong style={{ color: 'var(--text)' }}>Stand Flama</strong> — subí una foto del stand o acompañando al grupo → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_STAND_FLAMA} Flamita</strong><br />
+            Los puntos se acreditan al instante. Tenés hasta {PLAZO_RECLAMO_DIAS} días post-carrera para subir la foto. Si ya subiste fotos en "Ver fotos", podés usarlas directamente sin volver a cargarlas.<br />
+            <span style={{ color: 'var(--text)', fontStyle: 'italic' }}>Comienza a contar desde el Circuito de las Estaciones (Invierno).</span>
             <br /><br />
             <strong style={{ color: 'var(--text)' }}>Por perfil completo (única vez):</strong><br />
             💎 Cargá tu <strong style={{ color: 'var(--text)' }}>certificado médico</strong> y al menos un <strong style={{ color: 'var(--text)' }}>récord personal</strong> en "Mi perfil" → <strong style={{ color: 'var(--text)' }}>+5 Flamitas</strong> de forma automática.
