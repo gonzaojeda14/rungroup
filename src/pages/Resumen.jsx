@@ -53,7 +53,10 @@ export default function Resumen() {
 
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')
-    const { data: partsRaw } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id').range(0, 4999)
+    const [{ data: partsRaw }, { count: totalCorredores }] = await Promise.all([
+      supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id').range(0, 4999),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('role', 'admin'),
+    ])
     const { data: tcRaw } = await supabase
       .from('tiempos_carreras')
       .select('carrera_id, distancia, tiempo_segundos, tiempo_texto, user_id')
@@ -75,9 +78,11 @@ export default function Resumen() {
       const dists = c.distancias?.length ? c.distancias : (c.distancia ? [c.distancia] : [])
       const multiDist = dists.length > 1
 
-      // Conteos globales
+      // Conteos globales (sumar implícitos sin fila como Pendiente)
       const counts = {}
       ESTADOS.forEach(e => counts[e] = ps.filter(p => p.estado === e).length)
+      const implicitPendientes = Math.max(0, (totalCorredores || 0) - ps.length)
+      counts['Pendiente'] = (counts['Pendiente'] || 0) + implicitPendientes
 
       // Conteos por distancia
       let porDistancia = null
@@ -99,7 +104,7 @@ export default function Resumen() {
         mal: feedbacks.filter(p => p.feedback === 'mal').map(p => ({ ...p, nombre: p.profiles?.nombre, telefono: p.profiles?.telefono })),
       }
 
-      return { ...c, counts, total: ps.length, dists, multiDist, porDistancia, feedbacks, porFeedback }
+      return { ...c, counts, total: totalCorredores || ps.length, dists, multiDist, porDistancia, feedbacks, porFeedback }
     })
     setCarreras(enriched)
     setLoading(false)
