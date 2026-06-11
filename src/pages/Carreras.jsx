@@ -222,7 +222,7 @@ export default function Carreras() {
     setForm({
       nombre: c.nombre,
       fecha: c.fecha || '',
-      hora: c.hora || '',
+      hora: c.hora ? c.hora.substring(0, 5) : '',
       distancias: c.distancias?.length ? c.distancias.join(', ') : (c.distancia || ''),
       lugar: c.lugar || '',
       link: c.link || '',

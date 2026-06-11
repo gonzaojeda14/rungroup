@@ -29,14 +29,18 @@ Deno.serve(async (req) => {
     // (margen amplio para que ningún cron run la pierda)
     const desdeMs = ahora.getTime() - 4 * 60 * 60 * 1000
     const hastaMs = ahora.getTime() - 1.75 * 60 * 60 * 1000
-    const hoy = ahora.toISOString().split('T')[0]
+
+    // Buscamos carreras en un rango de ±1 día para cubrir el desfasaje UTC/local
+    const desdeFecha = new Date(desdeMs).toISOString().split('T')[0]
+    const hastaFecha = new Date(hastaMs + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
     const { data: carreras, error: errCar } = await supabase
       .from('carreras')
       .select('id, nombre, fecha, hora, flama_points, flamitas_notif_enviada')
       .eq('flama_points', true)
       .eq('flamitas_notif_enviada', false)
-      .eq('fecha', hoy)
+      .gte('fecha', desdeFecha)
+      .lte('fecha', hastaFecha)
 
     if (errCar) return json({ error: errCar.message }, 500)
     if (!carreras?.length) return json({ ok: true, mensaje: 'Sin carreras elegibles', enviadas: 0 })
@@ -45,8 +49,9 @@ Deno.serve(async (req) => {
 
     for (const carrera of carreras) {
       // Calcular timestamp de inicio de la carrera
-      const horaStr = carrera.hora ?? '00:00'
-      const inicioCarrera = new Date(`${carrera.fecha}T${horaStr}:00`)
+      // hora viene de Postgres como "HH:MM:SS" — tomamos solo HH:MM
+      const horaStr = (carrera.hora ?? '00:00').substring(0, 5)
+      const inicioCarrera = new Date(`${carrera.fecha}T${horaStr}:00Z`) // UTC
 
       // Solo notificar si ya pasaron al menos 1h45m desde el inicio
       if (inicioCarrera.getTime() > hastaMs) continue
