@@ -109,7 +109,7 @@ export default function Corredores() {
   }
 
   async function fetchCorredores() {
-    const { data } = await supabase.from('profiles').select('*').order('nombre')
+    const { data } = await supabase.from('profiles').select('*').neq('role', 'admin').order('nombre')
     setCorredores(data || [])
     setLoading(false)
   }
