@@ -121,17 +121,26 @@ export default function MiPerfil() {
   }
 
   async function fetchStats() {
-    const { data: parts } = await supabase
-      .from('participaciones')
-      .select('estado, distancia_elegida, carrera:carreras(fecha, tipo_actividad)')
-      .eq('user_id', user.id)
+    const [{ data: parts }, { data: pts }, { data: prof }, { count: recCount }] = await Promise.all([
+      supabase.from('participaciones')
+        .select('estado, distancia_elegida, carrera:carreras(fecha, tipo_actividad)')
+        .eq('user_id', user.id),
+      supabase.from('puntos_carreras')
+        .select('puntos')
+        .eq('user_id', user.id)
+        .eq('estado', 'validado'),
+      supabase.from('profiles')
+        .select('certificado_url, bonus_perfil_otorgado')
+        .eq('id', user.id)
+        .single(),
+      supabase.from('records_personales')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id),
+    ])
     setStatsParticipaciones(parts || [])
-    const { data: pts } = await supabase
-      .from('puntos_carreras')
-      .select('puntos')
-      .eq('user_id', user.id)
-      .eq('estado', 'validado')
-    setStatsFlamitas((pts || []).reduce((s, p) => s + (p.puntos || 0), 0))
+    const base = (pts || []).reduce((s, p) => s + (p.puntos || 0), 0)
+    const calificaBonus = (recCount || 0) > 0 && !!prof?.certificado_url
+    setStatsFlamitas(base + (calificaBonus ? 5 : 0))
   }
 
   async function fetchBugs() {
@@ -780,7 +789,10 @@ export default function MiPerfil() {
         const inscriptas = statsParticipaciones.filter(p => p.estado === 'Inscripto')
         const carreras = inscriptas.filter(p => !p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera')
         const eventosEntrenos = inscriptas.filter(p => p.carrera?.tipo_actividad === 'evento' || p.carrera?.tipo_actividad === 'entrenamiento')
-        const kmTotales = inscriptas.reduce((s, p) => s + (parseFloat(p.distancia_elegida) || 0), 0)
+        const kmTotales = inscriptas.reduce((s, p) => {
+          const n = parseFloat(p.distancia_elegida)
+          return s + (isNaN(n) ? 0 : n)
+        }, 0)
         return (
           <>
             <RecordsPersonales />
