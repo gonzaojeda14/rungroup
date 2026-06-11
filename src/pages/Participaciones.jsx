@@ -348,8 +348,8 @@ export default function Participaciones() {
                 <div key={i} className="card" style={{
                   borderLeft: `3px solid ${ESTADO_COLOR[p.estado] || '#475569'}`,
                 }}>
-                  {/* Alerta menos de 1 semana */}
-                  {urgente && p.estado === 'Inscripto' && (
+                  {/* Alerta menos de 1 semana — solo carreras */}
+                  {urgente && p.estado === 'Inscripto' && (!p.carrera?.tipo_actividad || p.carrera.tipo_actividad === 'carrera') && (
                     <div style={{
                       fontSize: '12px', color: '#fbbf24',
                       marginBottom: '8px', fontWeight: 500

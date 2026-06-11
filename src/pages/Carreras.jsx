@@ -57,6 +57,89 @@ function EstadoBtnConInfo({ label, info, activo, color, onClick }) {
   )
 }
 
+function TransferenciaModal({ carreraId, carreraNombre, originalUserId, onConfirm, onClose }) {
+  const [perfiles, setPerfiles] = useState([])
+  const [busqueda, setBusqueda] = useState('')
+  const [seleccionado, setSeleccionado] = useState(null)
+  const [cargando, setCargando] = useState(true)
+
+  useEffect(() => {
+    async function cargar() {
+      const [{ data: todos }, { data: inscriptos }] = await Promise.all([
+        supabase.from('profiles').select('id, nombre, avatar_url').neq('id', originalUserId).order('nombre'),
+        supabase.from('participaciones').select('user_id').eq('carrera_id', carreraId).eq('estado', 'Inscripto'),
+      ])
+      const ids = new Set((inscriptos || []).map(p => p.user_id))
+      setPerfiles((todos || []).filter(p => !ids.has(p.id)))
+      setCargando(false)
+    }
+    cargar()
+  }, [carreraId, originalUserId])
+
+  const filtrados = perfiles.filter(p =>
+    !busqueda || p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+  )
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '16px' }} onClick={onClose}>
+      <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '20px', maxWidth: '420px', width: '100%', maxHeight: '72vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '15px' }}>Transferir lugar</div>
+            <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '2px' }}>{carreraNombre}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        </div>
+        <input
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar corredor/a..."
+          style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '9px 12px', fontSize: '13px', fontFamily: 'inherit', marginBottom: '10px' }}
+          autoFocus
+        />
+        {cargando ? (
+          <div style={{ textAlign: 'center', color: 'var(--text2)', padding: '24px', fontSize: '13px' }}>Cargando...</div>
+        ) : (
+          <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {filtrados.length === 0
+              ? <div style={{ fontSize: '13px', color: 'var(--text2)', textAlign: 'center', padding: '20px' }}>Sin resultados</div>
+              : filtrados.map(p => {
+                const activo = seleccionado?.id === p.id
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => setSeleccionado(p)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '8px 10px', borderRadius: '10px', cursor: 'pointer',
+                      background: activo ? 'rgba(74,222,128,0.1)' : 'transparent',
+                      border: activo ? '1px solid rgba(74,222,128,0.3)' : '1px solid transparent',
+                    }}
+                  >
+                    <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, background: 'rgba(255,45,45,0.15)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
+                      {p.avatar_url ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : p.nombre?.[0]?.toUpperCase()}
+                    </div>
+                    <span style={{ flex: 1, fontSize: '14px', fontWeight: activo ? 600 : 400 }}>{p.nombre}</span>
+                    {activo && <span style={{ color: '#4ade80', fontSize: '16px' }}>✓</span>}
+                  </div>
+                )
+              })
+            }
+          </div>
+        )}
+        <button
+          disabled={!seleccionado}
+          onClick={() => seleccionado && onConfirm(seleccionado.id, seleccionado.nombre)}
+          className="btn-primary"
+          style={{ marginTop: '12px', opacity: seleccionado ? 1 : 0.4 }}
+        >
+          {seleccionado ? `Transferir a ${seleccionado.nombre}` : 'Seleccioná un corredor/a'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false, tipo_actividad: 'carrera', calzado: '' }
 
 const INSTRUCTIVO_RUNNING_TEAM = `1. Entrar a EntryFee.com.ar con tu usuario y contraseña.
@@ -106,6 +189,7 @@ export default function Carreras() {
   const [showFiltros, setShowFiltros] = useState(false)
   const [inscriptosAbiertos, setInscriptosAbiertos] = useState({}) // carreraId -> [perfiles] | 'loading'
   const [inscriptosExpandidos, setInscriptosExpandidos] = useState({}) // carreraId -> bool
+  const [transferenciaModal, setTransferenciaModal] = useState(null) // { carreraId, carreraNombre, originalUserId }
 
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
@@ -479,10 +563,50 @@ export default function Carreras() {
     if (userIds.length === 0) { setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: [] })); return }
     const { data: perfiles } = await supabase
       .from('profiles')
-      .select('nombre, avatar_url')
+      .select('id, nombre, avatar_url')
       .in('id', userIds)
     const ordenados = (perfiles || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
     setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: ordenados }))
+  }
+
+  async function realizarTransferencia(carreraId, originalUserId, nuevoUserId, nuevoNombre) {
+    // 1. Original → No voy
+    await supabase.from('participaciones')
+      .update({ estado: 'No voy', distancia_elegida: null, updated_at: new Date().toISOString() })
+      .eq('carrera_id', carreraId).eq('user_id', originalUserId)
+
+    // 2. Nuevo → Inscripto (upsert por si no tenía participacion)
+    const { error } = await supabase.from('participaciones')
+      .upsert({ carrera_id: carreraId, user_id: nuevoUserId, estado: 'Inscripto', updated_at: new Date().toISOString() },
+        { onConflict: 'carrera_id,user_id' })
+
+    if (error) { setToast('❌ Error al transferir'); setTimeout(() => setToast(''), 2500); return }
+
+    // 3. Actualizar estado local si es el usuario actual quien transfiere
+    if (originalUserId === user.id) {
+      setParticipaciones(prev =>
+        prev.map(p => p.carrera_id === carreraId ? { ...p, estado: 'No voy', distancia_elegida: null } : p)
+      )
+      setDistanciasSeleccionadas(prev => { const n = { ...prev }; delete n[carreraId]; return n })
+    }
+
+    // 4. Refrescar lista de inscriptos si está abierta
+    if (inscriptosAbiertos[carreraId] && inscriptosAbiertos[carreraId] !== 'loading') {
+      refreshInscriptos(carreraId)
+    }
+
+    // 5. Notificar al nuevo inscripto
+    const carrera = carreras.find(c => c.id === carreraId)
+    notificar(
+      '🎉 ¡Te transfirieron un lugar!',
+      `Quedaste inscripto/a en ${carrera?.nombre ?? 'una carrera'}. ¡A prepararse!`,
+      '/carreras',
+      { user_ids: [nuevoUserId] }
+    )
+
+    setTransferenciaModal(null)
+    setToast(`✅ Lugar transferido a ${nuevoNombre}`)
+    setTimeout(() => setToast(''), 3000)
   }
 
   async function toggleInscriptos(carreraId) {
@@ -1061,7 +1185,7 @@ export default function Carreras() {
               )}
 
               {(c.tipo_actividad === 'evento' || c.tipo_actividad === 'entrenamiento') ? (
-                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <button
                     className={`estado-btn ${estado === 'Inscripto' ? 'active' : ''}`}
                     style={estado === 'Inscripto' ? { borderColor: '#4ade80', color: '#4ade80', background: '#4ade8022' } : {}}
@@ -1071,6 +1195,14 @@ export default function Carreras() {
                     {estado === 'Inscripto' ? '✓ Voy' : 'Voy'}
                   </button>
                   {carreraPasada && <span style={{ color: 'var(--text2)', fontSize: '11px' }}>ya terminó</span>}
+                  {estado === 'Inscripto' && !carreraPasada && (
+                    <button
+                      onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: user.id })}
+                      style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '12px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      ⇄ Transferir lugar
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="race-estado-section">
@@ -1091,6 +1223,14 @@ export default function Carreras() {
                       />
                     ))}
                   </div>
+                  {estado === 'Inscripto' && !carreraPasada && (
+                    <button
+                      onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: user.id })}
+                      style={{ marginTop: '8px', background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '12px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      ⇄ Transferir lugar
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -1156,7 +1296,14 @@ export default function Carreras() {
                                       : p.nombre?.[0]?.toUpperCase()
                                     }
                                   </div>
-                                  <span>{p.nombre}</span>
+                                  <span style={{ flex: 1 }}>{p.nombre}</span>
+                                  {isAdmin && p.id && (
+                                    <button
+                                      onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: p.id })}
+                                      title="Transferir lugar"
+                                      style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '14px', cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }}
+                                    >⇄</button>
+                                  )}
                                 </div>
                               ))}
                               {hayMas && (
@@ -1369,6 +1516,18 @@ export default function Carreras() {
           mensaje={`¿Borrar ${seleccionadas.size} foto${seleccionadas.size !== 1 ? 's' : ''} seleccionada${seleccionadas.size !== 1 ? 's' : ''}?`}
           onConfirm={borrarSeleccionadas}
           onCancel={() => setConfirmarBorrarSeleccion(false)}
+        />
+      )}
+
+      {transferenciaModal && (
+        <TransferenciaModal
+          carreraId={transferenciaModal.carreraId}
+          carreraNombre={transferenciaModal.carreraNombre}
+          originalUserId={transferenciaModal.originalUserId}
+          onClose={() => setTransferenciaModal(null)}
+          onConfirm={(nuevoUserId, nuevoNombre) =>
+            realizarTransferencia(transferenciaModal.carreraId, transferenciaModal.originalUserId, nuevoUserId, nuevoNombre)
+          }
         />
       )}
 

@@ -49,9 +49,10 @@ Deno.serve(async (req) => {
 
     for (const carrera of carreras) {
       // Calcular timestamp de inicio de la carrera
-      // hora viene de Postgres como "HH:MM:SS" — tomamos solo HH:MM
+      // hora viene de Postgres como "HH:MM:SS" en hora Argentina (UTC-3) — convertir a UTC
       const horaStr = (carrera.hora ?? '00:00').substring(0, 5)
-      const inicioCarrera = new Date(`${carrera.fecha}T${horaStr}:00Z`) // UTC
+      const inicioCarreraLocal = new Date(`${carrera.fecha}T${horaStr}:00`)
+      const inicioCarrera = new Date(inicioCarreraLocal.getTime() + 3 * 60 * 60 * 1000)
 
       // Solo notificar si ya pasaron al menos 1h45m desde el inicio
       if (inicioCarrera.getTime() > hastaMs) continue
