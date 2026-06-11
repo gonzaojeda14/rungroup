@@ -294,10 +294,12 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
 
         {/* ESTADÍSTICAS */}
         {(() => {
+          const hoy = new Date().toISOString().split('T')[0]
           const inscriptas = participaciones.filter(p => p.estado === 'Inscripto')
-          const carreras = inscriptas.filter(p => !p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera')
-          const eventosEntrenos = inscriptas.filter(p => p.carrera?.tipo_actividad === 'evento' || p.carrera?.tipo_actividad === 'entrenamiento')
-          const kmTotales = inscriptas.reduce((s, p) => s + (parseFloat(p.distancia_elegida) || 0), 0)
+          const pasadas = inscriptas.filter(p => p.carrera?.fecha && p.carrera.fecha < hoy)
+          const carreras = pasadas.filter(p => !p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera')
+          const eventosEntrenos = pasadas.filter(p => p.carrera?.tipo_actividad === 'evento' || p.carrera?.tipo_actividad === 'entrenamiento')
+          const kmTotales = pasadas.reduce((s, p) => s + (parseFloat(p.distancia_elegida) || 0), 0)
           if (inscriptas.length === 0) return null
           return (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>

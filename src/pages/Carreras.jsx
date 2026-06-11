@@ -503,7 +503,15 @@ export default function Carreras() {
   async function updateEstado(carreraId, estado) {
     const noVoy = estado === 'No voy'
     const prevEstado = participaciones.find(p => p.carrera_id === carreraId)?.estado
-    const distanciaElegida = noVoy ? null : (distanciasSeleccionadas[carreraId] || null)
+    let distanciaElegida = noVoy ? null : (distanciasSeleccionadas[carreraId] || null)
+    // Si no eligió distancia explícitamente pero la carrera tiene solo una, usarla
+    if (!noVoy && !distanciaElegida) {
+      const carrera = carreras.find(c => c.id === carreraId)
+      if (carrera) {
+        const dists = getDistancias(carrera)
+        if (dists.length === 1) distanciaElegida = dists[0]
+      }
+    }
     if (noVoy) setDistanciasSeleccionadas(prev => { const n = { ...prev }; delete n[carreraId]; return n })
     await supabase.from('participaciones')
       .update({ estado, distancia_elegida: distanciaElegida, updated_at: new Date().toISOString() })
