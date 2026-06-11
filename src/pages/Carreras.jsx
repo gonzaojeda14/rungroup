@@ -1450,8 +1450,8 @@ export default function Carreras() {
                       }}
                     >
                       <span>
-                        👟 {totalInscriptos !== null
-                          ? `${totalInscriptos} inscripto${totalInscriptos !== 1 ? 's' : ''}${totalStand > 0 ? ` · ${totalStand} 🧉` : ''}`
+                        {totalInscriptos !== null
+                          ? <>{totalInscriptos} 👟{totalStand > 0 ? <> · {totalStand} 🧉</> : ''}</>
                           : 'Ver quiénes van'}
                       </span>
                       <span style={{ fontSize: '11px' }}>{abierto ? '▲ Ocultar' : '▼'}</span>
