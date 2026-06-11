@@ -39,6 +39,8 @@ export default function Resumen() {
   const [loading, setLoading] = useState(true)
   const [carreraFiltro, setCarreraFiltro] = useState('todas')
   const [mesFiltro, setMesFiltro] = useState('todos')
+  const [tiempos, setTiempos] = useState([]) // todos los tiempos cargados
+  const [rankingAbierto, setRankingAbierto] = useState({}) // carreraId_distancia -> bool
 
   useEffect(() => {
     fetchResumen()
@@ -52,6 +54,10 @@ export default function Resumen() {
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')
     const { data: partsRaw } = await supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id')
+    const { data: tc } = await supabase
+      .from('tiempos_carreras')
+      .select('carrera_id, distancia, tiempo_segundos, tiempo_texto, user_id, profiles(nombre)')
+    setTiempos(tc || [])
     const userIds = [...new Set((partsRaw || []).map(p => p.user_id))]
     const { data: perfiles } = userIds.length
       ? await supabase.from('profiles').select('id, nombre').in('id', userIds)
@@ -168,6 +174,53 @@ export default function Resumen() {
           ) : (
             <StatsRow counts={c.counts} total={c.total} />
           )}
+          {/* Ranking de tiempos — solo carreras pasadas con tiempos cargados */}
+          {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && (() => {
+            const today = new Date().toISOString().split('T')[0]
+            if (!c.fecha || c.fecha >= today) return null
+            const tiemposCarrera = tiempos.filter(t => t.carrera_id === c.id)
+            if (tiemposCarrera.length === 0) return null
+            const distanciasConTiempos = [...new Set(tiemposCarrera.map(t => t.distancia))].sort()
+            return (
+              <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '10px' }}>
+                  🏆 Ranking de tiempos
+                </div>
+                {distanciasConTiempos.map(dist => {
+                  const key = `${c.id}_${dist}`
+                  const abierto = rankingAbierto[key]
+                  const lista = tiemposCarrera
+                    .filter(t => t.distancia === dist)
+                    .sort((a, b) => a.tiempo_segundos - b.tiempo_segundos)
+                  return (
+                    <div key={dist} style={{ marginBottom: '8px' }}>
+                      <button
+                        onClick={() => setRankingAbierto(prev => ({ ...prev, [key]: !prev[key] }))}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', fontFamily: 'inherit' }}
+                      >
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>📏 {dist} <span style={{ color: 'var(--text2)', fontWeight: 400 }}>({lista.length} tiempo{lista.length !== 1 ? 's' : ''})</span></span>
+                        <span style={{ fontSize: '11px', color: 'var(--text2)' }}>{abierto ? '▲' : '▼'}</span>
+                      </button>
+                      {abierto && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                          {lista.map((t, i) => (
+                            <div key={t.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', padding: '5px 8px', borderRadius: '8px', background: i === 0 ? 'rgba(251,191,36,0.08)' : 'transparent' }}>
+                              <span style={{ width: 20, textAlign: 'center', fontWeight: 700, color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#fb923c' : 'var(--text2)', fontSize: i < 3 ? '14px' : '12px' }}>
+                                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
+                              </span>
+                              <span style={{ flex: 1 }}>{t.profiles?.nombre || '—'}</span>
+                              <span style={{ fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{t.tiempo_texto}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
+
           {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.feedbacks?.length > 0 && (
             <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', marginBottom: '8px' }}>

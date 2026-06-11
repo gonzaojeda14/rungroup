@@ -1464,7 +1464,7 @@ export default function Carreras() {
                                     }
                                   </div>
                                   <span style={{ flex: 1 }}>{p.nombre}</span>
-                                  {isAdmin && p.id && (
+                                  {isAdmin && p.id && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && (
                                     <button
                                       onClick={() => setTransferenciaModal({ carreraId: c.id, carreraNombre: c.nombre, originalUserId: p.id })}
                                       title="Transferir lugar"

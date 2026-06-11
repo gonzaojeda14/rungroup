@@ -207,7 +207,7 @@ function Shell() {
           <FlamaLogo height={28} light={modoClaro} />
         </div>
         <div className="topbar-social">
-          {totalFlamaPoints !== null && totalFlamaPoints > 0 && (
+          {totalFlamaPoints !== null && (
             <span className="social-btn" title="Mis Flamitas" style={{ fontSize: '13px', fontWeight: 700, cursor: 'default', letterSpacing: '-0.3px' }}>
               💎 {totalFlamaPoints}
             </span>
