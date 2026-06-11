@@ -41,7 +41,8 @@ export default function MiPerfil() {
   const [fotosCarrera, setFotosCarrera] = useState(null)
 
   // Tabs
-  const [tab, setTab] = useState('datos')
+  const [tab, setTab] = useState(() => localStorage.getItem('miperfilTab') || 'datos')
+  function cambiarTab(t) { setTab(t); localStorage.setItem('miperfilTab', t) }
 
   // Stats
   const [statsParticipaciones, setStatsParticipaciones] = useState([])
@@ -355,9 +356,9 @@ export default function MiPerfil() {
 
       {/* TABS */}
       <div className="filtro-group" style={{ marginBottom: '12px' }}>
-        <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => setTab('datos')}>Datos</button>
-        <button className={`filtro-btn ${tab === 'salud' ? 'active' : ''}`} onClick={() => setTab('salud')}>Salud</button>
-        <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => setTab('estadisticas')}>Estadísticas</button>
+        <button className={`filtro-btn ${tab === 'datos' ? 'active' : ''}`} onClick={() => cambiarTab('datos')}>Datos</button>
+        <button className={`filtro-btn ${tab === 'salud' ? 'active' : ''}`} onClick={() => cambiarTab('salud')}>Salud</button>
+        <button className={`filtro-btn ${tab === 'estadisticas' ? 'active' : ''}`} onClick={() => cambiarTab('estadisticas')}>Estadísticas</button>
       </div>
 
       {tab === 'datos' && <>
