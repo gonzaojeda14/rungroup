@@ -377,7 +377,7 @@ export default function Novedades() {
                 ¡Hoy es el cumple de {cumpleañeros.map(c => c.nombre).join(' y ')}!
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text2)' }}>
-                Mandales un saludo 🎉
+                {cumpleañeros.length === 1 ? 'Mandale un saludo 🎉' : 'Mandales un saludo 🎉'}
               </div>
             </div>
           </div>
