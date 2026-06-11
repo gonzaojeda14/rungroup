@@ -99,8 +99,7 @@ export default function Resumen() {
         mal: feedbacks.filter(p => p.feedback === 'mal').map(p => ({ ...p, nombre: p.profiles?.nombre, telefono: p.profiles?.telefono })),
       }
 
-      const total = ESTADOS.reduce((sum, e) => sum + (counts[e] || 0), 0)
-      return { ...c, counts, total, dists, multiDist, porDistancia, feedbacks, porFeedback }
+      return { ...c, counts, total: ps.length, dists, multiDist, porDistancia, feedbacks, porFeedback }
     })
     setCarreras(enriched)
     setLoading(false)
@@ -161,9 +160,7 @@ export default function Resumen() {
               </div>
             </div>
             <span className="summary-total">
-              {(c.tipo_actividad === 'evento' || c.tipo_actividad === 'entrenamiento')
-                ? (c.counts['Inscripto'] || 0) + (c.counts['Pendiente'] || 0)
-                : c.total} corredores
+              {c.total} corredores
             </span>
           </div>
 
