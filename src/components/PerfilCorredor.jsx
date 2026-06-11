@@ -41,7 +41,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
     setLoading(true)
     const [{ data: parts }, { data: cert }, { data: puntos }, { count: recordCount }] = await Promise.all([
       supabase.from('participaciones')
-        .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha, tipo_actividad)')
+        .select('estado, distancia_elegida, carrera:carreras(id, nombre, fecha, tipo_actividad, distancia)')
         .eq('user_id', corredor.id)
         .neq('estado', 'Pendiente')
         .order('updated_at', { ascending: false }),
@@ -299,7 +299,10 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
           const pasadas = inscriptas.filter(p => p.carrera?.fecha && p.carrera.fecha < hoy)
           const carreras = pasadas.filter(p => !p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera')
           const eventosEntrenos = pasadas.filter(p => p.carrera?.tipo_actividad === 'evento' || p.carrera?.tipo_actividad === 'entrenamiento')
-          const kmTotales = pasadas.reduce((s, p) => s + (parseFloat(p.distancia_elegida) || 0), 0)
+          const kmTotales = pasadas.reduce((s, p) => {
+            const n = parseFloat(p.distancia_elegida || p.carrera?.distancia)
+            return s + (isNaN(n) ? 0 : n)
+          }, 0)
           if (inscriptas.length === 0) return null
           return (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>

@@ -123,7 +123,7 @@ export default function MiPerfil() {
   async function fetchStats() {
     const [{ data: parts }, { data: pts }, { data: prof }, { count: recCount }] = await Promise.all([
       supabase.from('participaciones')
-        .select('estado, distancia_elegida, carrera:carreras(fecha, tipo_actividad)')
+        .select('estado, distancia_elegida, carrera:carreras(fecha, tipo_actividad, distancia)')
         .eq('user_id', user.id),
       supabase.from('puntos_carreras')
         .select('puntos')
@@ -792,7 +792,7 @@ export default function MiPerfil() {
         const carreras = pasadas.filter(p => !p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera')
         const eventosEntrenos = pasadas.filter(p => p.carrera?.tipo_actividad === 'evento' || p.carrera?.tipo_actividad === 'entrenamiento')
         const kmTotales = pasadas.reduce((s, p) => {
-          const n = parseFloat(p.distancia_elegida)
+          const n = parseFloat(p.distancia_elegida || p.carrera?.distancia)
           return s + (isNaN(n) ? 0 : n)
         }, 0)
         return (
