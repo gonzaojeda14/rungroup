@@ -88,6 +88,12 @@ export default function Participaciones() {
   const [fotosCarrera, setFotosCarrera] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
+  function labelFotos(tipo) {
+    if (tipo === 'evento') return 'Ver fotos del evento'
+    if (tipo === 'entrenamiento') return 'Ver fotos del entrenamiento'
+    return 'Ver fotos de la carrera'
+  }
+
   function abrirGaleria(carrera) {
     setFotosCarrera(carrera)
     setSearchParams({ galeria: carrera.id }, { replace: true })
@@ -369,7 +375,7 @@ export default function Participaciones() {
                       onClick={() => abrirGaleria(p.carrera)}
                       style={{ width: '100%', padding: '8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                     >
-                      📷 Ver fotos de la carrera
+                      📷 {labelFotos(p.carrera?.tipo_actividad)}
                     </button>
                   </div>
                 )
@@ -486,7 +492,7 @@ export default function Participaciones() {
                       onClick={() => abrirGaleria(p.carrera)}
                       style={{ marginTop: '10px', width: '100%', padding: '8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                     >
-                      📷 Fotos de la carrera
+                      📷 {labelFotos(p.carrera?.tipo_actividad)}
                     </button>
                   )}
 
