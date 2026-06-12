@@ -1021,7 +1021,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
     async function calcularFlamaPendientes() {
       const [{ data: parts }, { data: env }] = await Promise.all([
         supabase.from('participaciones')
-          .select('carrera_id, carrera:carreras(id, fecha, hora, flama_points)')
+          .select('carrera_id, carrera:carreras(id, fecha, hora, flama_points, es_prueba)')
           .eq('user_id', user.id)
           .in('estado', ['Inscripto', 'Stand Flama']),
         supabase.from('puntos_carreras')
@@ -1031,6 +1031,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
       const enviadasIds = new Set((env || []).map(e => e.carrera_id))
       const cantidad = (parts || [])
         .filter(p => p.carrera && p.carrera.flama_points
+          && (!p.carrera.es_prueba || isAdmin)
           && yaEmpezo(p.carrera.fecha, p.carrera.hora)
           && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
           && !enviadasIds.has(p.carrera_id))
