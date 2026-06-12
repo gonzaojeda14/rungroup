@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           title: `🎂 ¡Hoy cumple años ${nombre}!`,
-          body: `No te olvides de felicitarlo/a 🎉`,
+          body: `No te olvides de felicitarlx 🎉`,
           url: '/corredores',
           user_ids: adminIds,
         }),
