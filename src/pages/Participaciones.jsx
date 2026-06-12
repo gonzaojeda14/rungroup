@@ -117,7 +117,8 @@ export default function Participaciones() {
   }, [])
 
   async function fetchMisCarreras() {
-    const [{ data: parts }, { data: tcs }, { data: tags }] = await Promise.all([
+    const hoyFetch = new Date().toISOString().split('T')[0]
+    const [{ data: parts }, { data: tcs }, { data: fotosCarreras }] = await Promise.all([
       supabase.from('participaciones')
         .select('estado, distancia_elegida, feedback, feedback_nota, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo, tipo_actividad, calzado)')
         .eq('user_id', user.id)
@@ -125,19 +126,18 @@ export default function Participaciones() {
       supabase.from('tiempos_carreras')
         .select('carrera_id, distancia, tiempo_texto')
         .eq('user_id', user.id),
-      supabase.from('foto_tags')
-        .select('foto:fotos_carreras(carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo, tipo_actividad, calzado))')
-        .eq('user_id', user.id),
+      supabase.from('fotos_carreras')
+        .select('carrera_id, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo, tipo_actividad, calzado)'),
     ])
 
-    // Carreras donde está etiquetado pero no tiene participación → card solo-fotos
+    // Carreras pasadas con fotos donde no tiene participación → card solo-fotos
     const carrerasConPart = new Set((parts || []).map(p => p.carrera?.id).filter(Boolean))
-    const carrerasEtiquetadas = new Map()
-    ;(tags || []).forEach(t => {
-      const c = t.foto?.carrera
-      if (c?.id && !carrerasConPart.has(c.id)) carrerasEtiquetadas.set(c.id, c)
+    const carrerasConFotos = new Map()
+    ;(fotosCarreras || []).forEach(f => {
+      const c = f.carrera
+      if (c?.id && c.fecha < hoyFetch && !carrerasConPart.has(c.id)) carrerasConFotos.set(c.id, c)
     })
-    const itemsSoloFotos = [...carrerasEtiquetadas.values()].map(c => ({ soloFotos: true, estado: null, carrera: c }))
+    const itemsSoloFotos = [...carrerasConFotos.values()].map(c => ({ soloFotos: true, estado: null, carrera: c }))
 
     const sorted = [...(parts || []), ...itemsSoloFotos].sort((a, b) => {
       if (!a.carrera?.fecha) return 1
