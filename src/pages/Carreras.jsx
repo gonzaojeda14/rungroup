@@ -528,28 +528,6 @@ export default function Carreras() {
       refreshInscriptos(carreraId)
     }
 
-    // Si se liberó un cupo (era Inscripto y ahora no), notificar al primero en lista de espera
-    // Solo aplica a carreras (eventos/entrenamientos no tienen lista de espera)
-    if (prevEstado === 'Inscripto' && estado !== 'Inscripto') {
-      const carreraObj = carreras.find(c => c.id === carreraId)
-      if (!carreraObj || (carreraObj.tipo_actividad || 'carrera') === 'carrera') {
-        const { data: espera } = await supabase
-          .from('participaciones')
-          .select('user_id, created_at')
-          .eq('carrera_id', carreraId)
-          .eq('estado', 'Lista de espera')
-          .order('created_at', { ascending: true })
-          .limit(1)
-        if (espera?.[0]) {
-          notificar(
-            '🎉 ¡Hay un cupo disponible para vos!',
-            `Se liberó un cupo en ${carreraObj?.nombre ?? 'una carrera'}. ¡Anotate antes de que se llene!`,
-            '/carreras',
-            { user_ids: [espera[0].user_id] },
-          )
-        }
-      }
-    }
   }
 
   async function abrirFotos(carrera) {
