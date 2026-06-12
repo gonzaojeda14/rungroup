@@ -45,6 +45,23 @@ export default function FotosModal({ carrera, onClose }) {
     fetchTags(fotoAmpliada.id)
   }, [fotoAmpliada?.id])
 
+  function navegarFoto(dir) {
+    const idx = fotos.findIndex(f => f.id === fotoAmpliada?.id)
+    const siguiente = fotos[idx + dir]
+    if (siguiente) setFotoAmpliada(siguiente)
+  }
+
+  useEffect(() => {
+    if (!fotoAmpliada) return
+    function onKey(e) {
+      if (e.key === 'ArrowLeft')  navegarFoto(-1)
+      if (e.key === 'ArrowRight') navegarFoto(1)
+      if (e.key === 'Escape')     setFotoAmpliada(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fotoAmpliada, fotos])
+
   async function fetchTags(fotoId) {
     const { data } = await supabase
       .from('foto_tags')
@@ -80,7 +97,7 @@ export default function FotosModal({ carrera, onClose }) {
         notificar(
           '📸 ¡Te etiquetaron en fotos!',
           `${profile?.nombre || 'Alguien'} te etiquetó en fotos de ${carrera.nombre}.`,
-          '/carreras',
+          `/participaciones?galeria=${carrera.id}`,
           { user_ids: [perfil.id] }
         )
       }
@@ -270,12 +287,19 @@ export default function FotosModal({ carrera, onClose }) {
         )}
       </div>
 
-      {fotoAmpliada && (
+      {fotoAmpliada && (() => {
+        const idx = fotos.findIndex(f => f.id === fotoAmpliada.id)
+        const hayAnterior = idx > 0
+        const haySiguiente = idx < fotos.length - 1
+        const btnFlecha = { position: 'fixed', top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, backdropFilter: 'blur(4px)' }
+        return (
         <div onClick={() => setFotoAmpliada(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', padding: '16px 16px 32px' }}>
           <button
             onClick={e => { e.stopPropagation(); setFotoAmpliada(null) }}
             style={{ position: 'fixed', top: 16, right: 16, width: 38, height: 38, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, backdropFilter: 'blur(4px)' }}
           >✕</button>
+          {hayAnterior && <button onClick={e => { e.stopPropagation(); navegarFoto(-1) }} style={{ ...btnFlecha, left: 10 }}>‹</button>}
+          {haySiguiente && <button onClick={e => { e.stopPropagation(); navegarFoto(1) }} style={{ ...btnFlecha, right: 10 }}>›</button>}
           <div style={{ flex: '0 0 auto', margin: 'auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
           <img onClick={e => e.stopPropagation()} src={fotoAmpliada.cloudinary_url.replace('/upload/', '/upload/w_1200,q_auto/')} alt="" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 8, objectFit: 'contain' }} />
 
@@ -356,7 +380,8 @@ export default function FotosModal({ carrera, onClose }) {
           </a>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {confirmarEliminarFoto && <ConfirmModal mensaje="¿Eliminar esta foto?" onConfirm={() => eliminarFoto(confirmarEliminarFoto)} onCancel={() => setConfirmarEliminarFoto(null)} />}
       {confirmarBorrarTodas && <ConfirmModal mensaje={`¿Borrar las ${fotos.length} fotos de ${carrera.nombre}?`} onConfirm={borrarTodasLasFotos} onCancel={() => setConfirmarBorrarTodas(false)} />}
