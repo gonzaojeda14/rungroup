@@ -8,6 +8,14 @@ import { useAuth } from '../lib/auth'
 const DISTANCIAS_RANKING = ['5K', '10K', '15K', '21K', '42K']
 const MEDALLAS = ['🥇', '🥈', '🥉']
 
+function formatTiempo(segundos) {
+  if (!segundos || segundos <= 0) return '—'
+  const h = Math.floor(segundos / 3600)
+  const m = Math.floor((segundos % 3600) / 60)
+  const s = segundos % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
 function esCumpleaños(fecha_nacimiento) {
   if (!fecha_nacimiento) return false
   const hoy = new Date()
@@ -320,7 +328,7 @@ export default function Corredores() {
                           fontSize: '13px', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                           color: i === 0 ? '#4ade80' : 'var(--text)',
                         }}>
-                          {e.tiempo_texto}
+                          {formatTiempo(e.tiempo_segundos)}
                         </span>
                       </div>
                     ))}
