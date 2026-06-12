@@ -1378,7 +1378,6 @@ export default function Carreras() {
                   >
                     {estado === 'Inscripto' ? '✓ Voy' : 'Voy'}
                   </button>
-                  {carreraPasada && <span style={{ color: 'var(--text2)', fontSize: '11px' }}>ya terminó</span>}
                 </div>
               ) : (
                 <div className="race-estado-section">

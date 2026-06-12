@@ -117,17 +117,29 @@ export default function Participaciones() {
   }, [])
 
   async function fetchMisCarreras() {
-    const [{ data: parts }, { data: tcs }] = await Promise.all([
+    const [{ data: parts }, { data: tcs }, { data: tags }] = await Promise.all([
       supabase.from('participaciones')
         .select('estado, distancia_elegida, feedback, feedback_nota, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo, tipo_actividad, calzado)')
         .eq('user_id', user.id)
         .neq('estado', 'Pendiente'),
       supabase.from('tiempos_carreras')
         .select('carrera_id, distancia, tiempo_texto')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id),
+      supabase.from('foto_tags')
+        .select('foto:fotos_carreras(carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo, tipo_actividad, calzado))')
+        .eq('user_id', user.id),
     ])
 
-    const sorted = (parts || []).sort((a, b) => {
+    // Carreras donde está etiquetado pero no tiene participación → card solo-fotos
+    const carrerasConPart = new Set((parts || []).map(p => p.carrera?.id).filter(Boolean))
+    const carrerasEtiquetadas = new Map()
+    ;(tags || []).forEach(t => {
+      const c = t.foto?.carrera
+      if (c?.id && !carrerasConPart.has(c.id)) carrerasEtiquetadas.set(c.id, c)
+    })
+    const itemsSoloFotos = [...carrerasEtiquetadas.values()].map(c => ({ soloFotos: true, estado: null, carrera: c }))
+
+    const sorted = [...(parts || []), ...itemsSoloFotos].sort((a, b) => {
       if (!a.carrera?.fecha) return 1
       if (!b.carrera?.fecha) return -1
       return a.carrera.fecha.localeCompare(b.carrera.fecha)
@@ -343,6 +355,25 @@ export default function Participaciones() {
               const empezo = yaEmpezo(p.carrera?.fecha, p.carrera?.hora)
               const urgente = dias !== null && dias >= 0 && dias < 7 && !empezo
               const pasada = (dias !== null && dias < 0) || empezo
+
+              // Card solo-fotos: etiquetado sin participación
+              if (p.soloFotos) {
+                return (
+                  <div key={`fotos-${p.carrera.id}`} className="card" style={{ borderLeft: '3px solid #94a3b8' }}>
+                    <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>{p.carrera?.nombre}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                      {p.carrera?.fecha && <span className="tag">📅 {formatFechaHora(p.carrera.fecha, p.carrera.hora)}</span>}
+                      <span style={{ fontSize: '11px', color: 'var(--text2)', alignSelf: 'center' }}>📸 Estás etiquetado/a</span>
+                    </div>
+                    <button
+                      onClick={() => abrirGaleria(p.carrera)}
+                      style={{ width: '100%', padding: '8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      📷 Ver fotos de la carrera
+                    </button>
+                  </div>
+                )
+              }
 
               return (
                 <div key={i} className="card" style={{
