@@ -369,7 +369,6 @@ export default function Participaciones() {
                     <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>{p.carrera?.nombre}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
                       {p.carrera?.fecha && <span className="tag">📅 {formatFechaHora(p.carrera.fecha, p.carrera.hora)}</span>}
-                      <span style={{ fontSize: '11px', color: 'var(--text2)', alignSelf: 'center' }}>📸 Estás etiquetado/a</span>
                     </div>
                     <button
                       onClick={() => abrirGaleria(p.carrera)}
