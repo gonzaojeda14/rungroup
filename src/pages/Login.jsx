@@ -110,14 +110,16 @@ export default function Login() {
                 <button type="submit" className="btn-primary" disabled={recuperarLoading}>
                   {recuperarLoading ? 'Enviando...' : 'Enviar link'}
                 </button>
-                <button
-                  type="button"
-                  className="btn-ghost"
-                  style={{ marginTop: '8px', width: '100%' }}
-                  onClick={() => setShowRecuperar(false)}
-                >
-                  Volver
-                </button>
+                {!bloqueado && (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ marginTop: '8px', width: '100%' }}
+                    onClick={() => setShowRecuperar(false)}
+                  >
+                    Volver
+                  </button>
+                )}
               </form>
             </>
           )}
@@ -157,7 +159,7 @@ export default function Login() {
             />
           </div>
           {error && <p className="error-msg">{error}</p>}
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading || bloqueado}>
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
           <button
