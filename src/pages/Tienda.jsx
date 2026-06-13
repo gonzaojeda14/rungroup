@@ -474,17 +474,47 @@ function TiendaPublica({ config }) {
   const [cart, setCart]         = useState([])
   const [cartOpen, setCartOpen] = useState(false)
   const [toast, setToast]       = useState('')
+  const saveTimer = useRef(null)
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
   useEffect(() => {
-    supabase.from('productos').select('*').eq('disponible', true).order('created_at', { ascending: false })
-      .then(({ data }) => { setProductos(data || []); setLoading(false) })
+    async function init() {
+      const [{ data: prods }, { data: carrito }] = await Promise.all([
+        supabase.from('productos').select('*').eq('disponible', true).order('created_at', { ascending: false }),
+        user ? supabase.from('carritos').select('items').eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+      ])
+      setProductos(prods || [])
+      if (carrito?.items?.length) setCart(carrito.items)
+      setLoading(false)
+    }
+    init()
   }, [])
 
+  // Guardar carrito en DB con debounce
+  useEffect(() => {
+    if (!user || loading) return
+    clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      supabase.from('carritos').upsert({ user_id: user.id, items: cart, updated_at: new Date().toISOString() })
+    }, 600)
+    return () => clearTimeout(saveTimer.current)
+  }, [cart])
+
   function agregarAlCarrito(producto, talle = null) {
-    setCart(prev => [...prev, { key: Math.random().toString(36).slice(2), producto, talle }])
+    setCart(prev => {
+      const existe = prev.find(i => i.producto.id === producto.id && i.talle === talle)
+      if (existe) return prev.map(i => i === existe ? { ...i, cantidad: i.cantidad + 1 } : i)
+      return [...prev, { key: Math.random().toString(36).slice(2), producto, talle, cantidad: 1 }]
+    })
     showToast('✓ Agregado al carrito')
+  }
+
+  function cambiarCantidad(key, delta) {
+    setCart(prev => prev
+      .map(i => i.key === key ? { ...i, cantidad: i.cantidad + delta } : i)
+      .filter(i => i.cantidad > 0)
+    )
   }
 
   function quitarDelCarrito(key) {
@@ -519,7 +549,7 @@ function TiendaPublica({ config }) {
           style={{ position:'fixed', bottom:72, right:16, width:56, height:56, borderRadius:'50%', background:'var(--accent)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, boxShadow:'0 4px 16px rgba(0,0,0,0.4)', zIndex:50 }}>
           🛒
           <span style={{ position:'absolute', top:2, right:2, background:'#fff', color:'var(--accent)', fontSize:11, fontWeight:900, borderRadius:99, minWidth:18, height:18, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px', lineHeight:1 }}>
-            {cart.length}
+            {cart.reduce((s, i) => s + i.cantidad, 0)}
           </span>
         </button>
       )}
@@ -532,8 +562,14 @@ function TiendaPublica({ config }) {
           user={user}
           profile={profile}
           onQuitar={quitarDelCarrito}
+          onCambiarCantidad={cambiarCantidad}
           onClose={() => setCartOpen(false)}
-          onPedidoEnviado={() => { setCart([]); setCartOpen(false); showToast('✅ Pedido enviado') }} />
+          onPedidoEnviado={() => {
+            setCart([])
+            setCartOpen(false)
+            showToast('✅ Pedido enviado')
+            if (user) supabase.from('carritos').upsert({ user_id: user.id, items: [], updated_at: new Date().toISOString() })
+          }} />
       )}
 
       {toast && <Toast msg={toast} />}
@@ -548,6 +584,7 @@ function ProductoCardPublica({ p, onAgregar }) {
   const fotos   = (p.fotos || []).length > 0 ? p.fotos : (p.foto_url ? [p.foto_url] : [])
   const [talle, setTalle]     = useState(null)
   const [galeria, setGaleria] = useState(null)
+  const [showDesc, setShowDesc] = useState(false)
 
   const puedeAgregar = talles.length === 0 || talle !== null
 
@@ -573,7 +610,15 @@ function ProductoCardPublica({ p, onAgregar }) {
                 <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)', flexShrink:0, whiteSpace:'nowrap' }}>{p.genero}</span>
               )}
             </div>
-            {p.descripcion && <div style={{ fontSize:13, color:'var(--text2)', marginTop:2 }}>{p.descripcion}</div>}
+            {p.descripcion && (
+              <>
+                <button onClick={() => setShowDesc(v => !v)}
+                  style={{ fontSize:12, color:'var(--accent)', background:'transparent', border:'none', cursor:'pointer', padding:0, marginTop:4, display:'block' }}>
+                  {showDesc ? 'Ocultar ▲' : 'Ver descripción ▼'}
+                </button>
+                {showDesc && <div style={{ fontSize:13, color:'var(--text2)', marginTop:4 }}>{p.descripcion}</div>}
+              </>
+            )}
             <div style={{ fontWeight:700, fontSize:16, color:'var(--accent)', marginTop:6 }}>
               ${Number(p.precio).toLocaleString('es-AR')}
             </div>
@@ -694,14 +739,14 @@ function TallePickerModal({ producto, onConfirmar, onClose }) {
 
 // ─── CART SHEET ───────────────────────────────────────────────────────────────
 
-function CartSheet({ cart, config, user, profile, onQuitar, onClose, onPedidoEnviado }) {
+function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, onClose, onPedidoEnviado }) {
   const [comprFile, setComprFile]     = useState(null)
   const [comprPreview, setComprPreview] = useState(null)
   const [step, setStep]               = useState('carrito')  // 'carrito' | 'confirmar'
   const [sending, setSending]         = useState(false)
   const comprRef = useRef()
 
-  const total = cart.reduce((s, i) => s + Number(i.producto.precio), 0)
+  const total = cart.reduce((s, i) => s + Number(i.producto.precio) * i.cantidad, 0)
 
   async function handleEnviar() {
     if (!comprFile) return
@@ -714,6 +759,7 @@ function CartSheet({ cart, config, user, profile, onQuitar, onClose, onPedidoEnv
       nombre:      i.producto.nombre,
       talle:       i.talle || null,
       precio:      Number(i.producto.precio),
+      cantidad:    i.cantidad,
     }))
 
     const { error } = await supabase.from('pedidos').insert([{
@@ -751,12 +797,12 @@ function CartSheet({ cart, config, user, profile, onQuitar, onClose, onPedidoEnv
       <div style={{ background:'var(--bg2)', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:480, maxHeight:'90vh', overflowY:'auto', padding:20, display:'flex', flexDirection:'column', gap:16 }}>
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ fontWeight:700, fontSize:16 }}>Carrito ({cart.length})</div>
+          <div style={{ fontWeight:700, fontSize:16 }}>Carrito ({cart.reduce((s, i) => s + i.cantidad, 0)})</div>
           <button onClick={onClose} style={{ background:'transparent', border:'none', color:'var(--text2)', fontSize:20, cursor:'pointer' }}>✕</button>
         </div>
 
         {/* Items */}
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           {cart.map(item => (
             <div key={item.key} style={{ display:'flex', gap:12, alignItems:'center' }}>
               {item.producto.foto_url && (
@@ -766,10 +812,21 @@ function CartSheet({ cart, config, user, profile, onQuitar, onClose, onPedidoEnv
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:14, fontWeight:600 }}>{item.producto.nombre}</div>
                 {item.talle && <div style={{ fontSize:12, color:'var(--text2)' }}>Talle {item.talle}</div>}
-                <div style={{ fontSize:13, color:'var(--accent)', fontWeight:700 }}>${Number(item.producto.precio).toLocaleString('es-AR')}</div>
+                <div style={{ fontSize:13, color:'var(--accent)', fontWeight:700 }}>
+                  ${(Number(item.producto.precio) * item.cantidad).toLocaleString('es-AR')}
+                  {item.cantidad > 1 && <span style={{ fontWeight:400, color:'var(--text2)', fontSize:12 }}> ({item.cantidad} × ${Number(item.producto.precio).toLocaleString('es-AR')})</span>}
+                </div>
               </div>
-              <button onClick={() => onQuitar(item.key)}
-                style={{ background:'transparent', border:'none', color:'var(--text2)', fontSize:18, cursor:'pointer', padding:'4px 8px' }}>✕</button>
+              {/* Controles cantidad */}
+              <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+                <button onClick={() => onCambiarCantidad(item.key, -1)}
+                  style={{ width:26, height:26, borderRadius:'50%', border:'1px solid var(--border)', background:'transparent', color:'var(--text)', cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+                <span style={{ fontSize:14, fontWeight:600, minWidth:16, textAlign:'center' }}>{item.cantidad}</span>
+                <button onClick={() => onCambiarCantidad(item.key, 1)}
+                  style={{ width:26, height:26, borderRadius:'50%', border:'1px solid var(--border)', background:'transparent', color:'var(--text)', cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                <button onClick={() => onQuitar(item.key)}
+                  style={{ marginLeft:4, background:'transparent', border:'none', color:'var(--text2)', fontSize:16, cursor:'pointer', padding:'4px', lineHeight:1 }}>🗑️</button>
+              </div>
             </div>
           ))}
         </div>
@@ -821,7 +878,7 @@ function CartSheet({ cart, config, user, profile, onQuitar, onClose, onPedidoEnv
             <div style={{ fontWeight:700, fontSize:14 }}>¿Confirmás el pedido?</div>
             <div style={{ fontSize:13, color:'var(--text2)' }}>
               {cart.map((item, i) => (
-                <div key={i}>{item.producto.nombre}{item.talle ? ` · talle ${item.talle}` : ''}</div>
+                <div key={i}>{item.producto.nombre}{item.talle ? ` · talle ${item.talle}` : ''}{item.cantidad > 1 ? ` × ${item.cantidad}` : ''}</div>
               ))}
               <div style={{ marginTop:6, fontWeight:700, color:'var(--accent)' }}>
                 Total: ${total.toLocaleString('es-AR')}
