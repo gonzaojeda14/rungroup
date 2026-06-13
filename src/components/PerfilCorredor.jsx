@@ -104,7 +104,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
   const proximasCarreras = participaciones
     .filter(p => p.carrera?.fecha && p.carrera.fecha >= hoy && ['Inscripto', 'Quizás', 'Lista de espera'].includes(p.estado))
     .sort((a, b) => a.carrera.fecha.localeCompare(b.carrera.fecha))
-  const ultimasCarreras = participaciones.filter(p => p.carrera?.fecha && p.carrera.fecha < hoy).slice(0, 5)
+  const ultimasCarreras = participaciones.filter(p => p.carrera?.fecha && p.carrera.fecha < hoy && (!p.carrera.tipo_actividad || p.carrera.tipo_actividad === 'carrera')).slice(0, 5)
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom)' }}>
