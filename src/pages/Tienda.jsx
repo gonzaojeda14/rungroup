@@ -127,16 +127,18 @@ function TiendaAdmin({ config, onConfigChange }) {
     <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
 
       {/* Tabs */}
-      <div style={{ display:'flex', borderBottom:'1px solid var(--border)', padding:'0 16px', flexShrink:0 }}>
-        {['Productos','Compras'].map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ position:'relative', padding:'10px 16px', fontSize:14, fontWeight: tab===t ? 700 : 400, color: tab===t ? 'var(--accent)' : 'var(--text2)', background:'transparent', border:'none', cursor:'pointer', borderBottom: tab===t ? '2px solid var(--accent)' : '2px solid transparent' }}>
-            {t}
-            {t === 'Compras' && pendientes > 0 && (
-              <span style={{ position:'absolute', top:6, right:4, background:'var(--accent)', color:'#fff', fontSize:10, fontWeight:700, borderRadius:99, minWidth:16, height:16, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px' }}>{pendientes}</span>
-            )}
-          </button>
-        ))}
+      <div style={{ padding:'12px 16px 0', flexShrink:0 }}>
+        <div style={{ display:'inline-flex', background:'var(--bg3)', borderRadius:10, padding:3, gap:2 }}>
+          {['Productos','Compras'].map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              style={{ position:'relative', padding:'6px 18px', fontSize:13, fontWeight: tab===t ? 700 : 500, color: tab===t ? '#fff' : 'var(--text2)', background: tab===t ? 'var(--accent)' : 'transparent', border:'none', cursor:'pointer', borderRadius:8, transition:'all 0.15s' }}>
+              {t}
+              {t === 'Compras' && pendientes > 0 && (
+                <span style={{ position:'absolute', top:2, right:2, background: tab==='Compras' ? '#fff' : 'var(--accent)', color: tab==='Compras' ? 'var(--accent)' : '#fff', fontSize:10, fontWeight:800, borderRadius:99, minWidth:16, height:16, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px', lineHeight:1 }}>{pendientes}</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:16, display:'flex', flexDirection:'column', gap:16 }}>
