@@ -161,7 +161,8 @@ function TiendaAdmin({ config, onConfigChange }) {
             )}
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
-                <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} />
+                <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)}
+                  style={{ width:15, height:15, accentColor:'var(--accent)', cursor:'pointer' }} />
                 Tienda visible para corredores
               </label>
               <button onClick={guardarConfig} disabled={guardandoConfig} className="btn-accent" style={{ height:32, padding:'0 14px', fontSize:12 }}>
