@@ -470,10 +470,9 @@ function TiendaPublica({ config }) {
   const { user, profile } = useAuth()
   const [productos, setProductos]   = useState([])
   const [loading, setLoading]       = useState(true)
-  const [cart, setCart]             = useState([])  // [{ key, producto, talle }]
-  const [cartOpen, setCartOpen]     = useState(false)
-  const [talleModal, setTalleModal] = useState(null) // producto que está esperando talle
-  const [toast, setToast]           = useState('')
+  const [cart, setCart]         = useState([])
+  const [cartOpen, setCartOpen] = useState(false)
+  const [toast, setToast]       = useState('')
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
@@ -489,15 +488,6 @@ function TiendaPublica({ config }) {
 
   function quitarDelCarrito(key) {
     setCart(prev => prev.filter(i => i.key !== key))
-  }
-
-  function handleAgregar(producto) {
-    const necesitaTalle = (producto.talles_disponibles || []).length > 0
-    if (necesitaTalle) {
-      setTalleModal(producto)
-    } else {
-      agregarAlCarrito(producto, null)
-    }
   }
 
   if (loading) return <Cargando />
@@ -519,7 +509,7 @@ function TiendaPublica({ config }) {
       )}
 
       {productos.map(p => (
-        <ProductoCardPublica key={p.id} p={p} onAgregar={() => handleAgregar(p)} />
+        <ProductoCardPublica key={p.id} p={p} onAgregar={(talle) => agregarAlCarrito(p, talle)} />
       ))}
 
       {/* Botón carrito flotante */}
@@ -531,14 +521,6 @@ function TiendaPublica({ config }) {
             {cart.length}
           </span>
         </button>
-      )}
-
-      {/* Modal: elegir talle antes de agregar */}
-      {talleModal && (
-        <TallePickerModal
-          producto={talleModal}
-          onConfirmar={talle => { agregarAlCarrito(talleModal, talle); setTalleModal(null) }}
-          onClose={() => setTalleModal(null)} />
       )}
 
       {/* Sheet carrito */}
@@ -563,44 +545,62 @@ function TiendaPublica({ config }) {
 function ProductoCardPublica({ p, onAgregar }) {
   const talles  = p.talles_disponibles || []
   const fotos   = (p.fotos || []).length > 0 ? p.fotos : (p.foto_url ? [p.foto_url] : [])
-  const [galeria, setGaleria] = useState(null) // índice inicial
+  const [talle, setTalle]     = useState(null)
+  const [galeria, setGaleria] = useState(null)
+
+  const puedeAgregar = talles.length === 0 || talle !== null
 
   return (
     <>
-      <div className="card" style={{ padding:'14px 16px', display:'flex', gap:14 }}>
-        {fotos.length > 0 && (
-          <div style={{ position:'relative', flexShrink:0 }} onClick={() => setGaleria(0)}>
-            <img src={fotos[0].replace('/upload/', '/upload/w_160,q_auto/')} alt={p.nombre}
-              style={{ width:90, height:90, objectFit:'cover', borderRadius:8, cursor:'pointer' }} />
-            {fotos.length > 1 && (
-              <span style={{ position:'absolute', bottom:4, right:4, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'2px 6px', borderRadius:4, pointerEvents:'none' }}>
-                {fotos.length} 📷
-              </span>
-            )}
+      <div className="card" style={{ padding:'14px 16px' }}>
+        <div style={{ display:'flex', gap:14 }}>
+          {fotos.length > 0 && (
+            <div style={{ position:'relative', flexShrink:0 }} onClick={() => setGaleria(0)}>
+              <img src={fotos[0].replace('/upload/', '/upload/w_160,q_auto/')} alt={p.nombre}
+                style={{ width:90, height:90, objectFit:'cover', borderRadius:8, cursor:'pointer' }} />
+              {fotos.length > 1 && (
+                <span style={{ position:'absolute', bottom:4, right:4, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'2px 6px', borderRadius:4, pointerEvents:'none' }}>
+                  {fotos.length} 📷
+                </span>
+              )}
+            </div>
+          )}
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:6, flexWrap:'wrap' }}>
+              <div style={{ fontWeight:700, fontSize:15, flex:1 }}>{p.nombre}</div>
+              {p.genero && (
+                <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)', flexShrink:0, whiteSpace:'nowrap' }}>{p.genero}</span>
+              )}
+            </div>
+            {p.descripcion && <div style={{ fontSize:13, color:'var(--text2)', marginTop:2 }}>{p.descripcion}</div>}
+            <div style={{ fontWeight:700, fontSize:16, color:'var(--accent)', marginTop:6 }}>
+              ${Number(p.precio).toLocaleString('es-AR')}
+            </div>
+          </div>
+        </div>
+
+        {/* Selector de talle inline */}
+        {talles.length > 0 && (
+          <div style={{ marginTop:12 }}>
+            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:6 }}>Talle</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {talles.map(t => (
+                <button key={t} onClick={() => setTalle(t === talle ? null : t)}
+                  style={{ padding:'5px 14px', fontSize:13, borderRadius:20, border:`1px solid ${talle === t ? 'var(--accent)' : 'var(--border)'}`, background: talle === t ? 'var(--accent)' : 'transparent', color: talle === t ? '#fff' : 'var(--text)', cursor:'pointer', fontWeight: talle === t ? 700 : 400 }}>
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
         )}
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:'flex', alignItems:'flex-start', gap:6, flexWrap:'wrap' }}>
-            <div style={{ fontWeight:700, fontSize:15, flex:1 }}>{p.nombre}</div>
-            {p.genero && p.genero !== 'Unisex' && (
-              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)', flexShrink:0, whiteSpace:'nowrap' }}>{p.genero}</span>
-            )}
-            {p.genero === 'Unisex' && (
-              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)', flexShrink:0 }}>Unisex</span>
-            )}
-          </div>
-          {p.descripcion && <div style={{ fontSize:13, color:'var(--text2)', marginTop:2 }}>{p.descripcion}</div>}
-          <div style={{ fontWeight:700, fontSize:16, color:'var(--accent)', marginTop:6 }}>
-            ${Number(p.precio).toLocaleString('es-AR')}
-          </div>
-          {talles.length > 0 && (
-            <div style={{ fontSize:12, color:'var(--text2)', marginTop:4 }}>Talles: {talles.join(' · ')}</div>
-          )}
-          <button onClick={onAgregar} className="btn-accent"
-            style={{ marginTop:10, height:32, padding:'0 14px', fontSize:13, width:'100%' }}>
-            + Agregar al carrito
-          </button>
-        </div>
+
+        <button
+          onClick={() => { onAgregar(talle); setTalle(null) }}
+          disabled={!puedeAgregar}
+          className="btn-accent"
+          style={{ marginTop:12, height:34, padding:'0 14px', fontSize:13, width:'100%', opacity: puedeAgregar ? 1 : 0.4 }}>
+          {talles.length > 0 && !talle ? 'Elegí un talle' : '+ Agregar al carrito'}
+        </button>
       </div>
 
       {galeria !== null && (
