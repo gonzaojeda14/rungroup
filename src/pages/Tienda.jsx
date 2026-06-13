@@ -151,6 +151,12 @@ function TiendaAdmin({ config, onConfigChange }) {
               <input value={alias} onChange={e => setAlias(e.target.value)} placeholder="Alias MP" style={iStyle} />
               <input value={cbu} onChange={e => setCbu(e.target.value)} placeholder="CBU" style={iStyle} />
             </div>
+            {(config?.alias || config?.cbu) && (
+              <div style={{ fontSize:12, color:'var(--text2)', display:'flex', gap:16 }}>
+                {config.alias && <span>Alias guardado: <strong style={{ color:'var(--text)' }}>{config.alias}</strong></span>}
+                {config.cbu   && <span>CBU guardado: <strong style={{ color:'var(--text)' }}>{config.cbu}</strong></span>}
+              </div>
+            )}
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} />
