@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { suscribirPush } from '../lib/push'
+import { suscribirPush, notificar } from '../lib/push'
 import { formatTelefonoWA } from '../lib/utils'
 import PageLoader from '../components/PageLoader'
 import ConfirmModal from '../components/ConfirmModal'
@@ -168,18 +168,16 @@ export default function Novedades() {
       return
     }
 
-    // Disparar push a todos los suscriptores (solo si es publicación inmediata, y solo si se guardó bien)
+    // Disparar push a todos los suscriptores (solo si es publicación inmediata)
     if (!programarEn) {
-      const { data: { session } } = await supabase.auth.getSession()
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ title: titulo || '', body: contenido || '', tipo }),
-      }).then(r => r.text()).then(t => console.log('Push result:', t))
-        .catch(e => console.error('Push error:', e))
+      const emoji = tipo === 'plan_semanal' ? '📋' : '📢'
+      const labelTipo = tipo === 'plan_semanal' ? 'Plan semanal' : 'Nuevo aviso'
+      notificar(
+        `${emoji} ${labelTipo}`,
+        titulo || contenido || 'Revisá los avisos del equipo.',
+        '/novedades',
+        { all: true },
+      )
     }
 
     setTitulo('')

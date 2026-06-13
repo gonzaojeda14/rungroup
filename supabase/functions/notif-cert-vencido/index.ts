@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         title: '⚠️ Tu certificado médico venció',
         body: 'Renovalo en Mi Perfil para seguir participando en carreras.',
-        url: '/perfil',
+        url: '/perfil?tab=salud',
         user_ids: userIds,
       }),
     })

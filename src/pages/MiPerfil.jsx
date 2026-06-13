@@ -7,6 +7,7 @@ import { useAuth } from '../lib/auth'
 import { formatFecha, validarTelefono, capitalizarNombre, yaEmpezo } from '../lib/utils'
 import PasswordInput from '../components/PasswordInput'
 import { suscribirPush } from '../lib/push'
+import { useSearchParams } from 'react-router-dom'
 
 const thisYear = new Date().getFullYear()
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
@@ -41,7 +42,8 @@ export default function MiPerfil() {
   const [fotosCarrera, setFotosCarrera] = useState(null)
 
   // Tabs
-  const [tab, setTab] = useState(() => localStorage.getItem('miperfilTab') || 'datos')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(() => searchParams.get('tab') || localStorage.getItem('miperfilTab') || 'datos')
   function cambiarTab(t) { setTab(t); localStorage.setItem('miperfilTab', t) }
 
   // Stats

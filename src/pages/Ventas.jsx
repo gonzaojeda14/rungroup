@@ -84,7 +84,7 @@ export default function Ventas() {
       notificar(
         '🎉 ¡Hay un cupo disponible para vos!',
         `Alguien liberó su inscripción en ${venta.carrera?.nombre || 'una carrera'}. Entrá antes de que se agote.`,
-        '/mas',
+        '/ventas',
         { user_ids: [siguiente.user_id] }
       )
     } else {
@@ -202,7 +202,7 @@ export default function Ventas() {
       notificar(
         '🎉 ¡Hay un cupo disponible para vos!',
         `Alguien liberó su inscripción en ${carrera?.nombre || 'una carrera'}. Entrá antes de que se agote.`,
-        '/mas',
+        '/ventas',
         { user_ids: [primero.user_id] }
       )
     }

@@ -27,8 +27,10 @@ async function uploadCloudinary(file, folder) {
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 
+const TIENDA_BETA = ['ojeda.gonza@hotmail.com']
+
 export default function Tienda() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -38,8 +40,8 @@ export default function Tienda() {
   }, [])
 
   if (loading) return <Cargando />
-  if (isAdmin)        return <TiendaAdmin config={config} onConfigChange={setConfig} />
-  if (config?.activa) return <TiendaPublica config={config} />
+  if (isAdmin) return <TiendaAdmin config={config} onConfigChange={setConfig} />
+  if (config?.activa || TIENDA_BETA.includes(user?.email)) return <TiendaPublica config={config} />
   return <TiendaProximamente />
 }
 
