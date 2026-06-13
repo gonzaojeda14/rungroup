@@ -235,8 +235,7 @@ function ProductoForm({ onSaved }) {
   const [tipoTalle, setTipoTalle]     = useState('unico')
   const [talles, setTalles]           = useState([])
   const [genero, setGenero]           = useState('Unisex')
-  const [fotoFile, setFotoFile]       = useState(null)
-  const [fotoPreview, setFotoPreview] = useState(null)
+  const [fotosArr, setFotosArr]       = useState([]) // [{preview, file}]
   const [saving, setSaving]           = useState(false)
   const fotoRef = useRef()
 
@@ -249,17 +248,27 @@ function ProductoForm({ onSaved }) {
     setTalles(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   }
 
+  function agregarFotos(e) {
+    const files = Array.from(e.target.files)
+    const nuevas = files.map(f => ({ file: f, preview: URL.createObjectURL(f) }))
+    setFotosArr(prev => [...prev, ...nuevas])
+    fotoRef.current.value = ''
+  }
+
+  function quitarFoto(idx) {
+    setFotosArr(prev => prev.filter((_, i) => i !== idx))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!nombre || !precio) return
     setSaving(true)
 
-    let foto_url = null, foto_public_id = null
-    if (fotoFile) {
-      const d = await uploadCloudinary(fotoFile, 'flamarun/tienda')
-      foto_url = d.secure_url || null
-      foto_public_id = d.public_id || null
-    }
+    // Subir todas las fotos en paralelo
+    const urls = await Promise.all(
+      fotosArr.map(f => uploadCloudinary(f.file, 'flamarun/tienda').then(d => d.secure_url).catch(() => null))
+    )
+    const fotosUrls = urls.filter(Boolean)
 
     const { error } = await supabase.from('productos').insert([{
       nombre,
@@ -268,8 +277,8 @@ function ProductoForm({ onSaved }) {
       tipo_talle: tipoTalle,
       talles_disponibles: talles,
       genero,
-      foto_url,
-      foto_public_id,
+      foto_url: fotosUrls[0] || null,
+      fotos: fotosUrls,
     }])
 
     setSaving(false)
@@ -333,29 +342,29 @@ function ProductoForm({ onSaved }) {
           </div>
         )}
 
-        {/* Foto */}
+        {/* Fotos múltiples */}
         <div className="field">
-          <label>Foto del producto</label>
-          {fotoPreview ? (
-            <div style={{ position:'relative', width:120 }}>
-              <img src={fotoPreview} alt="" style={{ width:120, height:120, objectFit:'cover', borderRadius:8, border:'1px solid var(--border)' }} />
-              <button type="button" onClick={() => { setFotoFile(null); setFotoPreview(null); fotoRef.current.value = '' }}
-                style={{ position:'absolute', top:4, right:4, width:22, height:22, borderRadius:'50%', background:'rgba(0,0,0,0.6)', border:'none', color:'#fff', cursor:'pointer', fontSize:12 }}>✕</button>
-            </div>
-          ) : (
+          <label>Fotos del producto</label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom: fotosArr.length ? 8 : 0 }}>
+            {fotosArr.map((f, i) => (
+              <div key={i} style={{ position:'relative', width:80, height:80 }}>
+                <img src={f.preview} alt="" style={{ width:80, height:80, objectFit:'cover', borderRadius:8, border:'1px solid var(--border)' }} />
+                <button type="button" onClick={() => quitarFoto(i)}
+                  style={{ position:'absolute', top:3, right:3, width:20, height:20, borderRadius:'50%', background:'rgba(0,0,0,0.7)', border:'none', color:'#fff', cursor:'pointer', fontSize:11, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                {i === 0 && <span style={{ position:'absolute', bottom:3, left:3, fontSize:9, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4 }}>Principal</span>}
+              </div>
+            ))}
             <button type="button" onClick={() => fotoRef.current?.click()}
-              style={{ padding:10, border:'1px dashed var(--border)', borderRadius:8, background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:13, width:'100%' }}>
-              📷 Elegir foto
+              style={{ width:80, height:80, border:'1px dashed var(--border)', borderRadius:8, background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:22, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              +
             </button>
-          )}
-          <input ref={fotoRef} type="file" accept="image/*" style={{ display:'none' }} onChange={e => {
-            const f = e.target.files[0]
-            if (f) { setFotoFile(f); setFotoPreview(URL.createObjectURL(f)) }
-          }} />
+          </div>
+          <input ref={fotoRef} type="file" accept="image/*" multiple style={{ display:'none' }} onChange={agregarFotos} />
+          <div style={{ fontSize:11, color:'var(--text2)' }}>Podés agregar varias fotos y la tabla de talles como imagen.</div>
         </div>
 
         <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? 'Publicando...' : 'Publicar producto'}
+          {saving ? 'Subiendo fotos...' : 'Publicar producto'}
         </button>
       </form>
     </div>
@@ -366,11 +375,17 @@ function ProductoForm({ onSaved }) {
 
 function ProductoCardAdmin({ p, onToggle, onEliminar }) {
   const talles = p.talles_disponibles || []
+  const thumb = (p.fotos || [])[0] || p.foto_url
   return (
     <div className="card" style={{ padding:'14px 16px', display:'flex', gap:14, opacity: p.disponible ? 1 : 0.55 }}>
-      {p.foto_url && (
-        <img src={p.foto_url.replace('/upload/', '/upload/w_100,q_auto/')} alt={p.nombre}
-          style={{ width:72, height:72, objectFit:'cover', borderRadius:8, flexShrink:0 }} />
+      {thumb && (
+        <div style={{ position:'relative', flexShrink:0 }}>
+          <img src={thumb.replace('/upload/', '/upload/w_100,q_auto/')} alt={p.nombre}
+            style={{ width:72, height:72, objectFit:'cover', borderRadius:8 }} />
+          {(p.fotos || []).length > 1 && (
+            <span style={{ position:'absolute', bottom:3, right:3, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4 }}>{p.fotos.length} 📷</span>
+          )}
+        </div>
       )}
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontWeight:700, fontSize:15 }}>{p.nombre}</div>
@@ -546,27 +561,101 @@ function TiendaPublica({ config }) {
 // ─── CARD PRODUCTO (público) ──────────────────────────────────────────────────
 
 function ProductoCardPublica({ p, onAgregar }) {
-  const talles = p.talles_disponibles || []
+  const talles  = p.talles_disponibles || []
+  const fotos   = (p.fotos || []).length > 0 ? p.fotos : (p.foto_url ? [p.foto_url] : [])
+  const [galeria, setGaleria] = useState(null) // índice inicial
+
   return (
-    <div className="card" style={{ padding:'14px 16px', display:'flex', gap:14 }}>
-      {p.foto_url && (
-        <img src={p.foto_url.replace('/upload/', '/upload/w_120,q_auto/')} alt={p.nombre}
-          style={{ width:80, height:80, objectFit:'cover', borderRadius:8, flexShrink:0 }} />
-      )}
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontWeight:700, fontSize:15 }}>{p.nombre}</div>
-        {p.descripcion && <div style={{ fontSize:13, color:'var(--text2)', marginTop:2 }}>{p.descripcion}</div>}
-        <div style={{ fontWeight:700, fontSize:16, color:'var(--accent)', marginTop:6 }}>
-          ${Number(p.precio).toLocaleString('es-AR')}
-        </div>
-        {talles.length > 0 && (
-          <div style={{ fontSize:12, color:'var(--text2)', marginTop:4 }}>Talles: {talles.join(' · ')}</div>
+    <>
+      <div className="card" style={{ padding:'14px 16px', display:'flex', gap:14 }}>
+        {fotos.length > 0 && (
+          <div style={{ position:'relative', flexShrink:0 }} onClick={() => setGaleria(0)}>
+            <img src={fotos[0].replace('/upload/', '/upload/w_160,q_auto/')} alt={p.nombre}
+              style={{ width:90, height:90, objectFit:'cover', borderRadius:8, cursor:'pointer' }} />
+            {fotos.length > 1 && (
+              <span style={{ position:'absolute', bottom:4, right:4, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'2px 6px', borderRadius:4, pointerEvents:'none' }}>
+                {fotos.length} 📷
+              </span>
+            )}
+          </div>
         )}
-        <button onClick={onAgregar} className="btn-accent"
-          style={{ marginTop:10, height:32, padding:'0 14px', fontSize:13, width:'100%' }}>
-          + Agregar al carrito
-        </button>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:6, flexWrap:'wrap' }}>
+            <div style={{ fontWeight:700, fontSize:15, flex:1 }}>{p.nombre}</div>
+            {p.genero && p.genero !== 'Unisex' && (
+              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)', flexShrink:0, whiteSpace:'nowrap' }}>{p.genero}</span>
+            )}
+            {p.genero === 'Unisex' && (
+              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)', flexShrink:0 }}>Unisex</span>
+            )}
+          </div>
+          {p.descripcion && <div style={{ fontSize:13, color:'var(--text2)', marginTop:2 }}>{p.descripcion}</div>}
+          <div style={{ fontWeight:700, fontSize:16, color:'var(--accent)', marginTop:6 }}>
+            ${Number(p.precio).toLocaleString('es-AR')}
+          </div>
+          {talles.length > 0 && (
+            <div style={{ fontSize:12, color:'var(--text2)', marginTop:4 }}>Talles: {talles.join(' · ')}</div>
+          )}
+          <button onClick={onAgregar} className="btn-accent"
+            style={{ marginTop:10, height:32, padding:'0 14px', fontSize:13, width:'100%' }}>
+            + Agregar al carrito
+          </button>
+        </div>
       </div>
+
+      {galeria !== null && (
+        <GaleriaModal fotos={fotos} inicial={galeria} onClose={() => setGaleria(null)} />
+      )}
+    </>
+  )
+}
+
+// ─── GALERÍA MODAL ────────────────────────────────────────────────────────────
+
+function GaleriaModal({ fotos, inicial, onClose }) {
+  const [idx, setIdx] = useState(inicial)
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'ArrowLeft')  setIdx(i => Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') setIdx(i => Math.min(fotos.length - 1, i + 1))
+      if (e.key === 'Escape')     onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fotos.length])
+
+  const prev = idx > 0
+  const next = idx < fotos.length - 1
+
+  return (
+    <div onClick={onClose}
+      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.95)', zIndex:200, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+
+      {/* Foto */}
+      <div onClick={e => e.stopPropagation()} style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center', width:'100%', maxWidth:600, padding:'0 48px' }}>
+        <img src={fotos[idx]} alt="" style={{ maxWidth:'100%', maxHeight:'80vh', objectFit:'contain', borderRadius:8 }} />
+
+        {prev && (
+          <button onClick={e => { e.stopPropagation(); setIdx(i => i - 1) }}
+            style={{ position:'absolute', left:4, top:'50%', transform:'translateY(-50%)', width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
+        )}
+        {next && (
+          <button onClick={e => { e.stopPropagation(); setIdx(i => i + 1) }}
+            style={{ position:'absolute', right:4, top:'50%', transform:'translateY(-50%)', width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>›</button>
+        )}
+      </div>
+
+      {/* Contador + miniaturas */}
+      <div onClick={e => e.stopPropagation()} style={{ marginTop:16, display:'flex', gap:8, alignItems:'center' }}>
+        {fotos.map((f, i) => (
+          <img key={i} src={f.replace('/upload/', '/upload/w_60,q_auto/')} alt="" onClick={() => setIdx(i)}
+            style={{ width:44, height:44, objectFit:'cover', borderRadius:6, cursor:'pointer', opacity: i === idx ? 1 : 0.45, border: i === idx ? '2px solid #fff' : '2px solid transparent', transition:'opacity 0.15s' }} />
+        ))}
+      </div>
+
+      <button onClick={onClose}
+        style={{ position:'absolute', top:16, right:16, background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:36, height:36, borderRadius:'50%', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
     </div>
   )
 }
