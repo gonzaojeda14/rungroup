@@ -232,6 +232,7 @@ function ProductoForm({ onSaved }) {
   const [precio, setPrecio]           = useState('')
   const [tipoTalle, setTipoTalle]     = useState('unico')
   const [talles, setTalles]           = useState([])
+  const [genero, setGenero]           = useState('Unisex')
   const [fotoFile, setFotoFile]       = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
   const [saving, setSaving]           = useState(false)
@@ -258,17 +259,19 @@ function ProductoForm({ onSaved }) {
       foto_public_id = d.public_id || null
     }
 
-    await supabase.from('productos').insert([{
+    const { error } = await supabase.from('productos').insert([{
       nombre,
       descripcion: descripcion || null,
       precio: parseFloat(precio),
       tipo_talle: tipoTalle,
       talles_disponibles: talles,
+      genero,
       foto_url,
       foto_public_id,
     }])
 
     setSaving(false)
+    if (error) { alert('Error al publicar: ' + error.message); return }
     onSaved()
   }
 
@@ -299,6 +302,14 @@ function ProductoForm({ onSaved }) {
               <option value="unico">Talle único</option>
               <option value="ropa">Ropa (S–XXL)</option>
               <option value="zapatillas">Zapatillas (35–44)</option>
+            </select>
+          </div>
+          <div className="field" style={{ flex:1 }}>
+            <label>Género</label>
+            <select value={genero} onChange={e => setGenero(e.target.value)} style={selectStyle}>
+              <option value="Unisex">Unisex</option>
+              <option value="Hombre">Hombre</option>
+              <option value="Mujer">Mujer</option>
             </select>
           </div>
         </div>
@@ -365,6 +376,7 @@ function ProductoCardAdmin({ p, onToggle, onEliminar }) {
         <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:6, alignItems:'center' }}>
           <span style={{ fontWeight:700, fontSize:14, color:'var(--accent)' }}>${Number(p.precio).toLocaleString('es-AR')}</span>
           {talles.length > 0 && <span style={{ fontSize:12, color:'var(--text2)' }}>{talles.join(' · ')}</span>}
+          {p.genero && <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'var(--bg3)', color:'var(--text2)' }}>{p.genero}</span>}
           <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background: p.disponible ? 'rgba(74,222,128,0.15)' : 'var(--bg3)', color: p.disponible ? '#4ade80' : 'var(--text2)' }}>
             {p.disponible ? 'Visible' : 'Oculto'}
           </span>

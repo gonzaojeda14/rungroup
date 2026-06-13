@@ -9,6 +9,7 @@ create table if not exists public.productos (
   foto_public_id  text,
   tipo_talle      text check (tipo_talle in ('ropa', 'zapatillas', 'unico')),
   talles_disponibles jsonb not null default '[]'::jsonb,  -- ["S","M","L","XL"]
+  genero          text check (genero in ('Hombre', 'Mujer', 'Unisex')),
   disponible      boolean not null default true,
   created_at      timestamptz not null default now()
 );
