@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import Ventas from './Ventas'
+import Tienda from './Tienda'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { yaEmpezo, enVentanaPreAprobacion, dentroDePlazo } from '../lib/utils'
@@ -78,7 +79,7 @@ const MapIcon = () => (
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 
-const TABS = ['Alianzas', 'Flamitas', 'Inscripciones']
+const TABS = ['Alianzas', 'Flamitas', 'Inscripciones', 'Tienda']
 
 const ESTADO_INFO = {
   pendiente: { label: 'En revisión', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', icon: '⏳' },
@@ -1099,6 +1100,7 @@ export default function Mas({ ventasDisponibles = 0 }) {
         {tab === 'Alianzas' && <Alianzas />}
         {tab === 'Flamitas' && <FlamaPoints />}
         {tab === 'Inscripciones' && <Ventas />}
+        {tab === 'Tienda' && <Tienda />}
       </div>
     </div>
   )
