@@ -1009,7 +1009,7 @@ export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
   const [tab, setTab] = useState(() => {
     const urlTab = new URLSearchParams(window.location.search).get('tab')
     if (urlTab && TABS.includes(urlTab)) return urlTab
-    const guardada = sessionStorage.getItem('mas_tab')
+    const guardada = localStorage.getItem('mas_tab')
     return TABS.includes(guardada) ? guardada : 'Alianzas'
   })
   // Carreras completadas a las que todavía no le mandaste la prueba de dorsal —
@@ -1051,7 +1051,7 @@ export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
 
   function cambiarTab(t) {
     setTab(t)
-    sessionStorage.setItem('mas_tab', t)
+    localStorage.setItem('mas_tab', t)
   }
 
   return (
