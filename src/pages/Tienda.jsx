@@ -705,6 +705,8 @@ function TiendaPublica({ config }) {
 function PedidoCompradorCard({ pedido: p }) {
   const items = p.items || []
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+  const [estado, setEstado] = useState(p.estado)
+  const [marcando, setMarcando] = useState(false)
 
   const ESTADO_COMPRADOR = {
     pendiente:  { label:'⏳ Pendiente',  color:'#fbbf24', bg:'rgba(251,191,36,0.12)' },
@@ -712,7 +714,14 @@ function PedidoCompradorCard({ pedido: p }) {
     entregado:  { label:'📦 Entregado',  color:'#60a5fa', bg:'rgba(96,165,250,0.12)' },
     cancelado:  { label:'✕ Cancelado',  color:'#f87171', bg:'rgba(248,113,113,0.12)' },
   }
-  const info = ESTADO_COMPRADOR[p.estado] || ESTADO_COMPRADOR.pendiente
+  const info = ESTADO_COMPRADOR[estado] || ESTADO_COMPRADOR.pendiente
+
+  async function marcarEntregado() {
+    setMarcando(true)
+    const { error } = await supabase.from('pedidos').update({ estado: 'entregado' }).eq('id', p.id)
+    if (!error) setEstado('entregado')
+    setMarcando(false)
+  }
 
   return (
     <div className="card" style={{ padding:'14px 16px' }}>
@@ -731,6 +740,12 @@ function PedidoCompradorCard({ pedido: p }) {
           Total: ${Number(p.total).toLocaleString('es-AR')}
         </div>
       </div>
+      {estado === 'confirmado' && (
+        <button onClick={marcarEntregado} disabled={marcando}
+          style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(96,165,250,0.3)', background:'rgba(96,165,250,0.1)', color:'#60a5fa', cursor:'pointer', fontWeight:600 }}>
+          {marcando ? '...' : '📦 Lo recibí — marcar como entregado'}
+        </button>
+      )}
     </div>
   )
 }
