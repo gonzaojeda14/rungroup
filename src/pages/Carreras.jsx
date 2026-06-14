@@ -224,7 +224,7 @@ function SugerenciaModal({ onClose, onSend, userId }) {
   )
 }
 
-const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false, tipo_actividad: 'carrera', calzado: '' }
+const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false, tipo_actividad: 'carrera', calzado: '', tiene_cupo: false, cupo_maximo: '' }
 
 const INSTRUCTIVO_RUNNING_TEAM = `1. Entrar a EntryFee.com.ar con tu usuario y contraseña.
 2. Ir a la solapa GRUPO.
@@ -277,6 +277,7 @@ export default function Carreras() {
   const [sugerenciaModal, setSugerenciaModal] = useState(false)
   const [sugerencias, setSugerencias] = useState([]) // solo admin
   const [sugerenciasAbierto, setSugerenciasAbierto] = useState(false)
+  const [cuposUsados, setCuposUsados] = useState({}) // carreraId -> count de Inscriptos+StandFlama
 
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
@@ -323,6 +324,7 @@ export default function Carreras() {
       supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, transferido').eq('user_id', user.id)
     ])
     setCarreras(cars || [])
+    fetchCupos(cars || [])
     setParticipaciones(parts || [])
     const distMap = {}
     parts?.forEach(p => {
@@ -331,6 +333,20 @@ export default function Carreras() {
     setDistanciasSeleccionadas(distMap)
     setLoading(false)
     if (isAdmin) fetchSugerencias()
+  }
+
+  async function fetchCupos(carrerasList) {
+    const conCupo = (carrerasList || []).filter(c => c.cupo_maximo)
+    if (!conCupo.length) { setCuposUsados({}); return }
+    const ids = conCupo.map(c => c.id)
+    const { data } = await supabase
+      .from('participaciones')
+      .select('carrera_id')
+      .in('carrera_id', ids)
+      .in('estado', ['Inscripto', 'Stand Flama'])
+    const counts = Object.fromEntries(ids.map(id => [id, 0]))
+    for (const row of (data || [])) counts[row.carrera_id] = (counts[row.carrera_id] || 0) + 1
+    setCuposUsados(counts)
   }
 
   async function fetchSugerencias() {
@@ -387,6 +403,7 @@ export default function Carreras() {
       running_team: esCarrera ? (form.running_team || false) : false,
       flama_points: esCarrera ? (form.flama_points || false) : false,
       tipo: esCarrera ? (form.tipo || null) : null,
+      cupo_maximo: form.tiene_cupo ? (parseInt(form.cupo_maximo) || null) : null,
       distancias: distanciasArr,
       distancia: esCarrera ? (distanciasArr[0] || null) : null,
     }
@@ -439,6 +456,8 @@ export default function Carreras() {
       flama_points: c.flama_points || false,
       tipo_actividad: c.tipo_actividad || 'carrera',
       calzado: c.calzado || '',
+      tiene_cupo: !!c.cupo_maximo,
+      cupo_maximo: c.cupo_maximo ? String(c.cupo_maximo) : '',
     })
     setEditId(c.id)
     setShowForm(true)
@@ -501,6 +520,21 @@ export default function Carreras() {
   }
 
   async function updateEstado(carreraId, estado) {
+    if (estado === 'Inscripto') {
+      const carrera = carreras.find(c => c.id === carreraId)
+      if (carrera?.cupo_maximo) {
+        const { count } = await supabase
+          .from('participaciones')
+          .select('*', { count: 'exact', head: true })
+          .eq('carrera_id', carreraId)
+          .in('estado', ['Inscripto', 'Stand Flama'])
+        if ((count || 0) >= carrera.cupo_maximo) {
+          setToast('❌ No hay cupo disponible')
+          setTimeout(() => setToast(''), 3000)
+          return
+        }
+      }
+    }
     const noVoy = estado === 'No voy'
     const prevEstado = participaciones.find(p => p.carrera_id === carreraId)?.estado
     let distanciaElegida = noVoy ? null : (distanciasSeleccionadas[carreraId] || null)
@@ -527,6 +561,10 @@ export default function Carreras() {
     if (inscriptosAbiertos[carreraId] && inscriptosAbiertos[carreraId] !== 'loading') {
       refreshInscriptos(carreraId)
     }
+
+    // Actualizar conteo de cupos
+    const carrera = carreras.find(c => c.id === carreraId)
+    if (carrera?.cupo_maximo) fetchCupos(carreras)
 
   }
 
@@ -865,6 +903,20 @@ export default function Carreras() {
               <label>Lugar</label>
               <input value={form.lugar} onChange={e => setForm({ ...form, lugar: e.target.value })} placeholder="Parque Tres de Febrero" />
             </div>
+            <div className="field">
+              <label>Cupo máximo</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', width: 'fit-content' }}
+                onClick={() => setForm({ ...form, tiene_cupo: !form.tiene_cupo, cupo_maximo: '' })}
+              >
+                <div style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0, background: form.tiene_cupo ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+                  {form.tiene_cupo && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Limitar cupo</span>
+              </label>
+              {form.tiene_cupo && (
+                <input type="number" min="1" value={form.cupo_maximo} onChange={e => setForm({ ...form, cupo_maximo: e.target.value })} placeholder="Ej: 30" style={{ marginTop: '6px' }} />
+              )}
+            </div>
             {form.tipo_actividad === 'entrenamiento' && (
               <div className="field">
                 <label>Calzado a llevar</label>
@@ -1098,6 +1150,20 @@ export default function Carreras() {
                     <label>Lugar</label>
                     <input value={form.lugar} onChange={e => setForm({ ...form, lugar: e.target.value })} placeholder="Parque Tres de Febrero" />
                   </div>
+                  <div className="field">
+                    <label>Cupo máximo</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', width: 'fit-content' }}
+                      onClick={() => setForm({ ...form, tiene_cupo: !form.tiene_cupo, cupo_maximo: '' })}
+                    >
+                      <div style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--border)', flexShrink: 0, background: form.tiene_cupo ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+                        {form.tiene_cupo && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'var(--text2)' }}>Limitar cupo</span>
+                    </label>
+                    {form.tiene_cupo && (
+                      <input type="number" min="1" value={form.cupo_maximo} onChange={e => setForm({ ...form, cupo_maximo: e.target.value })} placeholder="Ej: 30" style={{ marginTop: '6px' }} />
+                    )}
+                  </div>
                   {form.tipo_actividad === 'entrenamiento' && (
                     <div className="field">
                       <label>Calzado a llevar</label>
@@ -1195,6 +1261,15 @@ export default function Carreras() {
                   </div>
                   <div className="race-meta">
                     {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
+                    {c.cupo_maximo && (() => {
+                      const usados = cuposUsados[c.id] || 0
+                      const lleno = usados >= c.cupo_maximo
+                      return (
+                        <span className="tag" style={{ background: lleno ? 'rgba(248,113,113,0.15)' : 'rgba(74,222,128,0.15)', color: lleno ? '#f87171' : '#4ade80', border: `1px solid ${lleno ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)'}` }}>
+                          {lleno ? '🔒 Cupo lleno' : `👥 ${usados}/${c.cupo_maximo}`}
+                        </span>
+                      )
+                    })()}
                     {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && dists.length > 0 && <span className="tag">📏 {dists.join(' · ')}</span>}
                     {c.lugar && (
                       <a
