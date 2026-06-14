@@ -125,6 +125,7 @@ function TiendaAdmin({ config, onConfigChange }) {
   }
 
   const pendientes = pedidos.filter(p => p.estado === 'pendiente').length
+  const [filtroCompras, setFiltroCompras] = useState('pendiente')
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
@@ -199,14 +200,33 @@ function TiendaAdmin({ config, onConfigChange }) {
 
         {/* ── COMPRAS ── */}
         {tab === 'Compras' && <>
-          {pedidos.length === 0 && (
-            <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>Todavía no hay pedidos.</div>
-          )}
-          {pedidos.map(p => (
-            <PedidoAdminCard key={p.id} pedido={p}
-              onVerFoto={url => setFotoAmpliada(url)}
-              onEstado={estado => actualizarEstado(p.id, estado)} />
-          ))}
+          {/* Filtro */}
+          <div style={{ display:'inline-flex', background:'var(--bg3)', borderRadius:10, padding:3, gap:2 }}>
+            {['pendiente','confirmado','entregado'].map(f => {
+              const labels = { pendiente:'Pendientes', confirmado:'Confirmados', entregado:'Entregados' }
+              const activo = filtroCompras === f
+              return (
+                <button key={f} onClick={() => setFiltroCompras(f)}
+                  style={{ padding:'5px 14px', fontSize:12, fontWeight: activo ? 700 : 500, color: activo ? '#fff' : 'var(--text2)', background: activo ? 'var(--accent)' : 'transparent', border:'none', cursor:'pointer', borderRadius:8 }}>
+                  {labels[f]}
+                </button>
+              )
+            })}
+          </div>
+
+          {(() => {
+            const filtrados = pedidos.filter(p => p.estado === filtroCompras)
+            if (filtrados.length === 0) return (
+              <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>
+                No hay pedidos {filtroCompras === 'pendiente' ? 'pendientes' : filtroCompras === 'confirmado' ? 'confirmados' : 'entregados'}.
+              </div>
+            )
+            return filtrados.map(p => (
+              <PedidoAdminCard key={p.id} pedido={p}
+                onVerFoto={url => setFotoAmpliada(url)}
+                onEstado={estado => actualizarEstado(p.id, estado)} />
+            ))
+          })()}
         </>}
 
       </div>
@@ -455,14 +475,20 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado }) {
       {p.estado === 'pendiente' && (
         <div style={{ display:'flex', gap:8, marginTop:10 }}>
           <button onClick={() => onEstado('confirmado')}
-            style={{ flex:1, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
-            ✓ Confirmar
+            style={{ flex:2, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
+            ✓ Confirmar pago
           </button>
           <button onClick={() => onEstado('cancelado')}
-            style={{ flex:1, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.1)', color:'#f87171', cursor:'pointer' }}>
+            style={{ flex:1, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(248,113,113,0.3)', background:'transparent', color:'#f87171', cursor:'pointer' }}>
             Cancelar
           </button>
         </div>
+      )}
+      {p.estado === 'confirmado' && (
+        <button onClick={() => onEstado('entregado')}
+          style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(96,165,250,0.3)', background:'rgba(96,165,250,0.1)', color:'#60a5fa', cursor:'pointer', fontWeight:600 }}>
+          📦 Marcar como entregado
+        </button>
       )}
     </div>
   )
@@ -481,6 +507,9 @@ function TiendaPublica({ config }) {
   const [toast, setToast]       = useState('')
   const [generoFiltro, setGeneroFiltro] = useState(null)
   const [talleFiltro, setTalleFiltro]   = useState(null)
+  const [vistaPublica, setVistaPublica] = useState('productos')
+  const [misPedidos, setMisPedidos]     = useState([])
+  const [loadingPedidos, setLoadingPedidos] = useState(false)
   const saveTimer = useRef(null)
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
@@ -528,10 +557,48 @@ function TiendaPublica({ config }) {
     setCart(prev => prev.filter(i => i.key !== key))
   }
 
+  async function abrirPedidos() {
+    setVistaPublica('pedidos')
+    if (misPedidos.length > 0) return
+    setLoadingPedidos(true)
+    const { data } = await supabase.from('pedidos').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+    setMisPedidos(data || [])
+    setLoadingPedidos(false)
+  }
+
   if (loading) return <Cargando />
 
   return (
-    <div style={{ padding:16, display:'flex', flexDirection:'column', gap:14, paddingBottom:80 }}>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+
+      {/* Pill switcher Productos / Pedidos */}
+      <div style={{ padding:'12px 16px 0', flexShrink:0 }}>
+        <div style={{ display:'inline-flex', background:'var(--bg3)', borderRadius:10, padding:3, gap:2 }}>
+          {['productos','pedidos'].map(v => {
+            const activo = vistaPublica === v
+            return (
+              <button key={v} onClick={() => v === 'pedidos' ? abrirPedidos() : setVistaPublica('productos')}
+                style={{ padding:'6px 18px', fontSize:13, fontWeight: activo ? 700 : 500, color: activo ? '#fff' : 'var(--text2)', background: activo ? 'var(--accent)' : 'transparent', border:'none', cursor:'pointer', borderRadius:8, textTransform:'capitalize' }}>
+                {v === 'productos' ? 'Productos' : 'Mis Pedidos'}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div style={{ flex:1, overflowY:'auto', padding:16, display:'flex', flexDirection:'column', gap:14, paddingBottom:80 }}>
+
+      {/* ── PEDIDOS DEL COMPRADOR ── */}
+      {vistaPublica === 'pedidos' && (
+        loadingPedidos ? <Cargando /> : misPedidos.length === 0 ? (
+          <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>Todavía no hiciste ningún pedido.</div>
+        ) : (
+          misPedidos.map(p => <PedidoCompradorCard key={p.id} pedido={p} />)
+        )
+      )}
+
+      {/* ── PRODUCTOS ── */}
+      {vistaPublica === 'productos' && <>
 
       {/* Datos de pago */}
       {(config?.alias || config?.cbu) && (
@@ -619,10 +686,51 @@ function TiendaPublica({ config }) {
             setCartOpen(false)
             showToast('✅ Pedido enviado')
             if (user) supabase.from('carritos').upsert({ user_id: user.id, items: [], updated_at: new Date().toISOString() })
+            // Refrescar pedidos para que aparezcan en "Mis Pedidos"
+            setMisPedidos([])
           }} />
       )}
 
+      </>}
+
+      </div>{/* end flex scroll */}
+
       {toast && <Toast msg={toast} />}
+    </div>
+  )
+}
+
+// ─── CARD PEDIDO (comprador) ──────────────────────────────────────────────────
+
+function PedidoCompradorCard({ pedido: p }) {
+  const items = p.items || []
+  const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+
+  const ESTADO_COMPRADOR = {
+    pendiente:  { label:'⏳ Pendiente',  color:'#fbbf24', bg:'rgba(251,191,36,0.12)' },
+    confirmado: { label:'✅ Acreditado', color:'#4ade80', bg:'rgba(74,222,128,0.12)' },
+    entregado:  { label:'📦 Entregado',  color:'#60a5fa', bg:'rgba(96,165,250,0.12)' },
+    cancelado:  { label:'✕ Cancelado',  color:'#f87171', bg:'rgba(248,113,113,0.12)' },
+  }
+  const info = ESTADO_COMPRADOR[p.estado] || ESTADO_COMPRADOR.pendiente
+
+  return (
+    <div className="card" style={{ padding:'14px 16px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10, marginBottom:10 }}>
+        <div style={{ fontSize:11, color:'var(--text2)' }}>{fecha}</div>
+        <span style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:info.bg, color:info.color, fontWeight:600, flexShrink:0 }}>{info.label}</span>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
+            <span>{it.nombre}{it.talle ? <span style={{ color:'var(--text2)' }}> · {it.talle}</span> : null}{it.cantidad > 1 ? <span style={{ color:'var(--text2)' }}> × {it.cantidad}</span> : null}</span>
+            <span style={{ color:'var(--text2)', flexShrink:0 }}>${(Number(it.precio) * (it.cantidad || 1)).toLocaleString('es-AR')}</span>
+          </div>
+        ))}
+        <div style={{ display:'flex', justifyContent:'flex-end', borderTop:'1px solid var(--border)', marginTop:4, paddingTop:4, fontWeight:700, fontSize:14 }}>
+          Total: ${Number(p.total).toLocaleString('es-AR')}
+        </div>
+      </div>
     </div>
   )
 }

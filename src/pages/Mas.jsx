@@ -1002,7 +1002,7 @@ function formatFechaCorta(fecha) {
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
-export default function Mas({ ventasDisponibles = 0 }) {
+export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
   const { user, isAdmin } = useAuth()
   // Recordamos la última pestaña elegida (en sessionStorage) para que, al
   // navegar a otra sección y volver a "Más", no se reinicie en "Alianzas".
@@ -1080,6 +1080,17 @@ export default function Mas({ ventasDisponibles = 0 }) {
                 fontSize: 9, fontWeight: 700, color: '#fff',
               }}>
                 {ventasDisponibles > 9 ? '9+' : ventasDisponibles}
+              </span>
+            )}
+            {t === 'Tienda' && pedidosPendientes > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                marginLeft: '4px', verticalAlign: 'middle',
+                minWidth: 14, height: 14, padding: '0 3px',
+                background: '#ff2d2d', borderRadius: '999px',
+                fontSize: 9, fontWeight: 700, color: '#fff',
+              }}>
+                {pedidosPendientes > 9 ? '9+' : pedidosPendientes}
               </span>
             )}
             {t === 'Flamitas' && flamaPendientes > 0 && (

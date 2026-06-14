@@ -59,6 +59,7 @@ function Shell() {
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
   const [ventasDisponibles, setVentasDisponibles] = useState(0)
   const [flamaPendientes, setFlamaPendientes] = useState(0)
+  const [pedidosPendientes, setPedidosPendientes] = useState(0)
   const [rawFlamaPoints, setRawFlamaPoints] = useState(null)
   const totalFlamaPoints = rawFlamaPoints === null ? null : rawFlamaPoints + (profile?.bonus_perfil_otorgado ? 5 : 0)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
@@ -167,6 +168,19 @@ function Shell() {
     return () => { activo = false; supabase.removeChannel(ch) }
   }, [user])
 
+  useEffect(() => {
+    if (!user || !isAdmin) return
+    async function checkPedidos() {
+      const { count } = await supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente')
+      setPedidosPendientes(count || 0)
+    }
+    checkPedidos()
+    const ch = supabase.channel('app-pedidos-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, checkPedidos)
+      .subscribe()
+    return () => supabase.removeChannel(ch)
+  }, [user, isAdmin])
+
   if (loading) return (
     <div className="splash">
       <FlamaLogo height={36} light={modoClaro} />
@@ -252,7 +266,7 @@ function Shell() {
           <Route path="/corredores" element={<Corredores />} />
           <Route path="/perfil" element={<MiPerfil />} />
           <Route path="/ventas" element={<Ventas />} />
-          <Route path="/mas" element={<Mas ventasDisponibles={ventasDisponibles} />} />
+          <Route path="/mas" element={<Mas ventasDisponibles={ventasDisponibles} pedidosPendientes={pedidosPendientes} />} />
           <Route path="/novedades" element={<Novedades />} />
           <Route path="/registro" element={<Navigate to="/carreras" replace />} />
           <Route path="*" element={<Navigate to="/carreras" replace />} />
@@ -330,7 +344,7 @@ function Shell() {
           </svg>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <span>Flama</span>
-            {(ventasDisponibles + flamaPendientes) > 0 && (
+            {(ventasDisponibles + flamaPendientes + pedidosPendientes) > 0 && (
               <span style={{
                 position: 'absolute', top: -4, right: -14,
                 minWidth: 14, height: 14, padding: '0 3px',
@@ -340,7 +354,7 @@ function Shell() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
-                {(ventasDisponibles + flamaPendientes) > 9 ? '9+' : (ventasDisponibles + flamaPendientes)}
+                {(ventasDisponibles + flamaPendientes + pedidosPendientes) > 9 ? '9+' : (ventasDisponibles + flamaPendientes + pedidosPendientes)}
               </span>
             )}
           </div>
