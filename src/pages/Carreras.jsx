@@ -266,7 +266,7 @@ export default function Carreras() {
   const [showForm, setShowForm] = useState(false)
   const [filtros, setFiltros] = useState(() => {
     try {
-      const saved = localStorage.getItem('carreras_filtros')
+      const saved = sessionStorage.getItem('carreras_filtros')
       return saved ? JSON.parse(saved) : { tipo: '', distancias: [], fecha: 'proximas', meses: [] }
     } catch { return { tipo: '', distancias: [], fecha: 'proximas', meses: [] } }
   })
@@ -281,7 +281,7 @@ export default function Carreras() {
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
       const next = typeof fn === 'function' ? fn(prev) : fn
-      localStorage.setItem('carreras_filtros', JSON.stringify(next))
+      sessionStorage.setItem('carreras_filtros', JSON.stringify(next))
       return next
     })
   }
@@ -1474,6 +1474,11 @@ export default function Carreras() {
 
                           return (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {visiblesInsc.length > 0 && (
+                                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>
+                                  Inscriptos 👟
+                                </div>
+                              )}
                               {visiblesInsc.map((p, i) => renderFila(p, i, false))}
                               {visiblesStand.length > 0 && (
                                 <>

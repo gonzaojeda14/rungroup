@@ -224,6 +224,8 @@ function TiendaAdmin({ config, onConfigChange }) {
         <div onClick={() => setFotoAmpliada(null)}
           style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.9)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <img src={fotoAmpliada} alt="" style={{ maxWidth:'100%', maxHeight:'90vh', borderRadius:8, objectFit:'contain' }} />
+          <button onClick={() => setFotoAmpliada(null)}
+            style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
         </div>
       )}
     </div>
@@ -477,6 +479,8 @@ function TiendaPublica({ config }) {
   const [cart, setCart]         = useState([])
   const [cartOpen, setCartOpen] = useState(false)
   const [toast, setToast]       = useState('')
+  const [generoFiltro, setGeneroFiltro] = useState(null)
+  const [talleFiltro, setTalleFiltro]   = useState(null)
   const saveTimer = useRef(null)
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
@@ -538,13 +542,56 @@ function TiendaPublica({ config }) {
         </div>
       )}
 
-      {productos.length === 0 && (
-        <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>No hay productos disponibles.</div>
-      )}
+      {/* Filtros */}
+      {productos.length > 0 && (() => {
+        const generos = [...new Set(productos.map(p => p.genero).filter(Boolean))]
+        const tallesSet = new Set()
+        productos.forEach(p => (p.talles_disponibles || []).forEach(t => tallesSet.add(t)))
+        const tallesOrden = [...TALLES_ROPA, ...TALLES_ZAPATILLAS]
+        const talles = [...tallesSet].sort((a, b) => {
+          const ia = tallesOrden.indexOf(a), ib = tallesOrden.indexOf(b)
+          if (ia !== -1 && ib !== -1) return ia - ib
+          if (ia !== -1) return -1
+          if (ib !== -1) return 1
+          return a.localeCompare(b)
+        })
+        if (generos.length < 2 && talles.length === 0) return null
+        const chip = (label, activo, onClick) => (
+          <button key={label} onClick={onClick}
+            style={{ padding:'4px 12px', fontSize:12, borderRadius:20, border:`1px solid ${activo ? 'var(--accent)' : 'var(--border)'}`, background: activo ? 'var(--accent)' : 'transparent', color: activo ? '#fff' : 'var(--text2)', cursor:'pointer', fontWeight: activo ? 700 : 400, whiteSpace:'nowrap' }}>
+            {label}
+          </button>
+        )
+        return (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {generos.length >= 2 && (
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {chip('Todos', !generoFiltro, () => setGeneroFiltro(null))}
+                {generos.map(g => chip(g, generoFiltro === g, () => setGeneroFiltro(f => f === g ? null : g)))}
+              </div>
+            )}
+            {talles.length > 0 && (
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {chip('Todos los talles', !talleFiltro, () => setTalleFiltro(null))}
+                {talles.map(t => chip(t, talleFiltro === t, () => setTalleFiltro(f => f === t ? null : t)))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
-      {productos.map(p => (
-        <ProductoCardPublica key={p.id} p={p} onAgregar={(talle) => agregarAlCarrito(p, talle)} />
-      ))}
+      {(() => {
+        const filtrados = productos.filter(p =>
+          (!generoFiltro || p.genero === generoFiltro) &&
+          (!talleFiltro || (p.talles_disponibles || []).includes(talleFiltro))
+        )
+        if (filtrados.length === 0) return (
+          <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>No hay productos con ese filtro.</div>
+        )
+        return filtrados.map(p => (
+          <ProductoCardPublica key={p.id} p={p} onAgregar={(talle) => agregarAlCarrito(p, talle)} />
+        ))
+      })()}
 
       {/* Botón carrito flotante */}
       {cart.length > 0 && (
