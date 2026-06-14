@@ -345,7 +345,7 @@ function LimpiezaPanel() {
                 {e.calculando ? 'Calculando…' : 'Calcular'}
               </button>
 
-              {!e.confirmando && e.count > 0 && e.resultado === null && (
+              {!e.confirmando && !e.limpiando && e.count > 0 && e.resultado === null && (
                 <button onClick={() => set(item.tipo, { confirmando: true })} disabled={e.limpiando}
                   style={{ flex:1, height:34, fontSize:12, fontWeight:600, border:'none', background:'#ef4444', color:'#fff', borderRadius:8, cursor:'pointer' }}>
                   Limpiar
@@ -562,7 +562,7 @@ function ProductoCardAdmin({ p, onToggle, onEliminar }) {
 function PedidoAdminCard({ pedido: p, onVerFoto, onEstado }) {
   const items = p.items || []
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
-  const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : 'var(--accent)'
+  const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : 'var(--accent)'
 
   return (
     <div className="card" style={{ padding:'14px 16px' }}>
@@ -843,7 +843,11 @@ function PedidoCompradorCard({ pedido: p }) {
   async function marcarEntregado() {
     setMarcando(true)
     const { error } = await supabase.from('pedidos').update({ estado: 'entregado' }).eq('id', p.id)
-    if (!error) setEstado('entregado')
+    if (error) {
+      alert('No se pudo actualizar el pedido. Intentá de nuevo.')
+    } else {
+      setEstado('entregado')
+    }
     setMarcando(false)
   }
 
@@ -966,7 +970,7 @@ function GaleriaModal({ fotos, inicial, onClose }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [fotos.length])
+  }, [fotos.length, onClose])
 
   const prev = idx > 0
   const next = idx < fotos.length - 1
@@ -1003,37 +1007,6 @@ function GaleriaModal({ fotos, inicial, onClose }) {
   )
 }
 
-// ─── TALLE PICKER MODAL ───────────────────────────────────────────────────────
-
-function TallePickerModal({ producto, onConfirmar, onClose }) {
-  const [talle, setTalle] = useState(null)
-  const talles = producto.talles_disponibles || []
-
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'var(--bg2)', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:480, padding:20, display:'flex', flexDirection:'column', gap:14 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ fontWeight:700, fontSize:16 }}>{producto.nombre}</div>
-          <button onClick={onClose} style={{ background:'transparent', border:'none', color:'var(--text2)', fontSize:20, cursor:'pointer' }}>✕</button>
-        </div>
-        <div style={{ fontSize:14, fontWeight:600 }}>Elegí tu talle</div>
-        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-          {talles.map(t => (
-            <button key={t} onClick={() => setTalle(t)}
-              style={{ padding:'8px 16px', fontSize:14, borderRadius:20, border:`1px solid ${talle === t ? 'var(--accent)' : 'var(--border)'}`, background: talle === t ? 'var(--accent)' : 'transparent', color: talle === t ? '#fff' : 'var(--text)', cursor:'pointer', fontWeight: talle === t ? 700 : 400 }}>
-              {t}
-            </button>
-          ))}
-        </div>
-        <button onClick={() => talle && onConfirmar(talle)} disabled={!talle} className="btn-primary" style={{ opacity: talle ? 1 : 0.4 }}>
-          Agregar al carrito
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ─── CART SHEET ───────────────────────────────────────────────────────────────
 
 function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, onClose, onPedidoEnviado }) {
@@ -1049,26 +1022,30 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
     if (!comprFile) return
     setSending(true)
 
-    const data = await uploadCloudinary(comprFile, 'flamarun/comprobantes')
+    try {
+      const data = await uploadCloudinary(comprFile, 'flamarun/comprobantes')
+      if (!data?.secure_url) throw new Error('Error al subir el comprobante')
 
-    const items = cart.map(i => ({
-      producto_id: i.producto.id,
-      nombre:      i.producto.nombre,
-      talle:       i.talle || null,
-      precio:      Number(i.producto.precio),
-      cantidad:    i.cantidad,
-    }))
+      const items = cart.map(i => ({
+        producto_id: i.producto.id,
+        nombre:      i.producto.nombre,
+        talle:       i.talle || null,
+        precio:      Number(i.producto.precio),
+        cantidad:    i.cantidad,
+      }))
 
-    const { error } = await supabase.from('pedidos').insert([{
-      user_id:              user.id,
-      items,
-      total,
-      comprobante_url:      data.secure_url || null,
-      comprobante_public_id: data.public_id || null,
-      estado:               'pendiente',
-    }])
+      const { error } = await supabase.from('pedidos').insert([{
+        user_id:               user.id,
+        items,
+        total,
+        comprobante_url:       data.secure_url,
+        comprobante_public_id: data.public_id || null,
+        estado:                'pendiente',
+      }])
 
-    if (!error) {
+      if (error) throw new Error(error.message)
+
+      // Notificar admins
       const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
       const adminIds = (admins || []).map(a => a.id)
       if (adminIds.length) {
@@ -1082,10 +1059,13 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
           { user_ids: adminIds }
         )
       }
-    }
 
-    setSending(false)
-    onPedidoEnviado()
+      setSending(false)
+      onPedidoEnviado()
+    } catch (err) {
+      setSending(false)
+      alert('No se pudo enviar el pedido: ' + (err.message || 'error desconocido'))
+    }
   }
 
   return (
@@ -1102,8 +1082,8 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           {cart.map(item => (
             <div key={item.key} style={{ display:'flex', gap:12, alignItems:'center' }}>
-              {item.producto.foto_url && (
-                <img src={item.producto.foto_url.replace('/upload/', '/upload/w_80,q_auto/')} alt=""
+              {((item.producto.fotos?.[0]) || item.producto.foto_url) && (
+                <img src={((item.producto.fotos?.[0]) || item.producto.foto_url).replace('/upload/', '/upload/w_80,q_auto/')} alt=""
                   style={{ width:52, height:52, objectFit:'cover', borderRadius:8, flexShrink:0 }} />
               )}
               <div style={{ flex:1, minWidth:0 }}>
