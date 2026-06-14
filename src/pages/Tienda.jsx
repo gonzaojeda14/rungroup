@@ -132,7 +132,7 @@ function TiendaAdmin({ config, onConfigChange }) {
 
       {/* Tabs — ancho completo con subrayado */}
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
-        {['Productos','Compras'].map(t => (
+        {['Productos','Compras','🧹'].map(t => (
           <button key={t} onClick={() => setTab(t)}
             style={{ position:'relative', flex:1, padding:'12px 4px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight: tab===t ? 700 : 400, color: tab===t ? 'var(--accent)' : 'var(--text2)', borderBottom: tab===t ? '2px solid var(--accent)' : '2px solid transparent', fontFamily:'inherit', transition:'all .15s' }}>
             {t}
@@ -227,6 +227,9 @@ function TiendaAdmin({ config, onConfigChange }) {
           })()}
         </>}
 
+        {/* ── LIMPIEZA ── */}
+        {tab === '🧹' && <LimpiezaPanel />}
+
       </div>
 
       {toast && <Toast msg={toast} />}
@@ -246,6 +249,129 @@ function TiendaAdmin({ config, onConfigChange }) {
             style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── LIMPIEZA DE DATOS ───────────────────────────────────────────────────────
+
+function LimpiezaPanel() {
+  const ITEMS = [
+    {
+      tipo:       'comprobantes',
+      titulo:     '🧾 Comprobantes de pago',
+      desc:       'Fotos de transferencia de pedidos entregados hace más de 90 días.',
+      accion:     'Eliminar imágenes + limpiar URLs en pedidos',
+    },
+    {
+      tipo:       'flamitas',
+      titulo:     '🔥 Fotos de Flamitas',
+      desc:       'Fotos de validación de puntos enviadas hace más de 1 año.',
+      accion:     'Eliminar imágenes + limpiar URLs en puntos_carreras',
+    },
+    {
+      tipo:       'fotos',
+      titulo:     '📷 Fotos de carreras',
+      desc:       'Fotos de carreras subidas hace más de 1 año.',
+      accion:     'Eliminar registros + imágenes en Cloudinary',
+    },
+  ]
+
+  // Estado por tipo: { count: null|number, calculando: bool, limpiando: bool, confirmando: bool, resultado: null|number }
+  const [estado, setEstado] = useState(() =>
+    Object.fromEntries(ITEMS.map(i => [i.tipo, { count: null, calculando: false, limpiando: false, confirmando: false, resultado: null }]))
+  )
+
+  function set(tipo, patch) {
+    setEstado(prev => ({ ...prev, [tipo]: { ...prev[tipo], ...patch } }))
+  }
+
+  async function calcular(tipo) {
+    set(tipo, { calculando: true, count: null, resultado: null, confirmando: false })
+    const { data, error } = await supabase.functions.invoke('cleanup-images', {
+      body: { tipo, dry_run: true }
+    })
+    if (error || data?.error) {
+      set(tipo, { calculando: false, count: -1 })
+    } else {
+      set(tipo, { calculando: false, count: data.count ?? 0 })
+    }
+  }
+
+  async function ejecutar(tipo) {
+    set(tipo, { limpiando: true, confirmando: false })
+    const { data, error } = await supabase.functions.invoke('cleanup-images', {
+      body: { tipo, dry_run: false }
+    })
+    if (error || data?.error) {
+      set(tipo, { limpiando: false, resultado: -1 })
+    } else {
+      set(tipo, { limpiando: false, resultado: data.deleted ?? 0, count: null })
+    }
+  }
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ fontSize:13, color:'var(--text2)', lineHeight:1.5 }}>
+        Elimina imágenes de Cloudinary que ya no son necesarias y libera espacio de almacenamiento. La limpieza automática de suscripciones push (+6 meses) y carritos abandonados (+30 días) ya está configurada.
+      </div>
+
+      {ITEMS.map(item => {
+        const e = estado[item.tipo]
+        return (
+          <div key={item.tipo} className="card" style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ fontWeight:700, fontSize:14 }}>{item.titulo}</div>
+            <div style={{ fontSize:13, color:'var(--text2)' }}>{item.desc}</div>
+            <div style={{ fontSize:11, color:'var(--text2)', fontStyle:'italic' }}>{item.accion}</div>
+
+            {/* Resultado previo */}
+            {e.resultado !== null && e.resultado >= 0 && (
+              <div style={{ fontSize:13, color:'#4ade80' }}>✅ {e.resultado} {e.resultado === 1 ? 'imagen eliminada' : 'imágenes eliminadas'}</div>
+            )}
+            {(e.count === -1 || e.resultado === -1) && (
+              <div style={{ fontSize:13, color:'#f87171' }}>⚠️ Error al conectar con el servidor</div>
+            )}
+
+            {/* Count preview */}
+            {e.count !== null && e.count >= 0 && e.resultado === null && (
+              <div style={{ fontSize:13, color: e.count === 0 ? 'var(--text2)' : '#fbbf24' }}>
+                {e.count === 0 ? '✓ Nada para limpiar por ahora' : `${e.count} ${e.count === 1 ? 'imagen encontrada' : 'imágenes encontradas'}`}
+              </div>
+            )}
+
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={() => calcular(item.tipo)} disabled={e.calculando || e.limpiando}
+                style={{ flex:1, height:34, fontSize:12, fontWeight:600, border:'1px solid var(--border)', background:'transparent', color:'var(--text)', borderRadius:8, cursor:'pointer', opacity: e.calculando ? 0.6 : 1 }}>
+                {e.calculando ? 'Calculando…' : 'Calcular'}
+              </button>
+
+              {!e.confirmando && e.count > 0 && e.resultado === null && (
+                <button onClick={() => set(item.tipo, { confirmando: true })} disabled={e.limpiando}
+                  style={{ flex:1, height:34, fontSize:12, fontWeight:600, border:'none', background:'#ef4444', color:'#fff', borderRadius:8, cursor:'pointer' }}>
+                  Limpiar
+                </button>
+              )}
+
+              {e.confirmando && (
+                <>
+                  <button onClick={() => set(item.tipo, { confirmando: false })}
+                    style={{ flex:1, height:34, fontSize:12, border:'1px solid var(--border)', background:'transparent', color:'var(--text2)', borderRadius:8, cursor:'pointer' }}>
+                    Cancelar
+                  </button>
+                  <button onClick={() => ejecutar(item.tipo)}
+                    style={{ flex:1, height:34, fontSize:12, fontWeight:700, border:'none', background:'#ef4444', color:'#fff', borderRadius:8, cursor:'pointer' }}>
+                    ¿Confirmar?
+                  </button>
+                </>
+              )}
+
+              {e.limpiando && (
+                <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'var(--text2)' }}>Limpiando…</div>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
