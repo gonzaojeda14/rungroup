@@ -71,6 +71,7 @@ function TiendaAdmin({ config, onConfigChange }) {
   const [productos, setProductos] = useState([])
   const [pedidos, setPedidos] = useState([])
   const [showForm, setShowForm] = useState(false)
+  const [editandoProducto, setEditandoProducto] = useState(null)
   const [confirmarEliminar, setConfirmarEliminar] = useState(null)
   const [fotoAmpliada, setFotoAmpliada] = useState(null)
   const [toast, setToast] = useState('')
@@ -81,7 +82,14 @@ function TiendaAdmin({ config, onConfigChange }) {
   const [activa, setActiva] = useState(config?.activa ?? false)
   const [guardandoConfig, setGuardandoConfig] = useState(false)
 
-  useEffect(() => { fetchProductos(); fetchPedidos() }, [])
+  useEffect(() => {
+    fetchProductos()
+    fetchPedidos()
+    const ch = supabase.channel('tienda-pedidos-admin-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, fetchPedidos)
+      .subscribe()
+    return () => supabase.removeChannel(ch)
+  }, [])
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
@@ -176,13 +184,25 @@ function TiendaAdmin({ config, onConfigChange }) {
           {/* Lista productos */}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div style={{ fontWeight:700, fontSize:15 }}>Productos ({productos.length})</div>
-            <button className="btn-accent" style={{ height:34, padding:'0 14px', fontSize:13 }} onClick={() => setShowForm(v => !v)}>
+            <button className="btn-accent" style={{ height:34, padding:'0 14px', fontSize:13 }} onClick={() => {
+              setEditandoProducto(null)
+              setShowForm(v => !v)
+            }}>
               {showForm ? 'Cancelar' : '+ Nuevo'}
             </button>
           </div>
 
           {showForm && (
-            <ProductoForm onSaved={() => { setShowForm(false); fetchProductos(); showToast('✅ Producto publicado') }} />
+            <ProductoForm
+              producto={editandoProducto}
+              onSaved={() => {
+                setShowForm(false)
+                setEditandoProducto(null)
+                fetchProductos()
+                showToast(editandoProducto ? '✅ Producto actualizado' : '✅ Producto publicado')
+              }}
+              onCancel={() => { setShowForm(false); setEditandoProducto(null) }}
+            />
           )}
 
           {productos.length === 0 && !showForm && (
@@ -192,6 +212,7 @@ function TiendaAdmin({ config, onConfigChange }) {
           {productos.map(p => (
             <ProductoCardAdmin key={p.id} p={p}
               onToggle={() => toggleDisponible(p)}
+              onEditar={() => { setEditandoProducto(p); setShowForm(true) }}
               onEliminar={() => setConfirmarEliminar(p)} />
           ))}
         </>}
@@ -378,20 +399,26 @@ function LimpiezaPanel() {
 
 // ─── FORM NUEVO PRODUCTO ──────────────────────────────────────────────────────
 
-function ProductoForm({ onSaved }) {
-  const [nombre, setNombre]           = useState('')
-  const [descripcion, setDescripcion] = useState('')
-  const [precio, setPrecio]           = useState('')
-  const [tipoTalle, setTipoTalle]     = useState('unico')
-  const [talles, setTalles]           = useState([])
-  const [genero, setGenero]           = useState('Unisex')
-  const [fotosArr, setFotosArr]       = useState([]) // [{preview, file}]
+function ProductoForm({ producto, onSaved, onCancel }) {
+  const editando = !!producto
+  const [nombre, setNombre]           = useState(producto?.nombre || '')
+  const [descripcion, setDescripcion] = useState(producto?.descripcion || '')
+  const [precio, setPrecio]           = useState(producto?.precio != null ? String(producto.precio) : '')
+  const [tipoTalle, setTipoTalle]     = useState(producto?.tipo_talle || 'unico')
+  const [talles, setTalles]           = useState(producto?.talles_disponibles || [])
+  const [genero, setGenero]           = useState(producto?.genero || 'Unisex')
+  // Fotos ya subidas en Cloudinary (solo URLs)
+  const [fotosExistentes, setFotosExistentes] = useState(
+    producto ? ((producto.fotos || []).length > 0 ? producto.fotos : (producto.foto_url ? [producto.foto_url] : [])) : []
+  )
+  // Fotos nuevas a subir
+  const [fotosNuevas, setFotosNuevas] = useState([]) // [{file, preview}]
   const [saving, setSaving]           = useState(false)
   const fotoRef = useRef()
 
   function onTipoChange(tipo) {
     setTipoTalle(tipo)
-    setTalles(tallesDefecto(tipo))
+    if (!editando) setTalles(tallesDefecto(tipo))
   }
 
   function toggleTalle(t) {
@@ -401,45 +428,68 @@ function ProductoForm({ onSaved }) {
   function agregarFotos(e) {
     const files = Array.from(e.target.files)
     const nuevas = files.map(f => ({ file: f, preview: URL.createObjectURL(f) }))
-    setFotosArr(prev => [...prev, ...nuevas])
+    setFotosNuevas(prev => [...prev, ...nuevas])
     fotoRef.current.value = ''
   }
 
-  function quitarFoto(idx) {
-    setFotosArr(prev => prev.filter((_, i) => i !== idx))
+  function quitarExistente(idx) {
+    setFotosExistentes(prev => prev.filter((_, i) => i !== idx))
   }
+
+  function quitarNueva(idx) {
+    setFotosNuevas(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const totalFotos = fotosExistentes.length + fotosNuevas.length
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!nombre || !precio) return
     setSaving(true)
 
-    // Subir todas las fotos en paralelo
-    const urls = await Promise.all(
-      fotosArr.map(f => uploadCloudinary(f.file, 'flamarun/tienda').then(d => d.secure_url).catch(() => null))
-    )
-    const fotosUrls = urls.filter(Boolean)
+    try {
+      // Subir fotos nuevas
+      const urlsNuevas = await Promise.all(
+        fotosNuevas.map(f => uploadCloudinary(f.file, 'flamarun/tienda').then(d => d.secure_url).catch(() => null))
+      )
+      const fotosUrls = [...fotosExistentes, ...urlsNuevas.filter(Boolean)]
 
-    const { error } = await supabase.from('productos').insert([{
-      nombre,
-      descripcion: descripcion || null,
-      precio: parseFloat(precio),
-      tipo_talle: tipoTalle,
-      talles_disponibles: talles,
-      genero,
-      foto_url: fotosUrls[0] || null,
-      fotos: fotosUrls,
-    }])
+      const payload = {
+        nombre,
+        descripcion: descripcion || null,
+        precio:      parseFloat(precio),
+        tipo_talle:  tipoTalle,
+        talles_disponibles: talles,
+        genero,
+        foto_url: fotosUrls[0] || null,
+        fotos:    fotosUrls,
+      }
 
-    setSaving(false)
-    if (error) { alert('Error al publicar: ' + error.message); return }
-    onSaved()
+      let error
+      if (editando) {
+        ;({ error } = await supabase.from('productos').update(payload).eq('id', producto.id))
+      } else {
+        ;({ error } = await supabase.from('productos').insert([payload]))
+      }
+
+      if (error) throw new Error(error.message)
+      onSaved()
+    } catch (err) {
+      alert('Error: ' + (err.message || 'error desconocido'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   const allTalles = tipoTalle === 'ropa' ? TALLES_ROPA : tipoTalle === 'zapatillas' ? TALLES_ZAPATILLAS : []
 
   return (
     <div className="card" style={{ padding:16 }}>
+      {editando && (
+        <div style={{ fontSize:12, fontWeight:700, color:'var(--text2)', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>
+          Editando producto
+        </div>
+      )}
       <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:12 }}>
 
         <div className="field">
@@ -492,16 +542,26 @@ function ProductoForm({ onSaved }) {
           </div>
         )}
 
-        {/* Fotos múltiples */}
+        {/* Fotos */}
         <div className="field">
           <label>Fotos del producto</label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom: fotosArr.length ? 8 : 0 }}>
-            {fotosArr.map((f, i) => (
-              <div key={i} style={{ position:'relative', width:80, height:80 }}>
-                <img src={f.preview} alt="" style={{ width:80, height:80, objectFit:'cover', borderRadius:8, border:'1px solid var(--border)' }} />
-                <button type="button" onClick={() => quitarFoto(i)}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom: totalFotos ? 8 : 0 }}>
+            {/* Existentes */}
+            {fotosExistentes.map((url, i) => (
+              <div key={`ex-${i}`} style={{ position:'relative', width:80, height:80 }}>
+                <img src={url.replace('/upload/', '/upload/w_160,q_auto/')} alt="" style={{ width:80, height:80, objectFit:'cover', borderRadius:8, border:'1px solid var(--border)' }} />
+                <button type="button" onClick={() => quitarExistente(i)}
                   style={{ position:'absolute', top:3, right:3, width:20, height:20, borderRadius:'50%', background:'rgba(0,0,0,0.7)', border:'none', color:'#fff', cursor:'pointer', fontSize:11, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-                {i === 0 && <span style={{ position:'absolute', bottom:3, left:3, fontSize:9, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4 }}>Principal</span>}
+                {i === 0 && fotosNuevas.length === 0 && <span style={{ position:'absolute', bottom:3, left:3, fontSize:9, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4 }}>Principal</span>}
+              </div>
+            ))}
+            {/* Nuevas */}
+            {fotosNuevas.map((f, i) => (
+              <div key={`nv-${i}`} style={{ position:'relative', width:80, height:80 }}>
+                <img src={f.preview} alt="" style={{ width:80, height:80, objectFit:'cover', borderRadius:8, border:'2px dashed var(--accent)' }} />
+                <button type="button" onClick={() => quitarNueva(i)}
+                  style={{ position:'absolute', top:3, right:3, width:20, height:20, borderRadius:'50%', background:'rgba(0,0,0,0.7)', border:'none', color:'#fff', cursor:'pointer', fontSize:11, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                {fotosExistentes.length === 0 && i === 0 && <span style={{ position:'absolute', bottom:3, left:3, fontSize:9, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4 }}>Principal</span>}
               </div>
             ))}
             <button type="button" onClick={() => fotoRef.current?.click()}
@@ -510,12 +570,21 @@ function ProductoForm({ onSaved }) {
             </button>
           </div>
           <input ref={fotoRef} type="file" accept="image/*" multiple style={{ display:'none' }} onChange={agregarFotos} />
-          <div style={{ fontSize:11, color:'var(--text2)' }}>Podés agregar varias fotos y la tabla de talles como imagen.</div>
+          <div style={{ fontSize:11, color:'var(--text2)' }}>
+            {editando ? 'Las fotos con borde sólido ya están guardadas. Las punteadas son nuevas.' : 'Podés agregar varias fotos y la tabla de talles como imagen.'}
+          </div>
         </div>
 
-        <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? 'Subiendo fotos...' : 'Publicar producto'}
-        </button>
+        <div style={{ display:'flex', gap:8 }}>
+          {onCancel && (
+            <button type="button" onClick={onCancel} style={{ flex:1, padding:10, borderRadius:8, border:'1px solid var(--border)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14 }}>
+              Cancelar
+            </button>
+          )}
+          <button type="submit" className="btn-primary" disabled={saving} style={{ flex:2 }}>
+            {saving ? (fotosNuevas.length ? 'Subiendo fotos...' : 'Guardando...') : editando ? 'Guardar cambios' : 'Publicar producto'}
+          </button>
+        </div>
       </form>
     </div>
   )
@@ -523,7 +592,7 @@ function ProductoForm({ onSaved }) {
 
 // ─── CARD PRODUCTO (admin) ────────────────────────────────────────────────────
 
-function ProductoCardAdmin({ p, onToggle, onEliminar }) {
+function ProductoCardAdmin({ p, onToggle, onEditar, onEliminar }) {
   const talles = p.talles_disponibles || []
   const thumb = (p.fotos || [])[0] || p.foto_url
   return (
@@ -551,6 +620,7 @@ function ProductoCardAdmin({ p, onToggle, onEliminar }) {
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap:6, flexShrink:0 }}>
         <button onClick={onToggle} style={btnSecStyle}>{p.disponible ? 'Ocultar' : 'Mostrar'}</button>
+        <button onClick={onEditar} style={btnSecStyle}>Editar</button>
         <button onClick={onEliminar} style={btnDangerStyle}>Eliminar</button>
       </div>
     </div>
@@ -660,6 +730,20 @@ function TiendaPublica({ config }) {
     }, 600)
     return () => clearTimeout(saveTimer.current)
   }, [cart])
+
+  // Realtime: actualizar "Mis Pedidos" cuando el admin cambia el estado
+  useEffect(() => {
+    if (!user) return
+    const ch = supabase.channel('tienda-pedidos-buyer-rt')
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'pedidos',
+        filter: `user_id=eq.${user.id}`,
+      }, payload => {
+        setMisPedidos(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p))
+      })
+      .subscribe()
+    return () => supabase.removeChannel(ch)
+  }, [user])
 
   function agregarAlCarrito(producto, talle = null) {
     setCart(prev => {
@@ -805,12 +889,20 @@ function TiendaPublica({ config }) {
           onQuitar={quitarDelCarrito}
           onCambiarCantidad={cambiarCantidad}
           onClose={() => setCartOpen(false)}
+          onActualizarPrecios={productosActuales => {
+            setCart(prev => prev
+              .filter(item => productosActuales.find(p => p.id === item.producto.id && p.disponible))
+              .map(item => {
+                const actual = productosActuales.find(p => p.id === item.producto.id)
+                return actual ? { ...item, producto: { ...item.producto, precio: actual.precio } } : item
+              })
+            )
+          }}
           onPedidoEnviado={() => {
             setCart([])
             setCartOpen(false)
             showToast('✅ Pedido enviado')
             if (user) supabase.from('carritos').upsert({ user_id: user.id, items: [], updated_at: new Date().toISOString() })
-            // Refrescar pedidos para que aparezcan en "Mis Pedidos"
             setMisPedidos([])
           }} />
       )}
@@ -831,6 +923,9 @@ function PedidoCompradorCard({ pedido: p }) {
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
   const [estado, setEstado] = useState(p.estado)
   const [marcando, setMarcando] = useState(false)
+
+  // Sincronizar con cambios externos (realtime del admin)
+  useEffect(() => { setEstado(p.estado) }, [p.estado])
 
   const ESTADO_COMPRADOR = {
     pendiente:  { label:'⏳ Pendiente',  color:'#fbbf24', bg:'rgba(251,191,36,0.12)' },
@@ -1009,7 +1104,7 @@ function GaleriaModal({ fotos, inicial, onClose }) {
 
 // ─── CART SHEET ───────────────────────────────────────────────────────────────
 
-function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, onClose, onPedidoEnviado }) {
+function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, onClose, onActualizarPrecios, onPedidoEnviado }) {
   const [comprFile, setComprFile]     = useState(null)
   const [comprPreview, setComprPreview] = useState(null)
   const [step, setStep]               = useState('carrito')  // 'carrito' | 'confirmar'
@@ -1023,6 +1118,32 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
     setSending(true)
 
     try {
+      // Verificar precios y disponibilidad contra la DB antes de proceder
+      const productoIds = [...new Set(cart.map(i => i.producto.id))]
+      const { data: productosActuales } = await supabase
+        .from('productos')
+        .select('id, precio, disponible, nombre')
+        .in('id', productoIds)
+
+      if (productosActuales) {
+        const noDisponibles = cart.filter(item =>
+          !productosActuales.find(p => p.id === item.producto.id && p.disponible)
+        )
+        if (noDisponibles.length > 0) {
+          const nombres = noDisponibles.map(i => `"${i.producto.nombre}"`).join(', ')
+          throw new Error(`${nombres} ${noDisponibles.length === 1 ? 'ya no está disponible' : 'ya no están disponibles'}. Removelo del carrito e intentá de nuevo.`)
+        }
+
+        const preciosCambiaron = cart.some(item => {
+          const actual = productosActuales.find(p => p.id === item.producto.id)
+          return actual && Number(actual.precio) !== Number(item.producto.precio)
+        })
+        if (preciosCambiaron) {
+          onActualizarPrecios(productosActuales)
+          throw new Error('Los precios se actualizaron. Revisá el total y volvé a confirmar.')
+        }
+      }
+
       const data = await uploadCloudinary(comprFile, 'flamarun/comprobantes')
       if (!data?.secure_url) throw new Error('Error al subir el comprobante')
 
