@@ -1007,6 +1007,8 @@ export default function Mas({ ventasDisponibles = 0 }) {
   // Recordamos la última pestaña elegida (en sessionStorage) para que, al
   // navegar a otra sección y volver a "Más", no se reinicie en "Alianzas".
   const [tab, setTab] = useState(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab')
+    if (urlTab && TABS.includes(urlTab)) return urlTab
     const guardada = sessionStorage.getItem('mas_tab')
     return TABS.includes(guardada) ? guardada : 'Alianzas'
   })

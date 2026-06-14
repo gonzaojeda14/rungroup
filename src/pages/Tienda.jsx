@@ -64,7 +64,10 @@ function TiendaProximamente() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TiendaAdmin({ config, onConfigChange }) {
-  const [tab, setTab] = useState('Productos')
+  const [tab, setTab] = useState(() => {
+    const p = new URLSearchParams(window.location.search)
+    return p.get('subtab') === 'Compras' ? 'Compras' : 'Productos'
+  })
   const [productos, setProductos] = useState([])
   const [pedidos, setPedidos] = useState([])
   const [showForm, setShowForm] = useState(false)
@@ -781,7 +784,7 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
         notificar(
           '🛍️ Nuevo pedido',
           `${profile?.nombre || 'Alguien'} pidió ${resumen}`,
-          '/mas',
+          '/mas?tab=Tienda&subtab=Compras',
           { user_ids: adminIds }
         )
       }
