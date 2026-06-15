@@ -6,7 +6,7 @@ const SUPABASE_ANON    = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Llama a la Edge Function send-push.
 // targets: { all: true } | { user_ids: [...] } | { emails: [...] }
-export async function notificar(title, body, url = '/', targets = {}) {
+export async function notificar(title, body, url = '/', targets = {}, tipo = 'push') {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
@@ -17,7 +17,7 @@ export async function notificar(title, body, url = '/', targets = {}) {
         'Authorization': `Bearer ${session.access_token}`,
         'apikey': SUPABASE_ANON,
       },
-      body: JSON.stringify({ title, body, url, ...targets }),
+      body: JSON.stringify({ title, body, url, tipo, ...targets }),
     })
     return res.ok
   } catch (e) {

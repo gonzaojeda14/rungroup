@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
     const token = req.headers.get('Authorization')?.replace('Bearer ', '')
     if (!token) return json({ error: 'No autorizado' }, 401)
 
-    const { title, body, url = '/novedades', user_ids, emails, all } = await req.json()
+    const { title, body, url = '/novedades', user_ids, emails, all, tipo } = await req.json()
     if (!title || !body) return json({ error: 'Faltan title y/o body' }, 400)
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
     if (dbErr) return json({ error: dbErr.message }, 500)
 
     // Escribir en notif_payload para que el SW muestre el mensaje correcto
-    await supabase.from('notif_payload').upsert({ id: 1, titulo: title, contenido: body, tipo: 'push' })
+    await supabase.from('notif_payload').upsert({ id: 1, titulo: title, contenido: body, tipo: tipo || 'push' })
 
     const payload = { title, body, url }
     const results = await Promise.allSettled(

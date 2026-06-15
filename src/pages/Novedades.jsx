@@ -170,13 +170,14 @@ export default function Novedades() {
 
     // Disparar push a todos los suscriptores (solo si es publicación inmediata)
     if (!programarEn) {
-      const emoji = tipo === 'plan_semanal' ? '📋' : '📢'
-      const labelTipo = tipo === 'plan_semanal' ? 'Plan semanal' : 'Nuevo aviso'
+      const emoji = tipo === 'plan' ? '📋' : '📢'
+      const labelTipo = tipo === 'plan' ? 'Plan semanal' : 'Nuevo aviso'
       notificar(
         `${emoji} ${labelTipo}`,
         titulo || contenido || 'Revisá los avisos del equipo.',
         '/novedades',
         { all: true },
+        tipo,
       )
     }
 
