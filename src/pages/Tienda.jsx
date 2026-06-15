@@ -619,10 +619,21 @@ function ProductoForm({ producto, onSaved, onCancel }) {
   )
 }
 
+const TALLES_ORDEN = [...TALLES_ROPA, ...TALLES_ZAPATILLAS]
+function sortTalles(talles) {
+  return [...talles].sort((a, b) => {
+    const ia = TALLES_ORDEN.indexOf(a), ib = TALLES_ORDEN.indexOf(b)
+    if (ia === -1 && ib === -1) return a.localeCompare(b)
+    if (ia === -1) return 1
+    if (ib === -1) return -1
+    return ia - ib
+  })
+}
+
 // ─── CARD PRODUCTO (admin) ────────────────────────────────────────────────────
 
 function ProductoCardAdmin({ p, onToggle, onEditar, onEliminar }) {
-  const talles = p.talles_disponibles || []
+  const talles = sortTalles(p.talles_disponibles || [])
   const thumb = (p.fotos || [])[0] || p.foto_url
   return (
     <div className="card" style={{ padding:'14px 16px', display:'flex', gap:14, opacity: p.disponible ? 1 : 0.55 }}>
@@ -1005,7 +1016,7 @@ function PedidoCompradorCard({ pedido: p }) {
 // ─── CARD PRODUCTO (público) ──────────────────────────────────────────────────
 
 function ProductoCardPublica({ p, onAgregar }) {
-  const talles  = p.talles_disponibles || []
+  const talles  = sortTalles(p.talles_disponibles || [])
   const fotos   = (p.fotos || []).length > 0 ? p.fotos : (p.foto_url ? [p.foto_url] : [])
   const [talle, setTalle]     = useState(null)
   const [galeria, setGaleria] = useState(null)
