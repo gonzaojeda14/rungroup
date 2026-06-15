@@ -38,7 +38,19 @@ export default function Corredores() {
   const [tab, setTab] = useState('corredores')
   const [ranking, setRanking] = useState({})
 
-  useEffect(() => { fetchCorredores(); fetchBugs(); fetchFlamitas(); fetchRanking() }, [])
+  useEffect(() => {
+    fetchCorredores(); fetchBugs(); fetchFlamitas(); fetchRanking()
+
+    // Realtime: actualizar lista cuando cambia un perfil
+    const ch = supabase.channel('corredores-profiles-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchCorredores()
+        fetchFlamitas()
+        fetchRanking()
+      })
+      .subscribe()
+    return () => supabase.removeChannel(ch)
+  }, [])
 
   function abrirPerfil(corredor) {
     history.pushState({ perfil: corredor.id }, '')
