@@ -7,7 +7,7 @@ import ConfirmModal from '../components/ConfirmModal'
 const CLOUD  = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
-const TALLES_ROPA       = ['S', 'M', 'L', 'XL', 'XXL']
+const TALLES_ROPA       = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const TALLES_ZAPATILLAS = ['35','36','37','38','39','40','41','42','43','44']
 
 function tallesDefecto(tipo) {
