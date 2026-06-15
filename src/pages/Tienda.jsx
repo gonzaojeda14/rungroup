@@ -206,6 +206,7 @@ function TiendaAdmin({ config, onConfigChange }) {
 
           {showForm && (
             <ProductoForm
+              key={editandoProducto?.id || 'nuevo'}
               producto={editandoProducto}
               onSaved={() => {
                 setShowForm(false)
