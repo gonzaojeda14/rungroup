@@ -130,6 +130,18 @@ function TiendaAdmin({ config, onConfigChange }) {
   async function actualizarEstado(pedidoId, estado) {
     await supabase.from('pedidos').update({ estado }).eq('id', pedidoId)
     setPedidos(prev => prev.map(p => p.id === pedidoId ? { ...p, estado } : p))
+    // Notificar al comprador cuando el admin confirma el pago
+    if (estado === 'confirmado') {
+      const pedido = pedidos.find(p => p.id === pedidoId)
+      if (pedido?.user_id) {
+        notificar(
+          '✅ Pago confirmado',
+          'Recibimos tu pago. Pronto te contactamos para coordinar la entrega 📦',
+          '/mas?tab=Tienda',
+          { user_ids: [pedido.user_id] }
+        )
+      }
+    }
   }
 
   const pendientes = pedidos.filter(p => p.estado === 'pendiente').length
@@ -473,6 +485,23 @@ function ProductoForm({ producto, onSaved, onCancel }) {
       }
 
       if (error) throw new Error(error.message)
+
+      // Notificar nuevo producto (máx 1 notif por hora aunque se suban varios)
+      if (!editando) {
+        const { data: cfg } = await supabase.from('tienda_config').select('ultima_notif_producto').eq('id', 1).maybeSingle()
+        const ultima = cfg?.ultima_notif_producto ? new Date(cfg.ultima_notif_producto) : null
+        const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000)
+        if (!ultima || ultima < haceUnaHora) {
+          notificar(
+            '🛍️ ¡Nuevo en la Tienda!',
+            `${payload.nombre} ya está disponible. ¡Miralo!`,
+            '/mas?tab=Tienda',
+            { all: true }
+          )
+          await supabase.from('tienda_config').upsert({ id: 1, ultima_notif_producto: new Date().toISOString() })
+        }
+      }
+
       onSaved()
     } catch (err) {
       alert('Error: ' + (err.message || 'error desconocido'))
