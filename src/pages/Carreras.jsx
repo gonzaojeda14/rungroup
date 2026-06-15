@@ -117,7 +117,7 @@ function TransferenciaModal({ carreraId, carreraNombre, originalUserId, onConfir
                     }}
                   >
                     <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, background: 'rgba(255,45,45,0.15)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
-                      {p.avatar_url ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : p.nombre?.[0]?.toUpperCase()}
+                      {p.avatar_url ? <img src={p.avatar_url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : p.nombre?.[0]?.toUpperCase()}
                     </div>
                     <span style={{ flex: 1, fontSize: '14px', fontWeight: activo ? 600 : 400 }}>{p.nombre}</span>
                     {activo && <span style={{ color: '#4ade80', fontSize: '16px' }}>✓</span>}
@@ -1530,7 +1530,7 @@ export default function Carreras() {
                                 fontSize: 10, fontWeight: 700, color: 'var(--accent)',
                               }}>
                                 {p.avatar_url
-                                  ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                  ? <img src={p.avatar_url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                                   : p.nombre?.[0]?.toUpperCase()
                                 }
                               </div>

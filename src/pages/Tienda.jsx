@@ -628,7 +628,7 @@ function ProductoCardAdmin({ p, onToggle, onEditar, onEliminar }) {
     <div className="card" style={{ padding:'14px 16px', display:'flex', gap:14, opacity: p.disponible ? 1 : 0.55 }}>
       {thumb && (
         <div style={{ position:'relative', flexShrink:0 }}>
-          <img src={thumb.replace('/upload/', '/upload/w_100,q_auto/')} alt={p.nombre}
+          <img src={thumb.replace('/upload/', '/upload/w_100,q_auto/')} alt={p.nombre} loading="lazy"
             style={{ width:72, height:72, objectFit:'cover', borderRadius:8 }} />
           {(p.fotos || []).length > 1 && (
             <span style={{ position:'absolute', bottom:3, right:3, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4 }}>{p.fotos.length} 📷</span>
@@ -1019,7 +1019,7 @@ function ProductoCardPublica({ p, onAgregar }) {
         <div style={{ display:'flex', gap:14 }}>
           {fotos.length > 0 && (
             <div style={{ position:'relative', flexShrink:0 }} onClick={() => setGaleria(0)}>
-              <img src={fotos[0].replace('/upload/', '/upload/w_160,q_auto/')} alt={p.nombre}
+              <img src={fotos[0].replace('/upload/', '/upload/w_160,q_auto/')} alt={p.nombre} loading="lazy"
                 style={{ width:90, height:90, objectFit:'cover', borderRadius:8, cursor:'pointer' }} />
               {fotos.length > 1 && (
                 <span style={{ position:'absolute', bottom:4, right:4, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'2px 6px', borderRadius:4, pointerEvents:'none' }}>
@@ -1233,7 +1233,7 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
           {cart.map(item => (
             <div key={item.key} style={{ display:'flex', gap:12, alignItems:'center' }}>
               {((item.producto.fotos?.[0]) || item.producto.foto_url) && (
-                <img src={((item.producto.fotos?.[0]) || item.producto.foto_url).replace('/upload/', '/upload/w_80,q_auto/')} alt=""
+                <img src={((item.producto.fotos?.[0]) || item.producto.foto_url).replace('/upload/', '/upload/w_80,q_auto/')} alt="" loading="lazy"
                   style={{ width:52, height:52, objectFit:'cover', borderRadius:8, flexShrink:0 }} />
               )}
               <div style={{ flex:1, minWidth:0 }}>

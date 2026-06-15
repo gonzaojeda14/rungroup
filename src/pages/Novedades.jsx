@@ -269,7 +269,7 @@ export default function Novedades() {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
                     {imagenesPreview.map((url, i) => (
                       <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
-                        <img src={url} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
+                        <img src={url} alt="" loading="lazy" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
                         <button
                           type="button"
                           onClick={() => {

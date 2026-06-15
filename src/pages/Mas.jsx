@@ -409,7 +409,7 @@ function RevisionAdmin() {
 
   const Foto = ({ url, label }) => (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <img src={url.replace('/upload/', '/upload/w_300,q_auto/')} alt=""
+      <img src={url.replace('/upload/', '/upload/w_300,q_auto/')} alt="" loading="lazy"
         style={{ width: '100%', aspectRatio: '1', borderRadius: '10px', objectFit: 'cover', cursor: 'pointer' }}
         onClick={() => window.open(url, '_blank')} />
       {label && <div style={{ fontSize: '10px', color: 'var(--text2)', marginTop: '4px', textAlign: 'center' }}>{label}</div>}
@@ -503,7 +503,6 @@ function FlamaPoints() {
   const [loading, setLoading] = useState(true)
   const [pendientes, setPendientes] = useState([])  // carreras completadas, sin ningún envío todavía
   const [envios, setEnvios] = useState([])          // envíos ya hechos (cualquier estado)
-  const [verHistorial, setVerHistorial] = useState(false)  // modal con envíos resueltos hace más de PLAZO_RECLAMO_DIAS
   // accion: { tipo: 'nuevo', carrera } | { tipo: 'reintento', envio } | null
   const [accion, setAccion] = useState(null)
   const [archivo, setArchivo] = useState(null)
@@ -868,8 +867,8 @@ function FlamaPoints() {
           y quedan disponibles en el modal "Ver historial completo". */}
       {(() => {
         const enCurso = e => e.estado === 'pendiente' || e.estado === 'revision_admin' || (e.estado === 'rechazado' && e.intentos === 1)
-        const vigentes = envios.filter(e => enCurso(e) || dentroDePlazo(e.carrera?.fecha, PLAZO_RECLAMO_DIAS))
-        const historial = envios.filter(e => !enCurso(e) && !dentroDePlazo(e.carrera?.fecha, PLAZO_RECLAMO_DIAS))
+        // Validados van al "Historial de Flamitas" de abajo; acá solo mostramos los accionables + rechazos recientes
+        const vigentes = envios.filter(e => enCurso(e) || (e.estado !== 'validado' && dentroDePlazo(e.carrera?.fecha, PLAZO_RECLAMO_DIAS)))
 
         const Envio = ({ e }) => {
           const info = ESTADO_INFO[e.estado] || ESTADO_INFO.pendiente
@@ -878,7 +877,7 @@ function FlamaPoints() {
           return (
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <img src={e.foto_url.replace('/upload/', '/upload/w_120,h_120,c_fill,q_auto/')} alt="" style={{ width: 52, height: 52, borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
+                <img src={e.foto_url.replace('/upload/', '/upload/w_120,h_120,c_fill,q_auto/')} alt="" loading="lazy" style={{ width: 52, height: 52, borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.carrera?.nombre}</div>
                   {e.intentos === 2 && <div style={{ fontSize: '12px', color: 'var(--text2)' }}>2do intento</div>}
@@ -929,31 +928,35 @@ function FlamaPoints() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {vigentes.map(e => <Envio key={e.id} e={e} />)}
                 </div>
-                {historial.length > 0 && (
-                  <button className="btn-ghost" onClick={() => setVerHistorial(true)}
-                    style={{ fontSize: '12px', height: 36, width: '100%', marginTop: '10px', color: 'var(--text2)' }}>
-                    Ver historial completo ({historial.length})
-                  </button>
-                )}
-              </div>
-            )}
-
-            {verHistorial && (
-              <div onClick={() => setVerHistorial(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                <div onClick={ev => ev.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '16px 16px 0 0', maxHeight: '85vh', width: '100%', maxWidth: '520px', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700 }}>Historial completo de envíos</div>
-                    <button className="btn-ghost" onClick={() => setVerHistorial(false)} style={{ fontSize: '12px', height: 30, padding: '0 12px' }}>Cerrar</button>
-                  </div>
-                  <div style={{ overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {historial.map(e => <Envio key={e.id} e={e} />)}
-                  </div>
-                </div>
               </div>
             )}
           </>
         )
       })()}
+
+      {/* Historial de Flamitas aprobados */}
+      {envios.some(e => e.estado === 'validado') && (
+        <div style={{ marginTop: '8px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+            Historial de Flamitas
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {envios
+              .filter(e => e.estado === 'validado')
+              .sort((a, b) => (b.carrera?.fecha || '').localeCompare(a.carrera?.fecha || ''))
+              .map(e => (
+                <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg2)', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.carrera?.nombre}</div>
+                    {e.carrera?.fecha && <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>{formatFechaCorta(e.carrera.fecha)}</div>}
+                  </div>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)', flexShrink: 0, marginLeft: '12px' }}>+{e.puntos} 💎</span>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      )}
 
       {pendientes.length === 0 && envios.length === 0 && (
         <div className="empty-state">Todavía no participaste de carreras como "Inscripto" o "Stand Flama". ¡Cuando arranque una en la que estés anotado/a así, vas a poder cargar tu foto acá!</div>

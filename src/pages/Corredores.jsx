@@ -214,7 +214,7 @@ export default function Corredores() {
               <div key={c.id} className="card runner-card" style={{ cursor: c.role !== 'admin' ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' }} onClick={() => c.role !== 'admin' && abrirPerfil(c)}>
                 <div className="runner-avatar" style={{ overflow: 'hidden', padding: 0 }}>
                   {c.avatar_url
-                    ? <img src={c.avatar_url} alt={c.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    ? <img src={c.avatar_url} alt={c.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                     : <span style={{ fontSize: 14, fontWeight: 600 }}>{(c.nombre || '?')[0].toUpperCase()}</span>
                   }
                 </div>
@@ -266,7 +266,7 @@ export default function Corredores() {
                     </div>
                     <div style={{ fontSize: '14px', marginBottom: '10px' }}>{b.descripcion}</div>
                     {b.foto_url && (
-                      <img src={b.foto_url.replace('/upload/', '/upload/w_600,q_auto/')} alt="bug" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' }}
+                      <img src={b.foto_url.replace('/upload/', '/upload/w_600,q_auto/')} alt="bug" loading="lazy" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' }}
                         onClick={() => window.open(b.foto_url, '_blank')} />
                     )}
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -319,7 +319,7 @@ export default function Corredores() {
                           fontSize: 11, fontWeight: 700, color: 'var(--accent)',
                         }}>
                           {e.avatar_url
-                            ? <img src={e.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                            ? <img src={e.avatar_url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                             : e.nombre?.[0]?.toUpperCase()
                           }
                         </div>
