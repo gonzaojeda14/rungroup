@@ -133,8 +133,8 @@ export default function Participaciones() {
     setCompartiendo(key)
     try {
       const isH = orientacion === 'horizontal'
-      const W = isH ? 1080 : 800
-      const H = isH ? 380 : 500
+      const W = isH ? 1080 : 640
+      const H = isH ? 400 : 900
       const R = 36
       const canvas = document.createElement('canvas')
       canvas.width = W; canvas.height = H
@@ -159,10 +159,7 @@ export default function Participaciones() {
       ctx.fillRect(0, 0, W, H)
 
       // Red radial glow top-right
-      const glowX = isH ? W - 60 : W + 20
-      const glowY = -30
-      const glowR = isH ? 380 : 320
-      const glow = ctx.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowR)
+      const glow = ctx.createRadialGradient(W + 20, -30, 0, W + 20, -30, isH ? 380 : 400)
       glow.addColorStop(0, 'rgba(239, 68, 68, 0.14)')
       glow.addColorStop(0.5, 'rgba(239, 68, 68, 0.04)')
       glow.addColorStop(1, 'rgba(0,0,0,0)')
@@ -179,7 +176,7 @@ export default function Participaciones() {
       const distKm = parsearDistanciaKm(dist)
       const ritmo = calcularRitmo(segundos, distKm)
       const sf = '"Helvetica Neue", -apple-system, BlinkMacSystemFont, Arial, sans-serif'
-      const lbl = 'rgba(255,255,255,0.52)'
+      const lbl = 'rgba(255,255,255,0.72)'
       const nTrunc = (carreraNombre || '').length > 40 ? (carreraNombre || '').slice(0, 38) + '\u2026' : (carreraNombre || '')
 
       if (isH) {
@@ -197,9 +194,9 @@ export default function Participaciones() {
         ctx.fillStyle = '#ffffff'; ctx.font = 'bold 96px ' + sf
         ctx.fillText(tiempoTexto, 46, 196)
 
-        // TIEMPO TOTAL label
+        // TIEMPO TOTAL
         ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-        ctx.fillText('TIEMPO TOTAL', 52, 230)
+        ctx.fillText('TIEMPO TOTAL', 52, 232)
 
         // Vertical divider fading
         const vdg = ctx.createLinearGradient(0, 20, 0, H - 20)
@@ -210,91 +207,96 @@ export default function Participaciones() {
         ctx.strokeStyle = vdg; ctx.lineWidth = 1.5
         ctx.beginPath(); ctx.moveTo(splitX, 20); ctx.lineTo(splitX, H - 20); ctx.stroke()
 
-        // Right col
         const rX = splitX + (W - splitX) / 2
 
-        // Logo — top of right col
+        // Logo — bottom-left
         if (logo) {
-          const lH = 52; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
-          ctx.save(); ctx.globalAlpha = 0.9
-          ctx.drawImage(logo, rX - lWd / 2, 22, lWd, lH)
+          const lH = 46; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          ctx.save(); ctx.globalAlpha = 0.88
+          ctx.drawImage(logo, 52, H - lH - 18, lWd, lH)
           ctx.restore()
         }
 
-        // Dist value
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 64px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(dist, rX, 186)
+        // Dist — top half of right col
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 68px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, rX, Math.round(H * 0.34))
         ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-        ctx.fillText('DISTANCIA', rX, 218)
+        ctx.fillText('DISTANCIA', rX, Math.round(H * 0.34) + 34)
 
-        // Horizontal sep in right col
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1
-        ctx.beginPath(); ctx.moveTo(splitX + 30, 240); ctx.lineTo(W - 30, 240); ctx.stroke()
+        // Sep line — exact vertical center of right col
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(splitX + 30, H / 2); ctx.lineTo(W - 30, H / 2); ctx.stroke()
 
         if (ritmo) {
-          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 58px ' + sf; ctx.textAlign = 'center'
-          ctx.fillText(ritmo.replace(' /km', ''), rX, 312)
+          // Ritmo — bottom half of right col
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 62px ' + sf; ctx.textAlign = 'center'
+          ctx.fillText(ritmo.replace(' /km', ''), rX, Math.round(H * 0.72))
           ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-          ctx.fillText('RITMO /KM', rX, 346)
+          ctx.fillText('RITMO /KM', rX, Math.round(H * 0.72) + 32)
         }
 
       } else {
-        // VERTICAL
+        // VERTICAL — 640×900, content distributed across full height
 
         // Top red accent bar
         ctx.fillStyle = '#ef4444'
         ctx.fillRect(0, 0, W, 5)
 
-        // Logo
+        // Logo — top zone (~10% from top)
         if (logo) {
-          const lH = 52; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          const lH = 58; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
           ctx.save(); ctx.globalAlpha = 0.9
-          ctx.drawImage(logo, W / 2 - lWd / 2, 26, lWd, lH)
+          ctx.drawImage(logo, W / 2 - lWd / 2, Math.round(H * 0.06), lWd, lH)
           ctx.restore()
         }
 
-        // Name
-        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(nTrunc.toUpperCase(), W / 2, 124)
+        // Carrera name — ~20% from top
+        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(nTrunc.toUpperCase(), W / 2, Math.round(H * 0.21))
 
-        // Time
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 82px ' + sf
-        ctx.fillText(tiempoTexto, W / 2, 236)
+        // Big time — ~40% from top (hero)
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 86px ' + sf
+        ctx.fillText(tiempoTexto, W / 2, Math.round(H * 0.40))
 
-        // TIEMPO TOTAL label
-        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-        ctx.fillText('TIEMPO TOTAL', W / 2, 268)
+        // TIEMPO TOTAL — ~46%
+        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+        ctx.fillText('TIEMPO TOTAL', W / 2, Math.round(H * 0.46))
 
-        // Divider + red diamond
-        const divY = 302
-        ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1.2
+        // Divider + red diamond — ~54%
+        const divY = Math.round(H * 0.54)
+        ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1.2
         ctx.beginPath(); ctx.moveTo(50, divY); ctx.lineTo(W / 2 - 22, divY); ctx.stroke()
         ctx.beginPath(); ctx.moveTo(W / 2 + 22, divY); ctx.lineTo(W - 50, divY); ctx.stroke()
         ctx.save()
         ctx.fillStyle = '#ef4444'; ctx.globalAlpha = 0.9
         ctx.translate(W / 2, divY); ctx.rotate(Math.PI / 4)
-        ctx.fillRect(-6, -6, 12, 12)
+        ctx.fillRect(-7, -7, 14, 14)
         ctx.restore()
 
-        // Stats
+        // Stats — values at ~75%, labels at ~82%
         const c1 = W * 0.27, c2 = W * 0.73
+        const valY = Math.round(H * 0.75)
+        const lblY = Math.round(H * 0.82)
 
         // Dist
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 68px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(dist, c1, 394)
-        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-        ctx.fillText('DISTANCIA', c1, 424)
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 72px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, c1, valY)
+        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+        ctx.fillText('DISTANCIA', c1, lblY)
 
         if (ritmo) {
           // Center separator
-          ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1.2
-          ctx.beginPath(); ctx.moveTo(W / 2, 326); ctx.lineTo(W / 2, 450); ctx.stroke()
+          ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1.2
+          ctx.beginPath()
+          ctx.moveTo(W / 2, Math.round(H * 0.60))
+          ctx.lineTo(W / 2, Math.round(H * 0.87))
+          ctx.stroke()
 
           // Ritmo
-          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 62px ' + sf
-          ctx.fillText(ritmo.replace(' /km', ''), c2, 394)
-          ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-          ctx.fillText('RITMO /KM', c2, 424)
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 66px ' + sf
+          ctx.fillText(ritmo.replace(' /km', ''), c2, valY)
+          ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+          ctx.fillText('RITMO /KM', c2, lblY)
         }
       }
 
