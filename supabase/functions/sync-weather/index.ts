@@ -14,6 +14,7 @@ const OWM_API_KEY      = Deno.env.get('OWM_API_KEY')!
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, apikey',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
@@ -54,7 +55,7 @@ async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: cors })
+  if (req.method === 'OPTIONS') return new Response(null, { status: 200, headers: cors })
 
   try {
     const { carrera_id } = await req.json()
