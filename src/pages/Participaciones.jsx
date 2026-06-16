@@ -133,7 +133,7 @@ export default function Participaciones() {
     setCompartiendo(key)
     try {
       const isH = orientacion === 'horizontal'
-      const W = isH ? 1080 : 520
+      const W = isH ? 1080 : 480
       const H = isH ? 400 : 860
       const R = 36
       const canvas = document.createElement('canvas')
@@ -238,11 +238,7 @@ export default function Participaciones() {
       } else {
         // VERTICAL — 640×900, content distributed across full height
 
-        // Top red accent bar
-        ctx.fillStyle = '#ef4444'
-        ctx.fillRect(0, 0, W, 5)
-
-        // Logo — top zone (~10% from top)
+        // Logo — top zone (~8% from top)
         if (logo) {
           const lH = 58; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
           ctx.save(); ctx.globalAlpha = 0.9
@@ -250,20 +246,20 @@ export default function Participaciones() {
           ctx.restore()
         }
 
-        // Carrera name — ~20% from top
-        ctx.fillStyle = lbl; ctx.font = '500 24px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(nTrunc.toUpperCase(), W / 2, Math.round(H * 0.21))
+        // Carrera name — ~19% from top
+        ctx.fillStyle = lbl; ctx.font = '500 28px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(nTrunc.toUpperCase(), W / 2, Math.round(H * 0.19))
 
-        // Big time — ~40% from top (hero)
+        // Big time — ~41% from top (hero)
         ctx.fillStyle = '#ffffff'; ctx.font = 'bold 88px ' + sf
-        ctx.fillText(tiempoTexto, W / 2, Math.round(H * 0.40))
+        ctx.fillText(tiempoTexto, W / 2, Math.round(H * 0.41))
 
-        // TIEMPO TOTAL — ~46%
+        // TIEMPO TOTAL — ~48%
         ctx.fillStyle = lbl; ctx.font = '500 24px ' + sf
-        ctx.fillText('TIEMPO TOTAL', W / 2, Math.round(H * 0.46))
+        ctx.fillText('TIEMPO TOTAL', W / 2, Math.round(H * 0.48))
 
-        // Divider + red diamond — ~54%
-        const divY = Math.round(H * 0.54)
+        // Divider + red diamond — ~56%
+        const divY = Math.round(H * 0.56)
         ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1.2
         ctx.beginPath(); ctx.moveTo(50, divY); ctx.lineTo(W / 2 - 22, divY); ctx.stroke()
         ctx.beginPath(); ctx.moveTo(W / 2 + 22, divY); ctx.lineTo(W - 50, divY); ctx.stroke()
@@ -275,8 +271,8 @@ export default function Participaciones() {
 
         // Stats — values at ~75%, labels at ~82%
         const c1 = W * 0.27, c2 = W * 0.73
-        const valY = Math.round(H * 0.75)
-        const lblY = Math.round(H * 0.82)
+        const valY = Math.round(H * 0.79)
+        const lblY = Math.round(H * 0.88)
 
         // Dist
         ctx.fillStyle = '#ffffff'; ctx.font = 'bold 76px ' + sf; ctx.textAlign = 'center'
@@ -288,8 +284,8 @@ export default function Participaciones() {
           // Center separator
           ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1.2
           ctx.beginPath()
-          ctx.moveTo(W / 2, Math.round(H * 0.60))
-          ctx.lineTo(W / 2, Math.round(H * 0.87))
+          ctx.moveTo(W / 2, Math.round(H * 0.63))
+          ctx.lineTo(W / 2, Math.round(H * 0.92))
           ctx.stroke()
 
           // Ritmo
