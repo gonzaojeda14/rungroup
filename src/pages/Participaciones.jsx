@@ -154,14 +154,7 @@ export default function Participaciones() {
         ctx.closePath()
       }
 
-      // Fondo degradado oscuro (cubre todo el canvas)
-      const grad = ctx.createLinearGradient(0, 0, 0, H)
-      grad.addColorStop(0, '#0f172a')
-      grad.addColorStop(1, '#1e293b')
-      ctx.fillStyle = grad
-      ctx.fillRect(0, 0, W, H)
-
-      // Dark semi-transparent panel
+      // Dark semi-transparent panel (fondo transparente)
       rr(pX, pY, pW, pH, 36)
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
       ctx.fill()
