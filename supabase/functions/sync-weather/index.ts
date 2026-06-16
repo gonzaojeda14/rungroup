@@ -50,8 +50,9 @@ async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
   for (const q of normalizarLugar(lugar)) {
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=1&appid=${OWM_API_KEY}`
     const geoRes = await fetch(geoUrl)
-    geoData = await geoRes.json()
-    console.log(`[geo] q="${q}" → ${geoData?.length ? geoData[0].name + ', ' + geoData[0].country : 'no results'}`)
+    const geoRaw = await geoRes.json()
+    console.log(`[geo] q="${q}" status=${geoRes.status} → ${JSON.stringify(geoRaw).substring(0, 200)}`)
+    geoData = Array.isArray(geoRaw) ? geoRaw : []
     if (geoData?.length) break
   }
   if (!geoData?.length) {
