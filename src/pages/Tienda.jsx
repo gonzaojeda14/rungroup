@@ -41,8 +41,7 @@ export default function Tienda() {
 
   if (loading) return <Cargando />
   if (isAdmin) return <TiendaAdmin config={config} onConfigChange={setConfig} />
-  if (config?.activa || TIENDA_BETA.includes(user?.email)) return <TiendaPublica config={config} />
-  return <TiendaProximamente />
+  return <TiendaPublica config={config} />
 }
 
 // ─── PRÓXIMAMENTE ─────────────────────────────────────────────────────────────
