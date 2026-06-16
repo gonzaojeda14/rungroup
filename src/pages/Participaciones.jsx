@@ -199,9 +199,9 @@ export default function Participaciones() {
 
         // Logo — bottom left
         if (logo) {
-          const lH = 44; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          const lH = 62; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
           ctx.save(); ctx.globalAlpha = 0.88
-          ctx.drawImage(logo, pad, H - lH - 16, lWd, lH)
+          ctx.drawImage(logo, pad, H - lH - 14, lWd, lH)
           ctx.restore()
         }
 
@@ -733,7 +733,7 @@ export default function Participaciones() {
                                 <button onClick={() => setCompartirMenu(null)} style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>✕</button>
                               </>
                             ) : (
-                              <button onClick={() => setCompartirMenu(key)} disabled={compartiendo === key} style={{ fontSize: '11px', color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: compartiendo === key ? 0.5 : 1 }}>{compartiendo === key ? '⏳' : '🏅 Compartir'}</button>
+                              <button onClick={() => setCompartirMenu(key)} disabled={compartiendo === key} style={{ fontSize: '11px', color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: compartiendo === key ? 0.5 : 1 }}>{compartiendo === key ? '⏳' : '📲 Compartir'}</button>
                             )}
                           </div>
                         ) : (
