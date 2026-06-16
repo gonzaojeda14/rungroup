@@ -385,7 +385,7 @@ export default function Carreras() {
   async function fetchSugerencias() {
     const { data } = await supabase
       .from('carreras_sugeridas')
-      .select('*, profiles(nombre)')
+      .select('*')
       .eq('estado', 'pendiente')
       .order('created_at', { ascending: false })
     setSugerencias(data || [])
