@@ -1390,9 +1390,9 @@ export default function Carreras() {
                           </div>
                         ))}
                       </div>
-                      {weatherModal.data.hora_pronostico && (
+                      {weatherModal.data.hora_local && (
                         <div style={{ fontSize: '11px', color: 'var(--text2)', textAlign: 'center' }}>
-                          Pronóstico para las {weatherModal.data.hora_pronostico.split(' ')[1].substring(0, 5)} hs · 📍 {weatherModal.carrera.lugar}
+                          Pronóstico para las {weatherModal.data.hora_local} hs · 📍 {weatherModal.carrera.lugar}
                         </div>
                       )}
                     </div>

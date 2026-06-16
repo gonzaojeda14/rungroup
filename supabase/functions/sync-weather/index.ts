@@ -59,8 +59,8 @@ async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
   console.log(`[forecast] status=${forecast?.cod}, entries=${forecast?.list?.length}`)
   if (!forecast?.list?.length) return null
 
-  // 3. Encontrar la entrada más cercana al horario de la carrera
-  const targetTime = new Date(`${fecha}T${hora ? hora.substring(0, 5) : '08:00'}:00`)
+  // 3. Encontrar la entrada más cercana al horario de la carrera (Argentina = UTC-3)
+  const targetTime = new Date(`${fecha}T${hora ? hora.substring(0, 5) : '08:00'}:00-03:00`)
 
   let closest = forecast.list[0]
   let minDiff = Infinity
@@ -68,6 +68,11 @@ async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
     const diff = Math.abs(new Date(entry.dt * 1000).getTime() - targetTime.getTime())
     if (diff < minDiff) { minDiff = diff; closest = entry }
   }
+
+  // Convertir hora del pronóstico de UTC a hora local Argentina (UTC-3)
+  const horaUTC = new Date(closest.dt * 1000)
+  const horaLocal = new Date(horaUTC.getTime() - 3 * 60 * 60 * 1000)
+  const horaLocalStr = horaLocal.toISOString().split('T')[1].substring(0, 5)
 
   return {
     temp: Math.round(closest.main.temp),
@@ -77,7 +82,7 @@ async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
     wind_kmh: Math.round(closest.wind.speed * 3.6),
     condition: closest.weather[0].description,
     icon: closest.weather[0].icon,
-    hora_pronostico: closest.dt_txt,
+    hora_local: horaLocalStr,
   }
 }
 
