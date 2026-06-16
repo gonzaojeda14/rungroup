@@ -128,16 +128,6 @@ export default function Participaciones() {
   }
 
   async function compartirResultado({ carreraNombre, dist, tiempoTexto, segundos, key }) {
-    // Pedir foto de fondo antes de mostrar spinner
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    const bgFile = await new Promise(res => {
-      input.onchange = e => res(e.target.files?.[0] || null)
-      input.addEventListener('cancel', () => res(null))
-      input.click()
-    })
-
     setCompartiendo(key)
     try {
       const W = 1080, H = 1080
@@ -164,19 +154,7 @@ export default function Participaciones() {
         ctx.closePath()
       }
 
-      // Foto de fondo (cover fit) o fondo negro si no hay foto
-      if (bgFile) {
-        const bgUrl = URL.createObjectURL(bgFile)
-        const bg = new Image()
-        bg.src = bgUrl
-        await new Promise((res, rej) => { bg.onload = res; bg.onerror = rej })
-        const scale = Math.max(W / bg.naturalWidth, H / bg.naturalHeight)
-        const sw = bg.naturalWidth * scale, sh = bg.naturalHeight * scale
-        ctx.drawImage(bg, (W - sw) / 2, (H - sh) / 2, sw, sh)
-        URL.revokeObjectURL(bgUrl)
-      }
-
-      // Dark semi-transparent panel
+      // Dark semi-transparent panel (fondo transparente — overlay sobre foto)
       rr(pX, pY, pW, pH, 36)
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
       ctx.fill()
