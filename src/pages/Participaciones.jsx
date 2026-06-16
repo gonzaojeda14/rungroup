@@ -128,6 +128,16 @@ export default function Participaciones() {
   }
 
   async function compartirResultado({ carreraNombre, dist, tiempoTexto, segundos, key }) {
+    // Pedir foto de fondo antes de mostrar spinner
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    const bgFile = await new Promise(res => {
+      input.onchange = e => res(e.target.files?.[0] || null)
+      input.addEventListener('cancel', () => res(null))
+      input.click()
+    })
+
     setCompartiendo(key)
     try {
       const W = 1080, H = 1080
@@ -135,8 +145,8 @@ export default function Participaciones() {
       canvas.width = W; canvas.height = H
       const ctx = canvas.getContext('2d')
 
-      // Panel dimensions (bottom portion)
-      const pH = 420, pY = H - pH - 40
+      // Panel dimensions (bottom portion, taller to fit logo)
+      const pH = 500, pY = H - pH - 40
       const pX = 50, pW = W - 100
 
       // Rounded rect helper
@@ -154,6 +164,18 @@ export default function Participaciones() {
         ctx.closePath()
       }
 
+      // Foto de fondo (cover fit) o fondo negro si no hay foto
+      if (bgFile) {
+        const bgUrl = URL.createObjectURL(bgFile)
+        const bg = new Image()
+        bg.src = bgUrl
+        await new Promise((res, rej) => { bg.onload = res; bg.onerror = rej })
+        const scale = Math.max(W / bg.naturalWidth, H / bg.naturalHeight)
+        const sw = bg.naturalWidth * scale, sh = bg.naturalHeight * scale
+        ctx.drawImage(bg, (W - sw) / 2, (H - sh) / 2, sw, sh)
+        URL.revokeObjectURL(bgUrl)
+      }
+
       // Dark semi-transparent panel
       rr(pX, pY, pW, pH, 36)
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
@@ -165,47 +187,33 @@ export default function Participaciones() {
       ctx.lineWidth = 2
       ctx.stroke()
 
-      // Logo (top-left of panel)
-      try {
-        const logo = new Image()
-        logo.src = '/logo-flama.png'
-        await new Promise((res, rej) => { logo.onload = res; logo.onerror = rej })
-        ctx.drawImage(logo, pX + 36, pY + 28, 64, 64)
-      } catch {}
-
-      // "flama" wordmark next to logo
-      ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 38px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.textAlign = 'left'
-      ctx.fillText('flama', pX + 116, pY + 74)
-
-      // Divider line
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)'
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(pX + 36, pY + 112)
-      ctx.lineTo(pX + pW - 36, pY + 112)
-      ctx.stroke()
-
-      // Carrera name (truncated)
+      // Carrera name (top of panel)
       ctx.fillStyle = 'rgba(255,255,255,0.55)'
       ctx.font = '30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       ctx.textAlign = 'center'
       const nombreTrunc = (carreraNombre || '').length > 36 ? (carreraNombre || '').slice(0, 34) + '…' : (carreraNombre || '')
-      ctx.fillText(nombreTrunc, W / 2, pY + 160)
+      ctx.fillText(nombreTrunc, W / 2, pY + 60)
 
       // Big time
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 108px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText(tiempoTexto, W / 2, pY + 280)
+      ctx.fillText(tiempoTexto, W / 2, pY + 180)
 
       // Label under time
       ctx.fillStyle = 'rgba(255,255,255,0.45)'
       ctx.font = '26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText('Tiempo total', W / 2, pY + 316)
+      ctx.fillText('Tiempo total', W / 2, pY + 216)
 
-      // Bottom row: Distancia | Ritmo
+      // Divider line
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(pX + 60, pY + 248)
+      ctx.lineTo(pX + pW - 60, pY + 248)
+      ctx.stroke()
+
+      // Middle row: Distancia | Ritmo
       const distKm = parsearDistanciaKm(dist)
       const ritmo = calcularRitmo(segundos, distKm)
 
@@ -213,31 +221,39 @@ export default function Participaciones() {
       const col2 = pX + pW * 0.75
 
       ctx.fillStyle = '#4ade80'
-      ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText(dist, col1, pY + 378)
+      ctx.fillText(dist, col1, pY + 318)
       ctx.fillStyle = 'rgba(255,255,255,0.45)'
-      ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText('Distancia', col1, pY + 408)
+      ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.fillText('Distancia', col1, pY + 352)
 
       if (ritmo) {
         ctx.fillStyle = '#60a5fa'
-        ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        ctx.fillText(ritmo.replace(' /km', ''), col2, pY + 378)
+        ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.fillText(ritmo.replace(' /km', ''), col2, pY + 318)
         ctx.fillStyle = 'rgba(255,255,255,0.45)'
-        ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        ctx.fillText('Ritmo promedio', col2, pY + 408)
-      }
+        ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.fillText('Ritmo promedio', col2, pY + 352)
 
-      // Vertical divider between cols
-      if (ritmo) {
+        // Vertical divider between cols
         ctx.strokeStyle = 'rgba(255,255,255,0.18)'
         ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(W / 2, pY + 340)
-        ctx.lineTo(W / 2, pY + pH - 20)
+        ctx.moveTo(W / 2, pY + 268)
+        ctx.lineTo(W / 2, pY + 370)
         ctx.stroke()
       }
+
+      // Logo large at bottom center
+      try {
+        const logo = new Image()
+        logo.src = '/logo-flama.png'
+        await new Promise((res, rej) => { logo.onload = res; logo.onerror = rej })
+        const logoH = 90
+        const logoW = logo.naturalWidth * (logoH / logo.naturalHeight)
+        ctx.drawImage(logo, W / 2 - logoW / 2, pY + pH - logoH - 28, logoW, logoH)
+      } catch {}
 
       // Export
       const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
@@ -723,37 +739,3 @@ export default function Participaciones() {
                                 Cancelar
                               </button>
                             )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
-
-      {fotosCarrera && (
-        <FotosModal
-          carrera={fotosCarrera}
-          onClose={cerrarGaleria}
-        />
-      )}
-
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-          fontSize: '13px', fontWeight: 500, zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease', whiteSpace: 'nowrap',
-        }}>
-          {toast}
-        </div>
-      )}
-    </div>
-  )
-}
