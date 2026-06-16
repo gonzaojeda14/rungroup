@@ -278,6 +278,8 @@ export default function Carreras() {
   const [sugerencias, setSugerencias] = useState([]) // solo admin
   const [sugerenciasAbierto, setSugerenciasAbierto] = useState(false)
   const [cuposUsados, setCuposUsados] = useState({}) // carreraId -> count de Inscriptos+StandFlama
+  const [weatherModal, setWeatherModal] = useState(null) // { carrera, data }
+  const [weatherLoading, setWeatherLoading] = useState(null) // carrera id
 
   function setFiltrosGuardados(fn) {
     setFiltros(prev => {
@@ -348,6 +350,37 @@ export default function Carreras() {
     for (const row of (data || [])) counts[row.carrera_id] = (counts[row.carrera_id] || 0) + 1
     setCuposUsados(counts)
   }
+
+  function isWithin5Days(fecha) {
+    if (!fecha) return false
+    const d = new Date(fecha + 'T00:00:00')
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const in5 = new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000)
+    return d >= today && d <= in5
+  }
+
+  async function fetchWeather(carrera) {
+    // Si el caché es fresco (< 1h), mostrar directamente
+    if (carrera.weather_data && carrera.weather_updated_at) {
+      const isStale = new Date(carrera.weather_updated_at) < new Date(Date.now() - 60 * 60 * 1000)
+      if (!isStale) { setWeatherModal({ carrera, data: carrera.weather_data }); return }
+    }
+    setWeatherLoading(carrera.id)
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-weather', {
+        body: { carrera_id: carrera.id },
+      })
+      if (error || !data?.weather) { setToast('❌ No se pudo obtener el clima'); setTimeout(() => setToast(''), 3000); return }
+      setCarreras(prev => prev.map(c => c.id === carrera.id
+        ? { ...c, weather_data: data.weather, weather_updated_at: new Date().toISOString() }
+        : c
+      ))
+      setWeatherModal({ carrera, data: data.weather })
+    } finally {
+      setWeatherLoading(null)
+    }
+  }
+
 
   async function fetchSugerencias() {
     const { data } = await supabase
@@ -1280,6 +1313,15 @@ export default function Carreras() {
                         onClick={e => e.stopPropagation()}
                       >📍 {c.lugar}</a>
                     )}
+                    {c.lugar && isWithin5Days(c.fecha) && (
+                      <span
+                        className="tag"
+                        style={{ cursor: 'pointer', opacity: weatherLoading === c.id ? 0.6 : 1 }}
+                        onClick={e => { e.stopPropagation(); if (weatherLoading !== c.id) fetchWeather(c) }}
+                      >
+                        {weatherLoading === c.id ? '⏳ Cargando...' : c.weather_data ? `🌡️ ${c.weather_data.temp}°C · 🌧️ ${c.weather_data.rain_prob}%` : '🌤️ Ver clima'}
+                      </span>
+                    )}
                     {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
                     {c.tipo_actividad === 'entrenamiento' && c.calzado && <span className="tag" style={{ background: TIPO_COLOR[c.calzado] + '22', color: TIPO_COLOR[c.calzado], border: `1px solid ${TIPO_COLOR[c.calzado]}44`, fontWeight: 600 }}>👟 {c.calzado}</span>}
                     {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.running_team && (
@@ -1316,6 +1358,46 @@ export default function Carreras() {
                     })()}
                   </div>
                 </div>
+
+                {weatherModal && (
+                  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setWeatherModal(null)}>
+                    <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '24px', maxWidth: '340px', width: '100%' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '15px' }}>{weatherModal.carrera.nombre}</div>
+                        <button onClick={() => setWeatherModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                        <img
+                          src={`https://openweathermap.org/img/wn/${weatherModal.data.icon}@2x.png`}
+                          alt={weatherModal.data.condition}
+                          style={{ width: 64, height: 64 }}
+                        />
+                        <div>
+                          <div style={{ fontSize: '36px', fontWeight: 800, lineHeight: 1 }}>{weatherModal.data.temp}°C</div>
+                          <div style={{ fontSize: '13px', color: 'var(--text2)', textTransform: 'capitalize', marginTop: '4px' }}>{weatherModal.data.condition}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                        {[
+                          { label: 'Sensación', value: `${weatherModal.data.feels_like}°C`, icon: '🌡️' },
+                          { label: 'Humedad', value: `${weatherModal.data.humidity}%`, icon: '💧' },
+                          { label: 'Lluvia', value: `${weatherModal.data.rain_prob}%`, icon: '🌧️' },
+                          { label: 'Viento', value: `${weatherModal.data.wind_kmh} km/h`, icon: '💨' },
+                        ].map(({ label, value, icon }) => (
+                          <div key={label} style={{ background: 'var(--bg)', borderRadius: '10px', padding: '12px', border: '1px solid var(--border)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--text2)', marginBottom: '4px' }}>{icon} {label}</div>
+                            <div style={{ fontSize: '16px', fontWeight: 700 }}>{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {weatherModal.data.hora_pronostico && (
+                        <div style={{ fontSize: '11px', color: 'var(--text2)', textAlign: 'center' }}>
+                          Pronóstico para las {weatherModal.data.hora_pronostico.split(' ')[1].substring(0, 5)} hs · 📍 {weatherModal.carrera.lugar}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {modalRunningTeam && (
                   <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setModalRunningTeam(false)}>
