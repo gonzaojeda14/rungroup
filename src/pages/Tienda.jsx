@@ -541,7 +541,7 @@ function ProductoForm({ producto, onSaved, onCancel }) {
             <label>Tipo de talle</label>
             <select value={tipoTalle} onChange={e => onTipoChange(e.target.value)} style={selectStyle}>
               <option value="unico">Talle único</option>
-              <option value="ropa">Ropa (S–XXL)</option>
+              <option value="ropa">De XS a XXL</option>
               <option value="zapatillas">Zapatillas (35–44)</option>
             </select>
           </div>
@@ -557,7 +557,7 @@ function ProductoForm({ producto, onSaved, onCancel }) {
 
         {allTalles.length > 0 && (
           <div>
-            <div style={{ fontSize:13, color:'var(--text2)', marginBottom:6 }}>Talles disponibles (desmarcar los que no hay)</div>
+            <div style={{ fontSize:13, color:'var(--text2)', marginBottom:6 }}>Talles disponibles</div>
             <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
               {allTalles.map(t => {
                 const on = talles.includes(t)
