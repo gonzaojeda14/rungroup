@@ -385,13 +385,15 @@ export default function Participaciones() {
       { onConflict: 'user_id,carrera_id,distancia' }
     ).select().single()
 
-    // Actualizar record personal si es mejor
+    // Actualizar record personal si es mejor O si esta carrera era la fuente del PR actual
     const { data: rp } = await supabase.from('records_personales')
-      .select('tiempo_segundos').eq('user_id', user.id).eq('distancia', distancia).single()
+      .select('tiempo_segundos, tiempo_carrera_id').eq('user_id', user.id).eq('distancia', distancia).single()
 
     const esPR = !rp || seg < rp.tiempo_segundos
+    // Si esta carrera era la fuente del PR → actualizar aunque sea más lento (corrección de error)
+    const esFuentePR = rp?.tiempo_carrera_id != null && rp.tiempo_carrera_id === tc?.id
 
-    if (!rp || seg < rp.tiempo_segundos) {
+    if (esPR || esFuentePR) {
       const tipo = carreraTipo === 'Trail' ? 'trail' : 'calle'
       await supabase.from('records_personales').upsert({
         user_id: user.id,

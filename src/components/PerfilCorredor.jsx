@@ -31,6 +31,10 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
   const [totalFlamitas, setTotalFlamitas] = useState(null)
   const [metas, setMetas] = useState([])
   const [tab, setTab] = useState('datos')
+  const [tiemposCarreras, setTiemposCarreras] = useState([])
+  const [editAdminKey, setEditAdminKey] = useState(null) // 'tcId'
+  const [editAdminVal, setEditAdminVal] = useState('')
+  const [savingAdmin, setSavingAdmin] = useState(false)
 
   const hoy = new Date().toISOString().split('T')[0]
 
@@ -69,6 +73,12 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
       supabase.from('profiles').update({ bonus_perfil_otorgado: true }).eq('id', corredor.id)
     }
 
+    const { data: tcData } = await supabase.from('tiempos_carreras')
+      .select('id, carrera_id, distancia, tiempo_texto, tiempo_segundos, carrera:carreras(nombre, fecha)')
+      .eq('user_id', corredor.id)
+      .order('created_at', { ascending: false })
+    setTiemposCarreras(tcData || [])
+
     if (cert?.certificado_url) {
       if (cert.certificado_url.startsWith('http')) {
         setCertUrl(cert.certificado_url)
@@ -93,6 +103,47 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
     await supabase.from('profiles').update({ activo: !nuevoEstado }).eq('id', corredor.id)
     setBloqueado(nuevoEstado)
     if (onToggleAcceso) onToggleAcceso(corredor.id, nuevoEstado)
+  }
+
+  async function adminGuardarTiempo(tc) {
+    const texto = editAdminVal.trim()
+    if (!texto && texto !== '') return
+    setSavingAdmin(true)
+    if (texto === '') {
+      // Delete the time record
+      await supabase.from('tiempos_carreras').delete().eq('id', tc.id)
+      // Also clear PR if it came from this record
+      await supabase.from('records_personales')
+        .delete()
+        .eq('user_id', corredor.id)
+        .eq('distancia', tc.distancia)
+        .eq('tiempo_carrera_id', tc.id)
+      setTiemposCarreras(prev => prev.filter(t => t.id !== tc.id))
+    } else {
+      // Validate HH:MM:SS or MM:SS
+      if (!/^\d{1,2}:\d{2}(:\d{2})?$/.test(texto)) { setSavingAdmin(false); return }
+      const partes = texto.split(':').map(Number)
+      const seg = partes.length === 3 ? partes[0]*3600+partes[1]*60+partes[2] : partes[0]*60+partes[1]
+      const tiempoTexto = seg >= 3600
+        ? `${String(Math.floor(seg/3600)).padStart(2,'0')}:${String(Math.floor((seg%3600)/60)).padStart(2,'0')}:${String(seg%60).padStart(2,'0')}`
+        : `${String(Math.floor(seg/60)).padStart(2,'0')}:${String(seg%60).padStart(2,'0')}`
+      await supabase.from('tiempos_carreras').update({ tiempo_segundos: seg, tiempo_texto: tiempoTexto }).eq('id', tc.id)
+      // Update PR if this was the source
+      const { data: rp } = await supabase.from('records_personales')
+        .select('tiempo_carrera_id').eq('user_id', corredor.id).eq('distancia', tc.distancia).single()
+      if (!rp || rp.tiempo_carrera_id === tc.id) {
+        await supabase.from('records_personales').upsert({
+          user_id: corredor.id, distancia: tc.distancia, tipo: 'calle',
+          tiempo_segundos: seg, tiempo_texto: tiempoTexto,
+          carrera_nombre: tc.carrera?.nombre, fecha: tc.carrera?.fecha || null,
+          fuente: 'automatico', tiempo_carrera_id: tc.id,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,distancia' })
+      }
+      setTiemposCarreras(prev => prev.map(t => t.id === tc.id ? { ...t, tiempo_texto: tiempoTexto, tiempo_segundos: seg } : t))
+    }
+    setEditAdminKey(null); setEditAdminVal('')
+    setSavingAdmin(false)
   }
 
   const edad = calcularEdad(extra.fecha_nacimiento)
@@ -307,6 +358,49 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
               )}
 
               <RecordsPersonales userId={corredor.id} />
+
+              {isAdmin && tiemposCarreras.length > 0 && (
+                <div className="card">
+                  <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>✏️ Editar tiempos (admin)</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {tiemposCarreras.map(tc => (
+                      <div key={tc.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 600 }}>{tc.carrera?.nombre || '—'}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{tc.distancia}{tc.carrera?.fecha ? ` · ${tc.carrera.fecha}` : ''}</div>
+                          </div>
+                          {editAdminKey === tc.id ? (
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <input
+                                value={editAdminVal}
+                                onChange={e => setEditAdminVal(e.target.value)}
+                                placeholder="HH:MM:SS o vacío=borrar"
+                                style={{ width: '150px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '5px 8px', fontSize: '13px', fontFamily: 'inherit' }}
+                              />
+                              <button
+                                onClick={() => adminGuardarTiempo(tc)}
+                                disabled={savingAdmin}
+                                className="btn-primary"
+                                style={{ height: 30, fontSize: 12, padding: '0 12px' }}
+                              >{savingAdmin ? '...' : 'Guardar'}</button>
+                              <button onClick={() => setEditAdminKey(null)} className="btn-ghost" style={{ height: 30, fontSize: 12, padding: '0 10px' }}>✕</button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '14px', fontWeight: 700, color: '#4ade80' }}>{tc.tiempo_texto}</span>
+                              <button
+                                onClick={() => { setEditAdminKey(tc.id); setEditAdminVal(tc.tiempo_texto) }}
+                                style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                              >Editar</button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 {[
