@@ -18,11 +18,19 @@ const cors = {
 }
 
 async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
-  // 1. Geocodificar el lugar
-  const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(lugar + ', Argentina')}&limit=1&appid=${OWM_API_KEY}`
-  const geoRes = await fetch(geoUrl)
-  const geoData = await geoRes.json()
-  if (!geoData?.length) return null
+  // 1. Geocodificar el lugar — primero con Argentina, si no encuentra sin país
+  let geoData: any[] = []
+  for (const q of [`${lugar}, Argentina`, lugar]) {
+    const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=1&appid=${OWM_API_KEY}`
+    const geoRes = await fetch(geoUrl)
+    geoData = await geoRes.json()
+    console.log(`[geo] q="${q}" → ${JSON.stringify(geoData)}`)
+    if (geoData?.length) break
+  }
+  if (!geoData?.length) {
+    console.error('[geo] No se encontró el lugar:', lugar)
+    return null
+  }
 
   const { lat, lon } = geoData[0]
 
@@ -30,6 +38,7 @@ async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
   const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OWM_API_KEY}&units=metric&lang=es&cnt=40`
   const forecastRes = await fetch(forecastUrl)
   const forecast = await forecastRes.json()
+  console.log(`[forecast] status=${forecast?.cod}, entries=${forecast?.list?.length}`)
   if (!forecast?.list?.length) return null
 
   // 3. Encontrar la entrada más cercana al horario de la carrera
@@ -80,7 +89,7 @@ Deno.serve(async (req) => {
     }
 
     const weather = await fetchWeather(carrera.lugar, carrera.fecha, carrera.hora)
-    if (!weather) return json({ error: 'No se pudo obtener el pronóstico' }, 500)
+    if (!weather) return json({ error: 'No se pudo obtener el pronóstico', lugar: carrera.lugar }, 500)
 
     await supabase.from('carreras').update({
       weather_data: weather,
