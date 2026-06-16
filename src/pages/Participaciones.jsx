@@ -244,7 +244,7 @@ export default function Participaciones() {
         }
 
         // Carrera name — ~19% from top
-        ctx.fillStyle = lbl; ctx.font = '500 28px ' + sf; ctx.textAlign = 'center'
+        ctx.fillStyle = lbl; ctx.font = '500 33px ' + sf; ctx.textAlign = 'center'
         ctx.fillText(nTrunc.toUpperCase(), W / 2, Math.round(H * 0.19))
 
         // Big time — ~41% from top (hero)
