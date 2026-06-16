@@ -133,8 +133,8 @@ export default function Participaciones() {
     setCompartiendo(key)
     try {
       const isH = orientacion === 'horizontal'
-      const W = isH ? 1080 : 640
-      const H = isH ? 400 : 900
+      const W = isH ? 1080 : 520
+      const H = isH ? 400 : 860
       const R = 36
       const canvas = document.createElement('canvas')
       canvas.width = W; canvas.height = H
@@ -153,8 +153,8 @@ export default function Participaciones() {
 
       // Background
       const bg = ctx.createLinearGradient(0, 0, W * 0.6, H)
-      bg.addColorStop(0, 'rgba(10, 10, 14, 0.95)')
-      bg.addColorStop(1, 'rgba(18, 14, 18, 0.93)')
+      bg.addColorStop(0, 'rgba(10, 10, 14, 0.80)')
+      bg.addColorStop(1, 'rgba(18, 14, 18, 0.78)')
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, W, H)
 
@@ -251,15 +251,15 @@ export default function Participaciones() {
         }
 
         // Carrera name — ~20% from top
-        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf; ctx.textAlign = 'center'
+        ctx.fillStyle = lbl; ctx.font = '500 24px ' + sf; ctx.textAlign = 'center'
         ctx.fillText(nTrunc.toUpperCase(), W / 2, Math.round(H * 0.21))
 
         // Big time — ~40% from top (hero)
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 86px ' + sf
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 88px ' + sf
         ctx.fillText(tiempoTexto, W / 2, Math.round(H * 0.40))
 
         // TIEMPO TOTAL — ~46%
-        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+        ctx.fillStyle = lbl; ctx.font = '500 24px ' + sf
         ctx.fillText('TIEMPO TOTAL', W / 2, Math.round(H * 0.46))
 
         // Divider + red diamond — ~54%
@@ -279,9 +279,9 @@ export default function Participaciones() {
         const lblY = Math.round(H * 0.82)
 
         // Dist
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 72px ' + sf; ctx.textAlign = 'center'
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 76px ' + sf; ctx.textAlign = 'center'
         ctx.fillText(dist, c1, valY)
-        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+        ctx.fillStyle = lbl; ctx.font = '500 24px ' + sf
         ctx.fillText('DISTANCIA', c1, lblY)
 
         if (ritmo) {
@@ -293,9 +293,9 @@ export default function Participaciones() {
           ctx.stroke()
 
           // Ritmo
-          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 66px ' + sf
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 70px ' + sf
           ctx.fillText(ritmo.replace(' /km', ''), c2, valY)
-          ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+          ctx.fillStyle = lbl; ctx.font = '500 24px ' + sf
           ctx.fillText('RITMO /KM', c2, lblY)
         }
       }
