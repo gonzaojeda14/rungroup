@@ -186,7 +186,7 @@ export default function Participaciones() {
         const pad = 44
 
         // Name — top left
-        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf; ctx.textAlign = 'left'
+        ctx.fillStyle = lbl; ctx.font = '500 28px ' + sf; ctx.textAlign = 'left'
         ctx.fillText(nTrunc.toUpperCase(), pad, Math.round(H * 0.13))
 
         // Time — hero, vertically centered in left col
@@ -194,7 +194,7 @@ export default function Participaciones() {
         ctx.fillText(tiempoTexto, pad - 4, Math.round(H * 0.57))
 
         // TIEMPO TOTAL
-        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+        ctx.fillStyle = lbl; ctx.font = '500 26px ' + sf
         ctx.fillText('TIEMPO TOTAL', pad, Math.round(H * 0.70))
 
         // Logo — bottom left
@@ -215,10 +215,10 @@ export default function Participaciones() {
         ctx.beginPath(); ctx.moveTo(splitX, 24); ctx.lineTo(splitX, H - 24); ctx.stroke()
 
         // Dist — top half of right col (centered at ~30% height)
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 76px ' + sf; ctx.textAlign = 'center'
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 86px ' + sf; ctx.textAlign = 'center'
         ctx.fillText(dist, rX, Math.round(H * 0.36))
-        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
-        ctx.fillText('DISTANCIA', rX, Math.round(H * 0.36) + 32)
+        ctx.fillStyle = lbl; ctx.font = '500 26px ' + sf
+        ctx.fillText('DISTANCIA', rX, Math.round(H * 0.36) + 36)
 
         // Sep line — exact center
         ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1
@@ -226,10 +226,10 @@ export default function Participaciones() {
 
         if (ritmo) {
           // Ritmo — bottom half of right col (centered at ~72% height)
-          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 70px ' + sf; ctx.textAlign = 'center'
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px ' + sf; ctx.textAlign = 'center'
           ctx.fillText(ritmo.replace(' /km', ''), rX, Math.round(H * 0.72))
-          ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
-          ctx.fillText('RITMO /KM', rX, Math.round(H * 0.72) + 32)
+          ctx.fillStyle = lbl; ctx.font = '500 26px ' + sf
+          ctx.fillText('RITMO /KM', rX, Math.round(H * 0.72) + 36)
         }
 
       } else {
