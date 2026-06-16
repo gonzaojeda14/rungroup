@@ -133,8 +133,8 @@ export default function Participaciones() {
     setCompartiendo(key)
     try {
       const isH = orientacion === 'horizontal'
-      const W = isH ? 1080 : 600
-      const H = isH ? 400 : 540
+      const W = isH ? 1080 : 800
+      const H = isH ? 380 : 500
       const R = 36
       const canvas = document.createElement('canvas')
       canvas.width = W; canvas.height = H
@@ -151,42 +151,23 @@ export default function Participaciones() {
       ctx.closePath()
       ctx.clip()
 
-      // Background dark gradient
-      const bg = ctx.createLinearGradient(0, 0, W * 0.7, H)
-      bg.addColorStop(0, 'rgba(7, 11, 22, 0.93)')
-      bg.addColorStop(1, 'rgba(14, 22, 40, 0.91)')
+      // Background
+      const bg = ctx.createLinearGradient(0, 0, W * 0.6, H)
+      bg.addColorStop(0, 'rgba(10, 10, 14, 0.95)')
+      bg.addColorStop(1, 'rgba(18, 14, 18, 0.93)')
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, W, H)
 
-      // Radial glow top-right corner
-      const glowX = isH ? W - 80 : W + 10
-      const glowY = isH ? -50 : -20
-      const glowR = isH ? 360 : 290
+      // Red radial glow top-right
+      const glowX = isH ? W - 60 : W + 20
+      const glowY = -30
+      const glowR = isH ? 380 : 320
       const glow = ctx.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowR)
-      glow.addColorStop(0, 'rgba(74, 222, 128, 0.13)')
-      glow.addColorStop(0.55, 'rgba(74, 222, 128, 0.04)')
+      glow.addColorStop(0, 'rgba(239, 68, 68, 0.14)')
+      glow.addColorStop(0.5, 'rgba(239, 68, 68, 0.04)')
       glow.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = glow
       ctx.fillRect(0, 0, W, H)
-
-      // Pill badge helper
-      function pillBg(cx, cy, pw, ph, color) {
-        const r = ph / 2, x = cx - pw / 2, y = cy - ph / 2
-        ctx.save()
-        ctx.globalAlpha = 0.16
-        ctx.fillStyle = color
-        ctx.beginPath()
-        ctx.moveTo(x + r, y); ctx.lineTo(x + pw - r, y)
-        ctx.quadraticCurveTo(x + pw, y, x + pw, y + r)
-        ctx.quadraticCurveTo(x + pw, y + ph, x + pw - r, y + ph)
-        ctx.lineTo(x + r, y + ph)
-        ctx.quadraticCurveTo(x, y + ph, x, y + r)
-        ctx.quadraticCurveTo(x, y, x + r, y)
-        ctx.closePath(); ctx.fill()
-        ctx.globalAlpha = 0.28
-        ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke()
-        ctx.restore()
-      }
 
       // Load logo
       let logo = null
@@ -198,131 +179,123 @@ export default function Participaciones() {
       const distKm = parsearDistanciaKm(dist)
       const ritmo = calcularRitmo(segundos, distKm)
       const sf = '"Helvetica Neue", -apple-system, BlinkMacSystemFont, Arial, sans-serif'
-      const nTrunc = (carreraNombre || '').length > 36 ? (carreraNombre || '').slice(0, 34) + '\u2026' : (carreraNombre || '')
+      const lbl = 'rgba(255,255,255,0.52)'
+      const nTrunc = (carreraNombre || '').length > 40 ? (carreraNombre || '').slice(0, 38) + '\u2026' : (carreraNombre || '')
 
       if (isH) {
-        // Green left accent bar
-        ctx.fillStyle = '#4ade80'
+        // Red left accent bar
+        ctx.fillStyle = '#ef4444'
         ctx.fillRect(0, 0, 8, H)
 
-        const splitX = 630
+        const splitX = 620
 
-        // Carrera name (small, uppercase)
-        ctx.fillStyle = 'rgba(255,255,255,0.38)'
-        ctx.font = '500 18px ' + sf
-        ctx.textAlign = 'left'
-        ctx.fillText(nTrunc.toUpperCase(), 56, 52)
+        // Name
+        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf; ctx.textAlign = 'left'
+        ctx.fillText(nTrunc.toUpperCase(), 56, 50)
 
-        // HUGE time
-        ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 108px ' + sf
-        ctx.fillText(tiempoTexto, 46, 210)
+        // Time
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 96px ' + sf
+        ctx.fillText(tiempoTexto, 46, 196)
 
-        // Label
-        ctx.fillStyle = 'rgba(255,255,255,0.3)'
-        ctx.font = '500 15px ' + sf
-        ctx.fillText('TIEMPO TOTAL', 52, 248)
+        // TIEMPO TOTAL label
+        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
+        ctx.fillText('TIEMPO TOTAL', 52, 230)
 
-        // Vertical divider — fades at top and bottom
+        // Vertical divider fading
         const vdg = ctx.createLinearGradient(0, 20, 0, H - 20)
         vdg.addColorStop(0, 'rgba(255,255,255,0)')
-        vdg.addColorStop(0.25, 'rgba(255,255,255,0.14)')
-        vdg.addColorStop(0.75, 'rgba(255,255,255,0.14)')
+        vdg.addColorStop(0.2, 'rgba(255,255,255,0.15)')
+        vdg.addColorStop(0.8, 'rgba(255,255,255,0.15)')
         vdg.addColorStop(1, 'rgba(255,255,255,0)')
         ctx.strokeStyle = vdg; ctx.lineWidth = 1.5
         ctx.beginPath(); ctx.moveTo(splitX, 20); ctx.lineTo(splitX, H - 20); ctx.stroke()
 
-        // Right column
+        // Right col
         const rX = splitX + (W - splitX) / 2
 
-        // Distancia pill
-        const dY = H * 0.31
-        pillBg(rX, dY, 210, 72, '#4ade80')
-        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 54px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(dist, rX, dY + 20)
-        ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
-        ctx.fillText('DISTANCIA', rX, dY + 42)
-
-        if (ritmo) {
-          const rY = H * 0.72
-          pillBg(rX, rY, 240, 72, '#60a5fa')
-          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 50px ' + sf; ctx.textAlign = 'center'
-          ctx.fillText(ritmo.replace(' /km', ''), rX, rY + 18)
-          ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
-          ctx.fillText('RITMO /KM', rX, rY + 40)
+        // Logo — top of right col
+        if (logo) {
+          const lH = 52; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          ctx.save(); ctx.globalAlpha = 0.9
+          ctx.drawImage(logo, rX - lWd / 2, 22, lWd, lH)
+          ctx.restore()
         }
 
-        if (logo) {
-          const lH = 34; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
-          ctx.save(); ctx.globalAlpha = 0.65
-          ctx.drawImage(logo, W - lWd - 22, H - lH - 14, lWd, lH)
-          ctx.restore()
+        // Dist value
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 64px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, rX, 186)
+        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
+        ctx.fillText('DISTANCIA', rX, 218)
+
+        // Horizontal sep in right col
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(splitX + 30, 240); ctx.lineTo(W - 30, 240); ctx.stroke()
+
+        if (ritmo) {
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 58px ' + sf; ctx.textAlign = 'center'
+          ctx.fillText(ritmo.replace(' /km', ''), rX, 312)
+          ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
+          ctx.fillText('RITMO /KM', rX, 346)
         }
 
       } else {
         // VERTICAL
 
-        // Top green accent bar
-        ctx.fillStyle = '#4ade80'
+        // Top red accent bar
+        ctx.fillStyle = '#ef4444'
         ctx.fillRect(0, 0, W, 5)
 
         // Logo
         if (logo) {
-          const lH = 48; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
-          ctx.save(); ctx.globalAlpha = 0.88
+          const lH = 52; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          ctx.save(); ctx.globalAlpha = 0.9
           ctx.drawImage(logo, W / 2 - lWd / 2, 26, lWd, lH)
           ctx.restore()
         }
 
-        // Carrera name
-        ctx.fillStyle = 'rgba(255,255,255,0.38)'
-        ctx.font = '500 16px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(nTrunc.toUpperCase(), W / 2, 114)
+        // Name
+        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(nTrunc.toUpperCase(), W / 2, 124)
 
-        // HUGE time
-        ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 100px ' + sf
-        ctx.fillText(tiempoTexto, W / 2, 242)
+        // Time
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 82px ' + sf
+        ctx.fillText(tiempoTexto, W / 2, 236)
 
-        // Time label
-        ctx.fillStyle = 'rgba(255,255,255,0.3)'
-        ctx.font = '500 15px ' + sf
-        ctx.fillText('TIEMPO TOTAL', W / 2, 274)
+        // TIEMPO TOTAL label
+        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
+        ctx.fillText('TIEMPO TOTAL', W / 2, 268)
 
-        // Decorative divider + green diamond
-        const divY = 308
+        // Divider + red diamond
+        const divY = 302
         ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1.2
-        ctx.beginPath(); ctx.moveTo(44, divY); ctx.lineTo(W / 2 - 20, divY); ctx.stroke()
-        ctx.beginPath(); ctx.moveTo(W / 2 + 20, divY); ctx.lineTo(W - 44, divY); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(50, divY); ctx.lineTo(W / 2 - 22, divY); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(W / 2 + 22, divY); ctx.lineTo(W - 50, divY); ctx.stroke()
         ctx.save()
-        ctx.fillStyle = '#4ade80'; ctx.globalAlpha = 0.9
+        ctx.fillStyle = '#ef4444'; ctx.globalAlpha = 0.9
         ctx.translate(W / 2, divY); ctx.rotate(Math.PI / 4)
         ctx.fillRect(-6, -6, 12, 12)
         ctx.restore()
 
         // Stats
-        const c1 = W * 0.27, c2 = W * 0.73, statValY = 405, statLblY = 432
+        const c1 = W * 0.27, c2 = W * 0.73
 
-        pillBg(c1, statValY - 22, 166, 68, '#4ade80')
-        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 58px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(dist, c1, statValY + 16)
-        ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
-        ctx.fillText('DISTANCIA', c1, statLblY)
+        // Dist
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 68px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, c1, 394)
+        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
+        ctx.fillText('DISTANCIA', c1, 424)
 
         if (ritmo) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1.2
-          ctx.beginPath(); ctx.moveTo(W / 2, 330); ctx.lineTo(W / 2, 458); ctx.stroke()
-          pillBg(c2, statValY - 22, 186, 68, '#60a5fa')
-          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 52px ' + sf
-          ctx.fillText(ritmo.replace(' /km', ''), c2, statValY + 14)
-          ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
-          ctx.fillText('RITMO /KM', c2, statLblY)
-        }
+          // Center separator
+          ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1.2
+          ctx.beginPath(); ctx.moveTo(W / 2, 326); ctx.lineTo(W / 2, 450); ctx.stroke()
 
-        // Bottom tagline
-        ctx.fillStyle = 'rgba(255,255,255,0.18)'
-        ctx.font = '400 12px ' + sf
-        ctx.fillText('Flama Running App', W / 2, H - 16)
+          // Ritmo
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 62px ' + sf
+          ctx.fillText(ritmo.replace(' /km', ''), c2, 394)
+          ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
+          ctx.fillText('RITMO /KM', c2, 424)
+        }
       }
 
       ctx.restore()
