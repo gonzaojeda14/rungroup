@@ -41,7 +41,8 @@ export default function Tienda() {
 
   if (loading) return <Cargando />
   if (isAdmin) return <TiendaAdmin config={config} onConfigChange={setConfig} />
-  return <TiendaPublica config={config} />
+  if (config?.activa) return <TiendaPublica config={config} />
+  return <TiendaProximamente />
 }
 
 // ─── PRÓXIMAMENTE ─────────────────────────────────────────────────────────────
@@ -225,7 +226,8 @@ function TiendaAdmin({ config, onConfigChange }) {
             <ProductoCardAdmin key={p.id} p={p}
               onToggle={() => toggleDisponible(p)}
               onEditar={() => { setEditandoProducto(p); setShowForm(true) }}
-              onEliminar={() => setConfirmarEliminar(p)} />
+              onEliminar={() => setConfirmarEliminar(p)}
+              onVerFoto={setFotoAmpliada} />
           ))}
         </>}
 
@@ -632,23 +634,35 @@ function sortTalles(talles) {
 
 // ─── CARD PRODUCTO (admin) ────────────────────────────────────────────────────
 
-function ProductoCardAdmin({ p, onToggle, onEditar, onEliminar }) {
+function ProductoCardAdmin({ p, onToggle, onEditar, onEliminar, onVerFoto }) {
   const talles = sortTalles(p.talles_disponibles || [])
-  const thumb = (p.fotos || [])[0] || p.foto_url
+  const fotos = p.fotos && p.fotos.length > 0 ? p.fotos : p.foto_url ? [p.foto_url] : []
+  const thumb = fotos[0]
+  const [descAbierta, setDescAbierta] = useState(false)
   return (
     <div className="card" style={{ padding:'14px 16px', display:'flex', gap:14, opacity: p.disponible ? 1 : 0.55 }}>
       {thumb && (
         <div style={{ position:'relative', flexShrink:0 }}>
           <img src={thumb.replace('/upload/', '/upload/w_100,q_auto/')} alt={p.nombre} loading="lazy"
-            style={{ width:72, height:72, objectFit:'cover', borderRadius:8 }} />
-          {(p.fotos || []).length > 1 && (
-            <span style={{ position:'absolute', bottom:3, right:3, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4 }}>{p.fotos.length} 📷</span>
+            onClick={() => onVerFoto && onVerFoto(thumb)}
+            style={{ width:72, height:72, objectFit:'cover', borderRadius:8, cursor:'pointer' }} />
+          {fotos.length > 1 && (
+            <span onClick={() => onVerFoto && onVerFoto(thumb)}
+              style={{ position:'absolute', bottom:3, right:3, fontSize:10, background:'rgba(0,0,0,0.7)', color:'#fff', padding:'1px 5px', borderRadius:4, cursor:'pointer' }}>{fotos.length} 📷</span>
           )}
         </div>
       )}
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontWeight:700, fontSize:15 }}>{p.nombre}</div>
-        {p.descripcion && <div style={{ fontSize:13, color:'var(--text2)', marginTop:2 }}>{p.descripcion}</div>}
+        {p.descripcion && (
+          <>
+            <button onClick={() => setDescAbierta(v => !v)}
+              style={{ fontSize:12, color:'var(--accent)', background:'none', border:'none', padding:'2px 0', cursor:'pointer', marginTop:2 }}>
+              {descAbierta ? 'Ocultar descripción ▲' : 'Ver descripción ▼'}
+            </button>
+            {descAbierta && <div style={{ fontSize:13, color:'var(--text2)', marginTop:4 }}>{p.descripcion}</div>}
+          </>
+        )}
         <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:6, alignItems:'center' }}>
           <span style={{ fontWeight:700, fontSize:14, color:'var(--accent)' }}>${Number(p.precio).toLocaleString('es-AR')}</span>
           {talles.length > 0 && <span style={{ fontSize:12, color:'var(--text2)' }}>{talles.join(' · ')}</span>}
