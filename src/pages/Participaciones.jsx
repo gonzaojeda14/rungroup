@@ -106,6 +106,7 @@ export default function Participaciones() {
   const [tiemposGuardados, setTiemposGuardados] = useState({}) // { carreraId_distancia: tiempo_texto }
   const [tiemposSegundos, setTiemposSegundos] = useState({}) // { carreraId_distancia: tiempo_segundos }
   const [compartiendo, setCompartiendo] = useState(null) // key en generación
+  const [compartirMenu, setCompartirMenu] = useState(null) // key mostrando opciones
   const [editandoTiempo, setEditandoTiempo] = useState({}) // { key: true } cuando está en modo edición
   const [savingTiempo, setSavingTiempo] = useState({})
   const [fotosCarrera, setFotosCarrera] = useState(null)
@@ -127,121 +128,105 @@ export default function Participaciones() {
     setSearchParams({}, { replace: true })
   }
 
-  async function compartirResultado({ carreraNombre, dist, tiempoTexto, segundos, key }) {
+  async function compartirResultado({ carreraNombre, dist, tiempoTexto, segundos, key, orientacion }) {
+    setCompartirMenu(null)
     setCompartiendo(key)
     try {
-      const W = 1080, H = 1080
+      const isH = orientacion === 'horizontal'
+      const W = isH ? 1080 : 600
+      const H = isH ? 500 : 900
+      const R = 40
       const canvas = document.createElement('canvas')
       canvas.width = W; canvas.height = H
       const ctx = canvas.getContext('2d')
 
-      // Panel dimensions (bottom portion, taller to fit logo)
-      const pH = 500, pY = H - pH - 40
-      const pX = 50, pW = W - 100
-
-      // Rounded rect helper
-      function rr(x, y, w, h, r) {
-        ctx.beginPath()
-        ctx.moveTo(x + r, y)
-        ctx.lineTo(x + w - r, y)
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r)
-        ctx.lineTo(x + w, y + h - r)
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
-        ctx.lineTo(x + r, y + h)
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r)
-        ctx.lineTo(x, y + r)
-        ctx.quadraticCurveTo(x, y, x + r, y)
-        ctx.closePath()
-      }
-
-      // Dark semi-transparent panel (fondo transparente)
-      rr(pX, pY, pW, pH, 36)
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
-      ctx.fill()
-
-      // Subtle border
-      rr(pX, pY, pW, pH, 36)
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-      ctx.lineWidth = 2
-      ctx.stroke()
-
-      // Carrera name (top of panel)
-      ctx.fillStyle = 'rgba(255,255,255,0.55)'
-      ctx.font = '30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.textAlign = 'center'
-      const nombreTrunc = (carreraNombre || '').length > 36 ? (carreraNombre || '').slice(0, 34) + '…' : (carreraNombre || '')
-      ctx.fillText(nombreTrunc, W / 2, pY + 60)
-
-      // Big time
-      ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 108px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.textAlign = 'center'
-      ctx.fillText(tiempoTexto, W / 2, pY + 180)
-
-      // Label under time
-      ctx.fillStyle = 'rgba(255,255,255,0.45)'
-      ctx.font = '26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText('Tiempo total', W / 2, pY + 216)
-
-      // Divider line
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)'
-      ctx.lineWidth = 1.5
+      // Clip to rounded rect (transparent corners)
+      ctx.save()
       ctx.beginPath()
-      ctx.moveTo(pX + 60, pY + 248)
-      ctx.lineTo(pX + pW - 60, pY + 248)
-      ctx.stroke()
+      ctx.moveTo(R, 0); ctx.lineTo(W - R, 0)
+      ctx.quadraticCurveTo(W, 0, W, R)
+      ctx.lineTo(W, H - R); ctx.quadraticCurveTo(W, H, W - R, H)
+      ctx.lineTo(R, H); ctx.quadraticCurveTo(0, H, 0, H - R)
+      ctx.lineTo(0, R); ctx.quadraticCurveTo(0, 0, R, 0)
+      ctx.closePath()
+      ctx.clip()
+      ctx.fillStyle = 'rgba(10, 15, 28, 0.82)'
+      ctx.fillRect(0, 0, W, H)
 
-      // Middle row: Distancia | Ritmo
+      // Load logo
+      let logo = null
+      try {
+        logo = new Image(); logo.src = '/logo-flama.png'
+        await new Promise((res, rej) => { logo.onload = res; logo.onerror = rej })
+      } catch { logo = null }
+
       const distKm = parsearDistanciaKm(dist)
       const ritmo = calcularRitmo(segundos, distKm)
+      const sf = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      const nTrunc = (carreraNombre || '').length > 32 ? (carreraNombre || '').slice(0, 30) + '…' : (carreraNombre || '')
 
-      const col1 = pX + pW * 0.25
-      const col2 = pX + pW * 0.75
-
-      ctx.fillStyle = '#4ade80'
-      ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.textAlign = 'center'
-      ctx.fillText(dist, col1, pY + 318)
-      ctx.fillStyle = 'rgba(255,255,255,0.45)'
-      ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      ctx.fillText('Distancia', col1, pY + 352)
-
-      if (ritmo) {
-        ctx.fillStyle = '#60a5fa'
-        ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        ctx.fillText(ritmo.replace(' /km', ''), col2, pY + 318)
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'
-        ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        ctx.fillText('Ritmo promedio', col2, pY + 352)
-
-        // Vertical divider between cols
-        ctx.strokeStyle = 'rgba(255,255,255,0.18)'
-        ctx.lineWidth = 1.5
-        ctx.beginPath()
-        ctx.moveTo(W / 2, pY + 268)
-        ctx.lineTo(W / 2, pY + 370)
-        ctx.stroke()
+      if (isH) {
+        const lW = Math.round(W * 0.58)
+        ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '26px ' + sf; ctx.textAlign = 'left'
+        ctx.fillText(nTrunc, 48, 62)
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 108px ' + sf
+        ctx.fillText(tiempoTexto, 48, 205)
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '26px ' + sf
+        ctx.fillText('Tiempo total', 48, 243)
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(lW, 30); ctx.lineTo(lW, H - 30); ctx.stroke()
+        const rX = lW + (W - lW) / 2
+        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 68px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, rX, 152)
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '24px ' + sf
+        ctx.fillText('Distancia', rX, 190)
+        if (ritmo) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1
+          ctx.beginPath(); ctx.moveTo(lW + 20, 218); ctx.lineTo(W - 20, 218); ctx.stroke()
+          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 58px ' + sf
+          ctx.fillText(ritmo.replace(' /km', ''), rX, 316)
+          ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '24px ' + sf
+          ctx.fillText('Ritmo promedio', rX, 354)
+        }
+        if (logo) {
+          const lH = 48; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          ctx.drawImage(logo, rX - lWd / 2, H - lH - 18, lWd, lH)
+        }
+      } else {
+        if (logo) {
+          const lH = 72; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          ctx.drawImage(logo, W / 2 - lWd / 2, 36, lWd, lH)
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '30px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(nTrunc, W / 2, 162)
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 106px ' + sf
+        ctx.fillText(tiempoTexto, W / 2, 308)
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '28px ' + sf
+        ctx.fillText('Tiempo total', W / 2, 350)
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(40, 386); ctx.lineTo(W - 40, 386); ctx.stroke()
+        const c1 = W * 0.27, c2 = W * 0.73
+        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 74px ' + sf
+        ctx.fillText(dist, c1, 490)
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '26px ' + sf
+        ctx.fillText('Distancia', c1, 530)
+        if (ritmo) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5
+          ctx.beginPath(); ctx.moveTo(W / 2, 402); ctx.lineTo(W / 2, 558); ctx.stroke()
+          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 62px ' + sf
+          ctx.fillText(ritmo.replace(' /km', ''), c2, 490)
+          ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '26px ' + sf
+          ctx.fillText('Ritmo prom.', c2, 530)
+        }
       }
 
-      // Logo large at bottom center
-      try {
-        const logo = new Image()
-        logo.src = '/logo-flama.png'
-        await new Promise((res, rej) => { logo.onload = res; logo.onerror = rej })
-        const logoH = 90
-        const logoW = logo.naturalWidth * (logoH / logo.naturalHeight)
-        ctx.drawImage(logo, W / 2 - logoW / 2, pY + pH - logoH - 28, logoW, logoH)
-      } catch {}
-
-      // Descargar directo
+      ctx.restore()
       const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `resultado-${dist || 'carrera'}.png`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      a.download = 'resultado-' + (dist || 'carrera') + '-' + orientacion + '.png'
+      document.body.appendChild(a); a.click(); document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 2000)
     } catch (err) {
       console.error('[compartir]', err)
@@ -668,19 +653,15 @@ export default function Participaciones() {
                             >
                               Editar
                             </button>
-                            <button
-                              onClick={() => compartirResultado({
-                                carreraNombre: p.carrera?.nombre,
-                                dist,
-                                tiempoTexto: guardado,
-                                segundos: tiemposSegundos[key],
-                                key,
-                              })}
-                              disabled={compartiendo === key}
-                              style={{ fontSize: '11px', color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: compartiendo === key ? 0.5 : 1 }}
-                            >
-                              {compartiendo === key ? '⏳' : '🏅 Compartir'}
-                            </button>
+                            {compartirMenu === key ? (
+                              <>
+                                <button onClick={() => compartirResultado({ carreraNombre: p.carrera?.nombre, dist, tiempoTexto: guardado, segundos: tiemposSegundos[key], key, orientacion: 'horizontal' })} style={{ fontSize: '11px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: '6px', cursor: 'pointer', padding: '2px 8px' }}>↔ Post</button>
+                                <button onClick={() => compartirResultado({ carreraNombre: p.carrera?.nombre, dist, tiempoTexto: guardado, segundos: tiemposSegundos[key], key, orientacion: 'vertical' })} style={{ fontSize: '11px', color: '#a78bfa', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', cursor: 'pointer', padding: '2px 8px' }}>↕ Story</button>
+                                <button onClick={() => setCompartirMenu(null)} style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>✕</button>
+                              </>
+                            ) : (
+                              <button onClick={() => setCompartirMenu(key)} disabled={compartiendo === key} style={{ fontSize: '11px', color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: compartiendo === key ? 0.5 : 1 }}>{compartiendo === key ? '⏳' : '🏅 Compartir'}</button>
+                            )}
                           </div>
                         ) : (
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
