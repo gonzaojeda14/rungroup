@@ -134,13 +134,13 @@ export default function Participaciones() {
     try {
       const isH = orientacion === 'horizontal'
       const W = isH ? 1080 : 600
-      const H = isH ? 500 : 900
-      const R = 40
+      const H = isH ? 400 : 540
+      const R = 36
       const canvas = document.createElement('canvas')
       canvas.width = W; canvas.height = H
       const ctx = canvas.getContext('2d')
 
-      // Clip to rounded rect (transparent corners)
+      // Clip rounded rect
       ctx.save()
       ctx.beginPath()
       ctx.moveTo(R, 0); ctx.lineTo(W - R, 0)
@@ -150,8 +150,43 @@ export default function Participaciones() {
       ctx.lineTo(0, R); ctx.quadraticCurveTo(0, 0, R, 0)
       ctx.closePath()
       ctx.clip()
-      ctx.fillStyle = 'rgba(10, 15, 28, 0.82)'
+
+      // Background dark gradient
+      const bg = ctx.createLinearGradient(0, 0, W * 0.7, H)
+      bg.addColorStop(0, 'rgba(7, 11, 22, 0.93)')
+      bg.addColorStop(1, 'rgba(14, 22, 40, 0.91)')
+      ctx.fillStyle = bg
       ctx.fillRect(0, 0, W, H)
+
+      // Radial glow top-right corner
+      const glowX = isH ? W - 80 : W + 10
+      const glowY = isH ? -50 : -20
+      const glowR = isH ? 360 : 290
+      const glow = ctx.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowR)
+      glow.addColorStop(0, 'rgba(74, 222, 128, 0.13)')
+      glow.addColorStop(0.55, 'rgba(74, 222, 128, 0.04)')
+      glow.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = glow
+      ctx.fillRect(0, 0, W, H)
+
+      // Pill badge helper
+      function pillBg(cx, cy, pw, ph, color) {
+        const r = ph / 2, x = cx - pw / 2, y = cy - ph / 2
+        ctx.save()
+        ctx.globalAlpha = 0.16
+        ctx.fillStyle = color
+        ctx.beginPath()
+        ctx.moveTo(x + r, y); ctx.lineTo(x + pw - r, y)
+        ctx.quadraticCurveTo(x + pw, y, x + pw, y + r)
+        ctx.quadraticCurveTo(x + pw, y + ph, x + pw - r, y + ph)
+        ctx.lineTo(x + r, y + ph)
+        ctx.quadraticCurveTo(x, y + ph, x, y + r)
+        ctx.quadraticCurveTo(x, y, x + r, y)
+        ctx.closePath(); ctx.fill()
+        ctx.globalAlpha = 0.28
+        ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke()
+        ctx.restore()
+      }
 
       // Load logo
       let logo = null
@@ -162,62 +197,132 @@ export default function Participaciones() {
 
       const distKm = parsearDistanciaKm(dist)
       const ritmo = calcularRitmo(segundos, distKm)
-      const sf = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      const nTrunc = (carreraNombre || '').length > 32 ? (carreraNombre || '').slice(0, 30) + '…' : (carreraNombre || '')
+      const sf = '"Helvetica Neue", -apple-system, BlinkMacSystemFont, Arial, sans-serif'
+      const nTrunc = (carreraNombre || '').length > 36 ? (carreraNombre || '').slice(0, 34) + '\u2026' : (carreraNombre || '')
 
       if (isH) {
-        const lW = Math.round(W * 0.58)
-        ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '26px ' + sf; ctx.textAlign = 'left'
-        ctx.fillText(nTrunc, 48, 62)
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 108px ' + sf
-        ctx.fillText(tiempoTexto, 48, 205)
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '26px ' + sf
-        ctx.fillText('Tiempo total', 48, 243)
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5
-        ctx.beginPath(); ctx.moveTo(lW, 30); ctx.lineTo(lW, H - 30); ctx.stroke()
-        const rX = lW + (W - lW) / 2
-        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 68px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(dist, rX, 152)
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '24px ' + sf
-        ctx.fillText('Distancia', rX, 190)
+        // Green left accent bar
+        ctx.fillStyle = '#4ade80'
+        ctx.fillRect(0, 0, 8, H)
+
+        const splitX = 630
+
+        // Carrera name (small, uppercase)
+        ctx.fillStyle = 'rgba(255,255,255,0.38)'
+        ctx.font = '500 18px ' + sf
+        ctx.textAlign = 'left'
+        ctx.fillText(nTrunc.toUpperCase(), 56, 52)
+
+        // HUGE time
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 108px ' + sf
+        ctx.fillText(tiempoTexto, 46, 210)
+
+        // Label
+        ctx.fillStyle = 'rgba(255,255,255,0.3)'
+        ctx.font = '500 15px ' + sf
+        ctx.fillText('TIEMPO TOTAL', 52, 248)
+
+        // Vertical divider — fades at top and bottom
+        const vdg = ctx.createLinearGradient(0, 20, 0, H - 20)
+        vdg.addColorStop(0, 'rgba(255,255,255,0)')
+        vdg.addColorStop(0.25, 'rgba(255,255,255,0.14)')
+        vdg.addColorStop(0.75, 'rgba(255,255,255,0.14)')
+        vdg.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.strokeStyle = vdg; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(splitX, 20); ctx.lineTo(splitX, H - 20); ctx.stroke()
+
+        // Right column
+        const rX = splitX + (W - splitX) / 2
+
+        // Distancia pill
+        const dY = H * 0.31
+        pillBg(rX, dY, 210, 72, '#4ade80')
+        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 54px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, rX, dY + 20)
+        ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
+        ctx.fillText('DISTANCIA', rX, dY + 42)
+
         if (ritmo) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1
-          ctx.beginPath(); ctx.moveTo(lW + 20, 218); ctx.lineTo(W - 20, 218); ctx.stroke()
-          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 58px ' + sf
-          ctx.fillText(ritmo.replace(' /km', ''), rX, 316)
-          ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '24px ' + sf
-          ctx.fillText('Ritmo promedio', rX, 354)
+          const rY = H * 0.72
+          pillBg(rX, rY, 240, 72, '#60a5fa')
+          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 50px ' + sf; ctx.textAlign = 'center'
+          ctx.fillText(ritmo.replace(' /km', ''), rX, rY + 18)
+          ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
+          ctx.fillText('RITMO /KM', rX, rY + 40)
         }
+
+        if (logo) {
+          const lH = 34; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          ctx.save(); ctx.globalAlpha = 0.65
+          ctx.drawImage(logo, W - lWd - 22, H - lH - 14, lWd, lH)
+          ctx.restore()
+        }
+
+      } else {
+        // VERTICAL
+
+        // Top green accent bar
+        ctx.fillStyle = '#4ade80'
+        ctx.fillRect(0, 0, W, 5)
+
+        // Logo
         if (logo) {
           const lH = 48; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
-          ctx.drawImage(logo, rX - lWd / 2, H - lH - 18, lWd, lH)
+          ctx.save(); ctx.globalAlpha = 0.88
+          ctx.drawImage(logo, W / 2 - lWd / 2, 26, lWd, lH)
+          ctx.restore()
         }
-      } else {
-        if (logo) {
-          const lH = 72; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
-          ctx.drawImage(logo, W / 2 - lWd / 2, 36, lWd, lH)
-        }
-        ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '30px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(nTrunc, W / 2, 162)
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 106px ' + sf
-        ctx.fillText(tiempoTexto, W / 2, 308)
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '28px ' + sf
-        ctx.fillText('Tiempo total', W / 2, 350)
-        ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5
-        ctx.beginPath(); ctx.moveTo(40, 386); ctx.lineTo(W - 40, 386); ctx.stroke()
-        const c1 = W * 0.27, c2 = W * 0.73
-        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 74px ' + sf
-        ctx.fillText(dist, c1, 490)
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '26px ' + sf
-        ctx.fillText('Distancia', c1, 530)
+
+        // Carrera name
+        ctx.fillStyle = 'rgba(255,255,255,0.38)'
+        ctx.font = '500 16px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(nTrunc.toUpperCase(), W / 2, 114)
+
+        // HUGE time
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 100px ' + sf
+        ctx.fillText(tiempoTexto, W / 2, 242)
+
+        // Time label
+        ctx.fillStyle = 'rgba(255,255,255,0.3)'
+        ctx.font = '500 15px ' + sf
+        ctx.fillText('TIEMPO TOTAL', W / 2, 274)
+
+        // Decorative divider + green diamond
+        const divY = 308
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1.2
+        ctx.beginPath(); ctx.moveTo(44, divY); ctx.lineTo(W / 2 - 20, divY); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(W / 2 + 20, divY); ctx.lineTo(W - 44, divY); ctx.stroke()
+        ctx.save()
+        ctx.fillStyle = '#4ade80'; ctx.globalAlpha = 0.9
+        ctx.translate(W / 2, divY); ctx.rotate(Math.PI / 4)
+        ctx.fillRect(-6, -6, 12, 12)
+        ctx.restore()
+
+        // Stats
+        const c1 = W * 0.27, c2 = W * 0.73, statValY = 405, statLblY = 432
+
+        pillBg(c1, statValY - 22, 166, 68, '#4ade80')
+        ctx.fillStyle = '#4ade80'; ctx.font = 'bold 58px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, c1, statValY + 16)
+        ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
+        ctx.fillText('DISTANCIA', c1, statLblY)
+
         if (ritmo) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5
-          ctx.beginPath(); ctx.moveTo(W / 2, 402); ctx.lineTo(W / 2, 558); ctx.stroke()
-          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 62px ' + sf
-          ctx.fillText(ritmo.replace(' /km', ''), c2, 490)
-          ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '26px ' + sf
-          ctx.fillText('Ritmo prom.', c2, 530)
+          ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1.2
+          ctx.beginPath(); ctx.moveTo(W / 2, 330); ctx.lineTo(W / 2, 458); ctx.stroke()
+          pillBg(c2, statValY - 22, 186, 68, '#60a5fa')
+          ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 52px ' + sf
+          ctx.fillText(ritmo.replace(' /km', ''), c2, statValY + 14)
+          ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '500 14px ' + sf
+          ctx.fillText('RITMO /KM', c2, statLblY)
         }
+
+        // Bottom tagline
+        ctx.fillStyle = 'rgba(255,255,255,0.18)'
+        ctx.font = '400 12px ' + sf
+        ctx.fillText('Flama Running App', W / 2, H - 16)
       }
 
       ctx.restore()
@@ -655,8 +760,8 @@ export default function Participaciones() {
                             </button>
                             {compartirMenu === key ? (
                               <>
-                                <button onClick={() => compartirResultado({ carreraNombre: p.carrera?.nombre, dist, tiempoTexto: guardado, segundos: tiemposSegundos[key], key, orientacion: 'horizontal' })} style={{ fontSize: '11px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: '6px', cursor: 'pointer', padding: '2px 8px' }}>↔ Post</button>
-                                <button onClick={() => compartirResultado({ carreraNombre: p.carrera?.nombre, dist, tiempoTexto: guardado, segundos: tiemposSegundos[key], key, orientacion: 'vertical' })} style={{ fontSize: '11px', color: '#a78bfa', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', cursor: 'pointer', padding: '2px 8px' }}>↕ Story</button>
+                                <button onClick={() => compartirResultado({ carreraNombre: p.carrera?.nombre, dist, tiempoTexto: guardado, segundos: tiemposSegundos[key], key, orientacion: 'horizontal' })} style={{ fontSize: '11px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: '6px', cursor: 'pointer', padding: '2px 8px' }}>↔ Horizontal</button>
+                                <button onClick={() => compartirResultado({ carreraNombre: p.carrera?.nombre, dist, tiempoTexto: guardado, segundos: tiemposSegundos[key], key, orientacion: 'vertical' })} style={{ fontSize: '11px', color: '#a78bfa', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', cursor: 'pointer', padding: '2px 8px' }}>↕ Vertical</button>
                                 <button onClick={() => setCompartirMenu(null)} style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>✕</button>
                               </>
                             ) : (
