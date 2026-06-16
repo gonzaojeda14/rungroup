@@ -17,14 +17,32 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+function normalizarLugar(lugar: string): string[] {
+  // Normalizar abreviaturas argentinas y generar variantes para geocoding
+  const normalizado = lugar
+    .replace(/\bCABA\b/gi, 'Buenos Aires')
+    .replace(/\bGBA\b/gi, 'Buenos Aires')
+    .replace(/\bPBA\b/gi, 'Buenos Aires')
+    .replace(/\bBsAs\b/gi, 'Buenos Aires')
+
+  const primeraParte = normalizado.split(',')[0].trim()
+
+  return [
+    `${normalizado}, Argentina`,
+    `${normalizado}`,
+    `${primeraParte}, Argentina`,
+    `${primeraParte}`,
+  ].filter((v, i, arr) => arr.indexOf(v) === i) // deduplicar
+}
+
 async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
-  // 1. Geocodificar el lugar — primero con Argentina, si no encuentra sin país
+  // 1. Geocodificar el lugar con múltiples variantes
   let geoData: any[] = []
-  for (const q of [`${lugar}, Argentina`, lugar]) {
+  for (const q of normalizarLugar(lugar)) {
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=1&appid=${OWM_API_KEY}`
     const geoRes = await fetch(geoUrl)
     geoData = await geoRes.json()
-    console.log(`[geo] q="${q}" → ${JSON.stringify(geoData)}`)
+    console.log(`[geo] q="${q}" → ${geoData?.length ? geoData[0].name + ', ' + geoData[0].country : 'no results'}`)
     if (geoData?.length) break
   }
   if (!geoData?.length) {
