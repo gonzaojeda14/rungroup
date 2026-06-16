@@ -162,14 +162,6 @@ export default function RecordsPersonales({ userId }) {
     const tiempoTexto = segundosATiempo(seg)
     setSaving(true)
 
-    // Bloquear solo si el tiempo nuevo es peor que el existente
-    const existente = records[distancia]
-    if (existente && seg > existente.tiempo_segundos) {
-      setMsg('Ya tenés un mejor tiempo registrado')
-      setSaving(false)
-      return
-    }
-
     await supabase.from('records_personales').upsert({
       user_id: uid,
       distancia,
