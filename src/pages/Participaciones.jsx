@@ -154,7 +154,14 @@ export default function Participaciones() {
         ctx.closePath()
       }
 
-      // Dark semi-transparent panel (fondo transparente — overlay sobre foto)
+      // Fondo degradado oscuro (cubre todo el canvas)
+      const grad = ctx.createLinearGradient(0, 0, 0, H)
+      grad.addColorStop(0, '#0f172a')
+      grad.addColorStop(1, '#1e293b')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, W, H)
+
+      // Dark semi-transparent panel
       rr(pX, pY, pW, pH, 36)
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
       ctx.fill()
@@ -233,18 +240,16 @@ export default function Participaciones() {
         ctx.drawImage(logo, W / 2 - logoW / 2, pY + pH - logoH - 28, logoW, logoH)
       } catch {}
 
-      // Export
+      // Descargar directo
       const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
-      const file = new File([blob], `resultado-${dist || 'carrera'}.png`, { type: 'image/png' })
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Mi resultado en ${carreraNombre}` })
-      } else {
-        // Fallback: download
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url; a.download = file.name; a.click()
-        setTimeout(() => URL.revokeObjectURL(url), 1000)
-      }
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `resultado-${dist || 'carrera'}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 2000)
     } catch (err) {
       console.error('[compartir]', err)
     } finally {
