@@ -133,8 +133,8 @@ export default function Participaciones() {
     setCompartiendo(key)
     try {
       const isH = orientacion === 'horizontal'
-      const W = isH ? 1080 : 480
-      const H = isH ? 400 : 860
+      const W = isH ? 860 : 480
+      const H = isH ? 440 : 860
       const R = 36
       const canvas = document.createElement('canvas')
       canvas.width = W; canvas.height = H
@@ -180,58 +180,55 @@ export default function Participaciones() {
       const nTrunc = (carreraNombre || '').length > 40 ? (carreraNombre || '').slice(0, 38) + '\u2026' : (carreraNombre || '')
 
       if (isH) {
-        // Red left accent bar
-        ctx.fillStyle = '#ef4444'
-        ctx.fillRect(0, 0, 8, H)
+        // No red bar — clean look
+        const splitX = Math.round(W * 0.58)
+        const rX = splitX + (W - splitX) / 2
+        const pad = 44
 
-        const splitX = 620
+        // Name — top left
+        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf; ctx.textAlign = 'left'
+        ctx.fillText(nTrunc.toUpperCase(), pad, Math.round(H * 0.13))
 
-        // Name
-        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf; ctx.textAlign = 'left'
-        ctx.fillText(nTrunc.toUpperCase(), 56, 50)
-
-        // Time
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 96px ' + sf
-        ctx.fillText(tiempoTexto, 46, 196)
+        // Time — hero, vertically centered in left col
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 108px ' + sf
+        ctx.fillText(tiempoTexto, pad - 4, Math.round(H * 0.57))
 
         // TIEMPO TOTAL
-        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-        ctx.fillText('TIEMPO TOTAL', 52, 232)
+        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+        ctx.fillText('TIEMPO TOTAL', pad, Math.round(H * 0.70))
 
-        // Vertical divider fading
-        const vdg = ctx.createLinearGradient(0, 20, 0, H - 20)
-        vdg.addColorStop(0, 'rgba(255,255,255,0)')
-        vdg.addColorStop(0.2, 'rgba(255,255,255,0.15)')
-        vdg.addColorStop(0.8, 'rgba(255,255,255,0.15)')
-        vdg.addColorStop(1, 'rgba(255,255,255,0)')
-        ctx.strokeStyle = vdg; ctx.lineWidth = 1.5
-        ctx.beginPath(); ctx.moveTo(splitX, 20); ctx.lineTo(splitX, H - 20); ctx.stroke()
-
-        const rX = splitX + (W - splitX) / 2
-
-        // Logo — bottom-left
+        // Logo — bottom left
         if (logo) {
-          const lH = 46; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
+          const lH = 44; const lWd = logo.naturalWidth * (lH / logo.naturalHeight)
           ctx.save(); ctx.globalAlpha = 0.88
-          ctx.drawImage(logo, 52, H - lH - 18, lWd, lH)
+          ctx.drawImage(logo, pad, H - lH - 16, lWd, lH)
           ctx.restore()
         }
 
-        // Dist — top half of right col
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 68px ' + sf; ctx.textAlign = 'center'
-        ctx.fillText(dist, rX, Math.round(H * 0.34))
-        ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
-        ctx.fillText('DISTANCIA', rX, Math.round(H * 0.34) + 34)
+        // Vertical divider fading
+        const vdg = ctx.createLinearGradient(0, 24, 0, H - 24)
+        vdg.addColorStop(0, 'rgba(255,255,255,0)')
+        vdg.addColorStop(0.15, 'rgba(255,255,255,0.15)')
+        vdg.addColorStop(0.85, 'rgba(255,255,255,0.15)')
+        vdg.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.strokeStyle = vdg; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(splitX, 24); ctx.lineTo(splitX, H - 24); ctx.stroke()
 
-        // Sep line — exact vertical center of right col
+        // Dist — top half of right col (centered at ~30% height)
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 76px ' + sf; ctx.textAlign = 'center'
+        ctx.fillText(dist, rX, Math.round(H * 0.36))
+        ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
+        ctx.fillText('DISTANCIA', rX, Math.round(H * 0.36) + 32)
+
+        // Sep line — exact center
         ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1
-        ctx.beginPath(); ctx.moveTo(splitX + 30, H / 2); ctx.lineTo(W - 30, H / 2); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(splitX + 28, H / 2); ctx.lineTo(W - 28, H / 2); ctx.stroke()
 
         if (ritmo) {
-          // Ritmo — bottom half of right col
-          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 62px ' + sf; ctx.textAlign = 'center'
+          // Ritmo — bottom half of right col (centered at ~72% height)
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 70px ' + sf; ctx.textAlign = 'center'
           ctx.fillText(ritmo.replace(' /km', ''), rX, Math.round(H * 0.72))
-          ctx.fillStyle = lbl; ctx.font = '500 20px ' + sf
+          ctx.fillStyle = lbl; ctx.font = '500 22px ' + sf
           ctx.fillText('RITMO /KM', rX, Math.round(H * 0.72) + 32)
         }
 
