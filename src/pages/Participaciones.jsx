@@ -51,6 +51,27 @@ function autoformatTiempo(valor) {
   return `${nums.slice(0,2)}:${nums.slice(2,4)}:${nums.slice(4)}`
 }
 
+// Extrae km numérico de una distancia como "15K", "Maratón", etc.
+function parsearDistanciaKm(dist) {
+  if (!dist) return null
+  const str = String(dist).toLowerCase().trim()
+  if (str.includes('maratón') || str.includes('maraton') || str === '42k' || str === '42.2k') return 42.195
+  if (str.includes('media') || str === '21k' || str === '21.1k') return 21.097
+  const m = str.match(/^(\d+(?:\.\d+)?)\s*k/)
+  if (m) return parseFloat(m[1])
+  const n = parseFloat(str)
+  return isNaN(n) ? null : n
+}
+
+// Calcula ritmo en formato "MM:SS /km"
+function calcularRitmo(segundos, distKm) {
+  if (!segundos || !distKm) return null
+  const rSeg = Math.round(segundos / distKm)
+  const m = Math.floor(rSeg / 60)
+  const s = rSeg % 60
+  return `${m}:${String(s).padStart(2, '0')} /km`
+}
+
 function diasRestantes(fecha) {
   if (!fecha) return null
   const hoy = new Date()
@@ -83,6 +104,8 @@ export default function Participaciones() {
   const [notas, setNotas] = useState({}) // { carreraId: texto }
   const [tiempos, setTiempos] = useState({}) // { carreraId_distancia: texto }
   const [tiemposGuardados, setTiemposGuardados] = useState({}) // { carreraId_distancia: tiempo_texto }
+  const [tiemposSegundos, setTiemposSegundos] = useState({}) // { carreraId_distancia: tiempo_segundos }
+  const [compartiendo, setCompartiendo] = useState(null) // key en generación
   const [editandoTiempo, setEditandoTiempo] = useState({}) // { key: true } cuando está en modo edición
   const [savingTiempo, setSavingTiempo] = useState({})
   const [fotosCarrera, setFotosCarrera] = useState(null)
@@ -102,6 +125,137 @@ export default function Participaciones() {
   function cerrarGaleria() {
     setFotosCarrera(null)
     setSearchParams({}, { replace: true })
+  }
+
+  async function compartirResultado({ carreraNombre, dist, tiempoTexto, segundos, key }) {
+    setCompartiendo(key)
+    try {
+      const W = 1080, H = 1080
+      const canvas = document.createElement('canvas')
+      canvas.width = W; canvas.height = H
+      const ctx = canvas.getContext('2d')
+
+      // Panel dimensions (bottom portion)
+      const pH = 420, pY = H - pH - 40
+      const pX = 50, pW = W - 100
+
+      // Rounded rect helper
+      function rr(x, y, w, h, r) {
+        ctx.beginPath()
+        ctx.moveTo(x + r, y)
+        ctx.lineTo(x + w - r, y)
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+        ctx.lineTo(x + w, y + h - r)
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+        ctx.lineTo(x + r, y + h)
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+        ctx.lineTo(x, y + r)
+        ctx.quadraticCurveTo(x, y, x + r, y)
+        ctx.closePath()
+      }
+
+      // Dark semi-transparent panel
+      rr(pX, pY, pW, pH, 36)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
+      ctx.fill()
+
+      // Subtle border
+      rr(pX, pY, pW, pH, 36)
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      // Logo (top-left of panel)
+      try {
+        const logo = new Image()
+        logo.src = '/logo-flama.png'
+        await new Promise((res, rej) => { logo.onload = res; logo.onerror = rej })
+        ctx.drawImage(logo, pX + 36, pY + 28, 64, 64)
+      } catch {}
+
+      // "flama" wordmark next to logo
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 38px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText('flama', pX + 116, pY + 74)
+
+      // Divider line
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(pX + 36, pY + 112)
+      ctx.lineTo(pX + pW - 36, pY + 112)
+      ctx.stroke()
+
+      // Carrera name (truncated)
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'
+      ctx.font = '30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.textAlign = 'center'
+      const nombreTrunc = (carreraNombre || '').length > 36 ? (carreraNombre || '').slice(0, 34) + '…' : (carreraNombre || '')
+      ctx.fillText(nombreTrunc, W / 2, pY + 160)
+
+      // Big time
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 108px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(tiempoTexto, W / 2, pY + 280)
+
+      // Label under time
+      ctx.fillStyle = 'rgba(255,255,255,0.45)'
+      ctx.font = '26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.fillText('Tiempo total', W / 2, pY + 316)
+
+      // Bottom row: Distancia | Ritmo
+      const distKm = parsearDistanciaKm(dist)
+      const ritmo = calcularRitmo(segundos, distKm)
+
+      const col1 = pX + pW * 0.25
+      const col2 = pX + pW * 0.75
+
+      ctx.fillStyle = '#4ade80'
+      ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(dist, col1, pY + 378)
+      ctx.fillStyle = 'rgba(255,255,255,0.45)'
+      ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.fillText('Distancia', col1, pY + 408)
+
+      if (ritmo) {
+        ctx.fillStyle = '#60a5fa'
+        ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.fillText(ritmo.replace(' /km', ''), col2, pY + 378)
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'
+        ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        ctx.fillText('Ritmo promedio', col2, pY + 408)
+      }
+
+      // Vertical divider between cols
+      if (ritmo) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(W / 2, pY + 340)
+        ctx.lineTo(W / 2, pY + pH - 20)
+        ctx.stroke()
+      }
+
+      // Export
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+      const file = new File([blob], `resultado-${dist || 'carrera'}.png`, { type: 'image/png' })
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Mi resultado en ${carreraNombre}` })
+      } else {
+        // Fallback: download
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = file.name; a.click()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
+    } catch (err) {
+      console.error('[compartir]', err)
+    } finally {
+      setCompartiendo(null)
+    }
   }
 
   // Restaurar la galería abierta tras un refresh, leyendo el id de la URL
@@ -130,7 +284,7 @@ export default function Participaciones() {
         .eq('user_id', user.id)
         .neq('estado', 'Pendiente'),
       supabase.from('tiempos_carreras')
-        .select('carrera_id, distancia, tiempo_texto')
+        .select('carrera_id, distancia, tiempo_texto, tiempo_segundos')
         .eq('user_id', user.id),
       supabase.from('fotos_carreras')
         .select('carrera_id, carrera:carreras(id, nombre, fecha, hora, distancias, distancia, link, lugar, tipo, tipo_actividad, calzado)'),
@@ -153,8 +307,14 @@ export default function Participaciones() {
     setItems(sorted)
 
     const tMap = {}
-    ;(tcs || []).forEach(t => { tMap[`${t.carrera_id}_${t.distancia}`] = t.tiempo_texto })
+    const sMap = {}
+    ;(tcs || []).forEach(t => {
+      const k = `${t.carrera_id}_${t.distancia}`
+      tMap[k] = t.tiempo_texto
+      sMap[k] = t.tiempo_segundos
+    })
     setTiemposGuardados(tMap)
+    setTiemposSegundos(sMap)
     setLoading(false)
   }
 
@@ -468,119 +628,4 @@ export default function Participaciones() {
                             onChange={e => setNotas(prev => ({ ...prev, [p.carrera.id]: e.target.value }))}
                             style={{
                               width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
-                              borderRadius: '8px', color: 'var(--text)', padding: '8px 12px',
-                              fontSize: '13px', resize: 'none', minHeight: '60px',
-                              fontFamily: 'inherit',
-                            }}
-                          />
-                          <button
-                            className="btn-primary"
-                            style={{ height: 32, fontSize: 12, padding: '0 14px', alignSelf: 'flex-end' }}
-                            onClick={() => handleNota(p.carrera.id, notas[p.carrera.id] || '')}
-                          >
-                            Guardar
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Fotos */}
-                  {pasada && (
-                    <button
-                      onClick={() => abrirGaleria(p.carrera)}
-                      style={{ marginTop: '10px', width: '100%', padding: '8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                    >
-                      📷 {labelFotos(p.carrera?.tipo_actividad)}
-                    </button>
-                  )}
-
-                  {/* Tiempo de carrera — solo para carreras */}
-                  {pasada && p.estado === 'Inscripto' && (!p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera') && (() => {
-                    const dist = p.distancia_elegida || p.carrera?.distancia
-                    if (!dist) return null
-                    const key = `${p.carrera.id}_${dist}`
-                    const guardado = tiemposGuardados[key]
-                    const saving = savingTiempo[key]
-                    return (
-                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
-                        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '6px' }}>
-                          ⏱ ¿En cuánto hiciste los {dist}?
-                        </div>
-                        {guardado && !editandoTiempo[key] ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '15px', fontWeight: 700, color: '#4ade80' }}>{guardado}</span>
-                            <button
-                              onClick={() => setEditandoTiempo(prev => ({ ...prev, [key]: true }))}
-                              style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                            >
-                              Editar
-                            </button>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <input
-                              value={tiempos[key] || ''}
-                              onChange={e => setTiempos(prev => ({ ...prev, [key]: autoformatTiempo(e.target.value) }))}
-                              placeholder="HH:MM:SS"
-                              inputMode="numeric"
-                              style={{
-                                width: '140px', background: 'var(--bg3)', border: '1px solid var(--border)',
-                                borderRadius: '8px', color: 'var(--text)', padding: '6px 10px',
-                                fontSize: '14px', fontFamily: 'inherit',
-                              }}
-                            />
-                            <button
-                              className="btn-primary"
-                              style={{ height: 32, fontSize: 12, padding: '0 14px' }}
-                              disabled={saving || !validarTiempo(tiempos[key] || '')}
-                              onClick={() => guardarTiempo(p.carrera.id, dist, p.carrera.nombre, p.carrera.tipo, p.carrera.fecha)}
-                            >
-                              {saving ? '...' : 'Guardar'}
-                            </button>
-                            {guardado && (
-                              <button
-                                className="btn-ghost"
-                                style={{ height: 32, fontSize: 12, padding: '0 12px' }}
-                                onClick={() => {
-                                  setEditandoTiempo(prev => { const n = {...prev}; delete n[key]; return n })
-                                  setTiempos(prev => { const n = {...prev}; delete n[key]; return n })
-                                }}
-                              >
-                                Cancelar
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
-
-      {fotosCarrera && (
-        <FotosModal
-          carrera={fotosCarrera}
-          onClose={cerrarGaleria}
-        />
-      )}
-
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
-          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
-          fontSize: '13px', fontWeight: 500, zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          animation: 'fadeIn .2s ease', whiteSpace: 'nowrap',
-        }}>
-          {toast}
-        </div>
-      )}
-    </div>
-  )
-}
+                              borderRadius: '8px', color: 'var(--text)', padd
