@@ -18,21 +18,30 @@ const cors = {
 }
 
 function normalizarLugar(lugar: string): string[] {
-  // Normalizar abreviaturas argentinas y generar variantes para geocoding
+  // Normalizar abreviaturas argentinas
   const normalizado = lugar
     .replace(/\bCABA\b/gi, 'Buenos Aires')
     .replace(/\bGBA\b/gi, 'Buenos Aires')
     .replace(/\bPBA\b/gi, 'Buenos Aires')
     .replace(/\bBsAs\b/gi, 'Buenos Aires')
+    .replace(/\bBuenos Aires City\b/gi, 'Buenos Aires')
 
-  const primeraParte = normalizado.split(',')[0].trim()
+  // Partes separadas por coma (de más específico a más general)
+  const partes = normalizado.split(',').map(p => p.trim()).filter(Boolean)
 
-  return [
-    `${normalizado}, Argentina`,
-    `${normalizado}`,
-    `${primeraParte}, Argentina`,
-    `${primeraParte}`,
-  ].filter((v, i, arr) => arr.indexOf(v) === i) // deduplicar
+  const candidatos: string[] = []
+
+  // Intentar con todas las partes primero
+  candidatos.push(`${normalizado}, Argentina`)
+
+  // Luego desde la última parte (ciudad) hacia la primera (barrio)
+  for (let i = partes.length - 1; i >= 0; i--) {
+    const sub = partes.slice(i).join(', ')
+    candidatos.push(`${sub}, Argentina`)
+    candidatos.push(sub)
+  }
+
+  return [...new Set(candidatos)] // deduplicar
 }
 
 async function fetchWeather(lugar: string, fecha: string, hora: string | null) {
