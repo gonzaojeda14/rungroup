@@ -628,4 +628,132 @@ export default function Participaciones() {
                             onChange={e => setNotas(prev => ({ ...prev, [p.carrera.id]: e.target.value }))}
                             style={{
                               width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
-                              borderRadius: '8px', color: 'var(--text)', padd
+                              borderRadius: '8px', color: 'var(--text)', padding: '8px 12px',
+                              fontSize: '13px', resize: 'none', minHeight: '60px',
+                              fontFamily: 'inherit',
+                            }}
+                          />
+                          <button
+                            className="btn-primary"
+                            style={{ height: 32, fontSize: 12, padding: '0 14px', alignSelf: 'flex-end' }}
+                            onClick={() => handleNota(p.carrera.id, notas[p.carrera.id] || '')}
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Fotos */}
+                  {pasada && (
+                    <button
+                      onClick={() => abrirGaleria(p.carrera)}
+                      style={{ marginTop: '10px', width: '100%', padding: '8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      📷 {labelFotos(p.carrera?.tipo_actividad)}
+                    </button>
+                  )}
+
+                  {/* Tiempo de carrera — solo para carreras */}
+                  {pasada && p.estado === 'Inscripto' && (!p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera') && (() => {
+                    const dist = p.distancia_elegida || p.carrera?.distancia
+                    if (!dist) return null
+                    const key = `${p.carrera.id}_${dist}`
+                    const guardado = tiemposGuardados[key]
+                    const saving = savingTiempo[key]
+                    return (
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '6px' }}>
+                          ⏱ ¿En cuánto hiciste los {dist}?
+                        </div>
+                        {guardado && !editandoTiempo[key] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '15px', fontWeight: 700, color: '#4ade80' }}>{guardado}</span>
+                            <button
+                              onClick={() => setEditandoTiempo(prev => ({ ...prev, [key]: true }))}
+                              style={{ fontSize: '11px', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => compartirResultado({
+                                carreraNombre: p.carrera?.nombre,
+                                dist,
+                                tiempoTexto: guardado,
+                                segundos: tiemposSegundos[key],
+                                key,
+                              })}
+                              disabled={compartiendo === key}
+                              style={{ fontSize: '11px', color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: compartiendo === key ? 0.5 : 1 }}
+                            >
+                              {compartiendo === key ? '⏳' : '🏅 Compartir'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input
+                              value={tiempos[key] || ''}
+                              onChange={e => setTiempos(prev => ({ ...prev, [key]: autoformatTiempo(e.target.value) }))}
+                              placeholder="HH:MM:SS"
+                              inputMode="numeric"
+                              style={{
+                                width: '140px', background: 'var(--bg3)', border: '1px solid var(--border)',
+                                borderRadius: '8px', color: 'var(--text)', padding: '6px 10px',
+                                fontSize: '14px', fontFamily: 'inherit',
+                              }}
+                            />
+                            <button
+                              className="btn-primary"
+                              style={{ height: 32, fontSize: 12, padding: '0 14px' }}
+                              disabled={saving || !validarTiempo(tiempos[key] || '')}
+                              onClick={() => guardarTiempo(p.carrera.id, dist, p.carrera.nombre, p.carrera.tipo, p.carrera.fecha)}
+                            >
+                              {saving ? '...' : 'Guardar'}
+                            </button>
+                            {guardado && (
+                              <button
+                                className="btn-ghost"
+                                style={{ height: 32, fontSize: 12, padding: '0 12px' }}
+                                onClick={() => {
+                                  setEditandoTiempo(prev => { const n = {...prev}; delete n[key]; return n })
+                                  setTiempos(prev => { const n = {...prev}; delete n[key]; return n })
+                                }}
+                              >
+                                Cancelar
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+
+      {fotosCarrera && (
+        <FotosModal
+          carrera={fotosCarrera}
+          onClose={cerrarGaleria}
+        />
+      )}
+
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.12)',
+          color: '#f1f5f9', padding: '10px 18px', borderRadius: '10px',
+          fontSize: '13px', fontWeight: 500, zIndex: 999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          animation: 'fadeIn .2s ease', whiteSpace: 'nowrap',
+        }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  )
+}
