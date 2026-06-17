@@ -1528,3 +1528,75 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
     </div>
   )
 }
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+function Cargando() {
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 0', color:'var(--text2)', fontSize:14 }}>
+      Cargando...
+    </div>
+  )
+}
+
+function Toast({ msg }) {
+  return (
+    <div style={{ position:'fixed', bottom:80, left:'50%', transform:'translateX(-50%)', background:'var(--bg2)', border:'1px solid var(--border)', color:'var(--text)', padding:'10px 20px', borderRadius:24, fontSize:13, fontWeight:600, zIndex:200, boxShadow:'0 4px 20px rgba(0,0,0,0.4)', whiteSpace:'nowrap', pointerEvents:'none' }}>
+      {msg}
+    </div>
+  )
+}
+
+function CopiableRow({ label, value }) {
+  const [copied, setCopied] = useState(false)
+  function copy() {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
+  return (
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginTop:4 }}>
+      <span style={{ fontSize:12, color:'var(--text2)' }}>{label}</span>
+      <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+        <span style={{ fontSize:13, fontWeight:600 }}>{value}</span>
+        <button onClick={copy} style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:14, color: copied ? '#4ade80' : 'var(--text2)', padding:2 }}>
+          {copied ? '✓' : '📋'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function GaleriaModal({ fotos, inicial, onClose }) {
+  const [idx, setIdx] = useState(inicial || 0)
+
+  useEffect(() => {
+    const onKey = e => {
+      if (e.key === 'ArrowRight') setIdx(i => Math.min(i + 1, fotos.length - 1))
+      if (e.key === 'ArrowLeft')  setIdx(i => Math.max(i - 1, 0))
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fotos.length, onClose])
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.92)', zIndex:200, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}
+      onClick={onClose}>
+      <img src={fotos[idx]} alt="" onClick={e => e.stopPropagation()}
+        style={{ maxWidth:'92vw', maxHeight:'80vh', objectFit:'contain', borderRadius:10 }} />
+      {fotos.length > 1 && (
+        <div style={{ display:'flex', gap:16, marginTop:16 }} onClick={e => e.stopPropagation()}>
+          <button onClick={() => setIdx(i => Math.max(i - 1, 0))} disabled={idx === 0}
+            style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:40, height:40, borderRadius:'50%', fontSize:20, cursor:'pointer', opacity: idx === 0 ? 0.3 : 1 }}>‹</button>
+          <span style={{ color:'rgba(255,255,255,0.7)', fontSize:13, alignSelf:'center' }}>{idx + 1} / {fotos.length}</span>
+          <button onClick={() => setIdx(i => Math.min(i + 1, fotos.length - 1))} disabled={idx === fotos.length - 1}
+            style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:40, height:40, borderRadius:'50%', fontSize:20, cursor:'pointer', opacity: idx === fotos.length - 1 ? 0.3 : 1 }}>›</button>
+        </div>
+      )}
+      <button onClick={onClose}
+        style={{ position:'absolute', top:16, right:16, background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:36, height:36, borderRadius:'50%', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+    </div>
+  )
+}
