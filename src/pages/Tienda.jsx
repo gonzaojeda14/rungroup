@@ -246,7 +246,7 @@ function TiendaAdmin({ config, onConfigChange }) {
           {/* Filtro — ancho completo */}
           <div style={{ display:'flex', background:'var(--bg3)', borderRadius:10, padding:3, gap:2 }}>
             {['pendiente','señado','confirmado','entregado'].map(f => {
-              const labels = { pendiente:'Pendientes', señado:'Señados', confirmado:'Confirmados', entregado:'Entregados' }
+              const labels = { pendiente:'Pendientes', 'señado':'Señados', confirmado:'Confirmados', entregado:'Entregados' }
               const activo = filtroCompras === f
               const badge = f === 'pendiente' ? pendientes : f === 'señado' ? senados : 0
               return (
@@ -263,7 +263,7 @@ function TiendaAdmin({ config, onConfigChange }) {
 
           {(() => {
             const filtrados = pedidos.filter(p => p.estado === filtroCompras)
-            const vacioLabel = { pendiente:'pendientes', señado:'señados', confirmado:'confirmados', entregado:'entregados' }
+            const vacioLabel = { pendiente:'pendientes', 'señado':'señados', confirmado:'confirmados', entregado:'entregados' }
             if (filtrados.length === 0) return (
               <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>
                 No hay pedidos {vacioLabel[filtroCompras] || filtroCompras}.
@@ -1042,7 +1042,7 @@ function PedidoCompradorCard({ pedido: p, onPedidoActualizado }) {
 
   const ESTADO_COMPRADOR = {
     pendiente:  { label:'⏳ Pendiente',  color:'#fbbf24', bg:'rgba(251,191,36,0.12)' },
-    señado:     { label:'💰 Seña recibida', color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
+    'señado':   { label:'💰 Seña recibida', color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
     confirmado: { label:'✅ Acreditado', color:'#4ade80', bg:'rgba(74,222,128,0.12)' },
     entregado:  { label:'📦 Entregado',  color:'#60a5fa', bg:'rgba(96,165,250,0.12)' },
     cancelado:  { label:'✕ Cancelado',  color:'#f87171', bg:'rgba(248,113,113,0.12)' },
