@@ -357,7 +357,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
                 </div>
               )}
 
-              <RecordsPersonales userId={corredor.id} />
+              <RecordsPersonales userId={corredor.id} isAdmin={isAdmin} />
 
               {isAdmin && tiemposCarreras.length > 0 && (
                 <div className="card">

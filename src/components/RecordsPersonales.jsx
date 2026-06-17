@@ -48,14 +48,23 @@ function autoformatK(valor) {
   return limpio
 }
 
-function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando, form, setForm, setEditando, msg, saving, validarTiempo, autoformatTiempo, guardarRecord, setConfirmarEliminar }) {
+function RecordRow({ distancia, tipo, carreraNombre, esPropio, isAdmin, rec, esteEditando, form, setForm, setEditando, msg, saving, validarTiempo, autoformatTiempo, guardarRecord, setConfirmarEliminar }) {
   if (!esPropio) {
     return (
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
         <span style={{ fontSize: '14px' }}>{distancia}</span>
-        <span style={{ fontSize: '14px', fontWeight: 600, color: rec ? '#4ade80' : 'var(--text2)' }}>
-          {rec ? rec.tiempo_texto : '—'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: rec ? '#4ade80' : 'var(--text2)' }}>
+            {rec ? rec.tiempo_texto : '—'}
+          </span>
+          {isAdmin && rec && (
+            <button
+              onClick={() => setConfirmarEliminar(distancia)}
+              style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+              title="Borrar record"
+            >✕</button>
+          )}
+        </div>
       </div>
     )
   }
@@ -126,7 +135,7 @@ function RecordRow({ distancia, tipo, carreraNombre, esPropio, rec, esteEditando
   )
 }
 
-export default function RecordsPersonales({ userId }) {
+export default function RecordsPersonales({ userId, isAdmin }) {
   const { user } = useAuth()
   const uid = userId || user.id
   const esPropio = uid === user.id
@@ -241,6 +250,7 @@ export default function RecordsPersonales({ userId }) {
             distancia={d}
             tipo="calle"
             esPropio={esPropio}
+            isAdmin={isAdmin}
             rec={records[d]}
             esteEditando={editando === d}
             form={form}
