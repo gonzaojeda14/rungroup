@@ -130,21 +130,30 @@ function TiendaAdmin({ config, onConfigChange }) {
   async function actualizarEstado(pedidoId, estado) {
     await supabase.from('pedidos').update({ estado }).eq('id', pedidoId)
     setPedidos(prev => prev.map(p => p.id === pedidoId ? { ...p, estado } : p))
-    // Notificar al comprador cuando el admin confirma el pago
-    if (estado === 'confirmado') {
-      const pedido = pedidos.find(p => p.id === pedidoId)
-      if (pedido?.user_id) {
-        notificar(
-          '✅ Pago confirmado',
-          'Recibimos tu pago. Pronto te contactamos para coordinar la entrega 📦',
-          '/mas?tab=Tienda',
-          { user_ids: [pedido.user_id] }
-        )
-      }
+    const pedido = pedidos.find(p => p.id === pedidoId)
+    if (estado === 'confirmado' && pedido?.user_id) {
+      notificar(
+        '✅ Pago confirmado',
+        'Recibimos tu pago. Pronto te contactamos para coordinar la entrega 📦',
+        '/mas?tab=Tienda',
+        { user_ids: [pedido.user_id] }
+      )
     }
   }
 
+  async function solicitarSaldo(pedidoId) {
+    const pedido = pedidos.find(p => p.id === pedidoId)
+    if (!pedido?.user_id) return
+    notificar(
+      '💳 Saldo pendiente',
+      'Tu seña fue recibida. Ya podés abonar el saldo restante desde Mis Pedidos.',
+      '/mas?tab=Tienda',
+      { user_ids: [pedido.user_id] }
+    )
+  }
+
   const pendientes = pedidos.filter(p => p.estado === 'pendiente').length
+  const senados    = pedidos.filter(p => p.estado === 'senado').length
   const [filtroCompras, setFiltroCompras] = useState('pendiente')
 
   return (
@@ -235,13 +244,17 @@ function TiendaAdmin({ config, onConfigChange }) {
         {tab === 'Compras' && <>
           {/* Filtro — ancho completo */}
           <div style={{ display:'flex', background:'var(--bg3)', borderRadius:10, padding:3, gap:2 }}>
-            {['pendiente','confirmado','entregado'].map(f => {
-              const labels = { pendiente:'Pendientes', confirmado:'Confirmados', entregado:'Entregados' }
+            {['pendiente','senado','confirmado','entregado'].map(f => {
+              const labels = { pendiente:'Pendientes', senado:'Senados', confirmado:'Confirmados', entregado:'Entregados' }
               const activo = filtroCompras === f
+              const badge  = f === 'pendiente' ? pendientes : f === 'senado' ? senados : 0
               return (
                 <button key={f} onClick={() => setFiltroCompras(f)}
-                  style={{ flex:1, padding:'6px 0', fontSize:12, fontWeight: activo ? 700 : 500, color: activo ? '#fff' : 'var(--text2)', background: activo ? 'var(--accent)' : 'transparent', border:'none', cursor:'pointer', borderRadius:8 }}>
+                  style={{ flex:1, padding:'6px 0', fontSize:11, fontWeight: activo ? 700 : 500, color: activo ? '#fff' : 'var(--text2)', background: activo ? 'var(--accent)' : 'transparent', border:'none', cursor:'pointer', borderRadius:8, position:'relative' }}>
                   {labels[f]}
+                  {badge > 0 && (
+                    <span style={{ position:'absolute', top:2, right:4, background: activo ? '#fff' : 'var(--accent)', color: activo ? 'var(--accent)' : '#fff', fontSize:9, fontWeight:800, borderRadius:99, minWidth:14, height:14, display:'inline-flex', alignItems:'center', justifyContent:'center', padding:'0 3px' }}>{badge}</span>
+                  )}
                 </button>
               )
             })}
@@ -249,15 +262,17 @@ function TiendaAdmin({ config, onConfigChange }) {
 
           {(() => {
             const filtrados = pedidos.filter(p => p.estado === filtroCompras)
+            const vacioLabel = { pendiente:'pendientes', senado:'senados', confirmado:'confirmados', entregado:'entregados' }
             if (filtrados.length === 0) return (
               <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>
-                No hay pedidos {filtroCompras === 'pendiente' ? 'pendientes' : filtroCompras === 'confirmado' ? 'confirmados' : 'entregados'}.
+                No hay pedidos {vacioLabel[filtroCompras] || filtroCompras}.
               </div>
             )
             return filtrados.map(p => (
               <PedidoAdminCard key={p.id} pedido={p}
                 onVerFoto={url => setFotoAmpliada(url)}
-                onEstado={estado => actualizarEstado(p.id, estado)} />
+                onEstado={estado => actualizarEstado(p.id, estado)}
+                onSolicitarSaldo={() => solicitarSaldo(p.id)} />
             ))
           })()}
         </>}
@@ -683,10 +698,11 @@ function ProductoCardAdmin({ p, onToggle, onEditar, onEliminar, onVerFoto }) {
 
 // ─── CARD PEDIDO (admin) ──────────────────────────────────────────────────────
 
-function PedidoAdminCard({ pedido: p, onVerFoto, onEstado }) {
+function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
   const items = p.items || []
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
-  const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : 'var(--accent)'
+  const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : p.estado === 'senado' ? '#f59e0b' : 'var(--accent)'
+  const saldoPendiente = p.estado === 'senado' && !!p.comprobante_url_2
 
   return (
     <div className="card" style={{ padding:'14px 16px' }}>
@@ -695,7 +711,15 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado }) {
           <div style={{ fontWeight:700, fontSize:14 }}>{p.perfil?.nombre || 'Usuario'}</div>
           <div style={{ fontSize:11, color:'var(--text2)', marginTop:2 }}>{fecha}</div>
         </div>
-        <span style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:`${estadoColor}22`, color:estadoColor, fontWeight:600, flexShrink:0 }}>{p.estado}</span>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+          <span style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:`${estadoColor}22`, color:estadoColor, fontWeight:600 }}>{p.estado}</span>
+          {p.es_sena && p.estado === 'pendiente' && (
+            <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(245,158,11,0.15)', color:'#f59e0b', fontWeight:600 }}>Sena 50%</span>
+          )}
+          {saldoPendiente && (
+            <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(96,165,250,0.15)', color:'#60a5fa', fontWeight:600 }}>Saldo enviado</span>
+          )}
+        </div>
       </div>
 
       {/* Items */}
@@ -708,23 +732,37 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado }) {
             <span style={{ color:'var(--text2)', flexShrink:0 }}>${Number(it.precio).toLocaleString('es-AR')}</span>
           </div>
         ))}
-        <div style={{ display:'flex', justifyContent:'flex-end', borderTop:'1px solid var(--border)', marginTop:4, paddingTop:4, fontWeight:700, fontSize:14 }}>
-          Total: ${Number(p.total).toLocaleString('es-AR')}
+        <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid var(--border)', marginTop:4, paddingTop:4, fontWeight:700, fontSize:14 }}>
+          <span>Total</span><span>${Number(p.total).toLocaleString('es-AR')}</span>
         </div>
+        {p.es_sena && (
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#f59e0b' }}>
+            <span>Sena transferida</span><span>${Number(p.monto_sena).toLocaleString('es-AR')}</span>
+          </div>
+        )}
       </div>
 
-      {p.comprobante_url && (
-        <button onClick={() => onVerFoto(p.comprobante_url)}
-          style={{ marginTop:10, display:'flex', alignItems:'center', gap:6, padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:13, cursor:'pointer', width:'100%' }}>
-          🧾 Ver comprobante
-        </button>
-      )}
+      {/* Comprobantes */}
+      <div style={{ display:'flex', gap:8, marginTop:10 }}>
+        {p.comprobante_url && (
+          <button onClick={() => onVerFoto(p.comprobante_url)}
+            style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:13, cursor:'pointer' }}>
+            {p.es_sena ? 'Comprobante sena' : 'Ver comprobante'}
+          </button>
+        )}
+        {p.comprobante_url_2 && (
+          <button onClick={() => onVerFoto(p.comprobante_url_2)}
+            style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'8px 12px', borderRadius:8, border:'1px solid rgba(96,165,250,0.4)', background:'rgba(96,165,250,0.08)', color:'#60a5fa', fontSize:13, cursor:'pointer' }}>
+            Comprobante saldo
+          </button>
+        )}
+      </div>
 
       {p.estado === 'pendiente' && (
         <div style={{ display:'flex', gap:8, marginTop:10 }}>
-          <button onClick={() => onEstado('confirmado')}
+          <button onClick={() => onEstado(p.es_sena ? 'senado' : 'confirmado')}
             style={{ flex:2, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
-            ✓ Confirmar pago
+            {p.es_sena ? 'Sena recibida' : 'Confirmar pago'}
           </button>
           <button onClick={() => onEstado('cancelado')}
             style={{ flex:1, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(248,113,113,0.3)', background:'transparent', color:'#f87171', cursor:'pointer' }}>
@@ -732,10 +770,22 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado }) {
           </button>
         </div>
       )}
+      {p.estado === 'senado' && !saldoPendiente && (
+        <button onClick={onSolicitarSaldo}
+          style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.1)', color:'#f59e0b', cursor:'pointer', fontWeight:600 }}>
+          Solicitar saldo
+        </button>
+      )}
+      {p.estado === 'senado' && saldoPendiente && (
+        <button onClick={() => onEstado('confirmado')}
+          style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
+          Confirmar pago total
+        </button>
+      )}
       {p.estado === 'confirmado' && (
         <button onClick={() => onEstado('entregado')}
           style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(96,165,250,0.3)', background:'rgba(96,165,250,0.1)', color:'#60a5fa', cursor:'pointer', fontWeight:600 }}>
-          📦 Marcar como entregado
+          Marcar como entregado
         </button>
       )}
     </div>
@@ -855,7 +905,7 @@ function TiendaPublica({ config }) {
         loadingPedidos ? <Cargando /> : misPedidos.length === 0 ? (
           <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>Todavía no hiciste ningún pedido.</div>
         ) : (
-          misPedidos.map(p => <PedidoCompradorCard key={p.id} pedido={p} />)
+          misPedidos.map(p => <PedidoCompradorCard key={p.id} pedido={p} onPedidoActualizado={(id, cambios) => setMisPedidos(prev => prev.map(x => x.id === id ? { ...x, ...cambios } : x))} />)
         )
       )}
 
@@ -972,35 +1022,36 @@ function TiendaPublica({ config }) {
 
 // ─── CARD PEDIDO (comprador) ──────────────────────────────────────────────────
 
-function PedidoCompradorCard({ pedido: p }) {
+function PedidoCompradorCard({ pedido: p, onPedidoActualizado }) {
   const items = p.items || []
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
-  const [estado, setEstado] = useState(p.estado)
-  const [marcando, setMarcando] = useState(false)
+  const [estado, setEstado]       = useState(p.estado)
+  const [marcando, setMarcando]   = useState(false)
+  const [saldoOpen, setSaldoOpen] = useState(false)
 
-  // Sincronizar con cambios externos (realtime del admin)
   useEffect(() => { setEstado(p.estado) }, [p.estado])
 
   const ESTADO_COMPRADOR = {
-    pendiente:  { label:'⏳ Pendiente',  color:'#fbbf24', bg:'rgba(251,191,36,0.12)' },
-    confirmado: { label:'✅ Acreditado', color:'#4ade80', bg:'rgba(74,222,128,0.12)' },
-    entregado:  { label:'📦 Entregado',  color:'#60a5fa', bg:'rgba(96,165,250,0.12)' },
-    cancelado:  { label:'✕ Cancelado',  color:'#f87171', bg:'rgba(248,113,113,0.12)' },
+    pendiente:  { label:'Pendiente',     color:'#fbbf24', bg:'rgba(251,191,36,0.12)' },
+    senado:     { label:'Sena recibida', color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
+    confirmado: { label:'Acreditado',    color:'#4ade80', bg:'rgba(74,222,128,0.12)' },
+    entregado:  { label:'Entregado',     color:'#60a5fa', bg:'rgba(96,165,250,0.12)' },
+    cancelado:  { label:'Cancelado',     color:'#f87171', bg:'rgba(248,113,113,0.12)' },
   }
-  const info = ESTADO_COMPRADOR[estado] || ESTADO_COMPRADOR.pendiente
+  const info           = ESTADO_COMPRADOR[estado] || ESTADO_COMPRADOR.pendiente
+  const saldoRestante  = p.es_sena ? (Number(p.total) - Number(p.monto_sena)) : 0
+  const yaEnvioSaldo   = !!p.comprobante_url_2
 
   async function marcarEntregado() {
     setMarcando(true)
     const { error } = await supabase.from('pedidos').update({ estado: 'entregado' }).eq('id', p.id)
-    if (error) {
-      alert('No se pudo actualizar el pedido. Intentá de nuevo.')
-    } else {
-      setEstado('entregado')
-    }
+    if (!error) setEstado('entregado')
+    else alert('No se pudo actualizar el pedido. Intenta de nuevo.')
     setMarcando(false)
   }
 
   return (
+    <>
     <div className="card" style={{ padding:'14px 16px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10, marginBottom:10 }}>
         <div style={{ fontSize:11, color:'var(--text2)' }}>{fecha}</div>
@@ -1009,20 +1060,112 @@ function PedidoCompradorCard({ pedido: p }) {
       <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
         {items.map((it, i) => (
           <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
-            <span>{it.nombre}{it.talle ? <span style={{ color:'var(--text2)' }}> · {it.talle}</span> : null}{it.cantidad > 1 ? <span style={{ color:'var(--text2)' }}> × {it.cantidad}</span> : null}</span>
+            <span>{it.nombre}{it.talle ? <span style={{ color:'var(--text2)' }}> · {it.talle}</span> : null}{it.cantidad > 1 ? <span style={{ color:'var(--text2)' }}> x {it.cantidad}</span> : null}</span>
             <span style={{ color:'var(--text2)', flexShrink:0 }}>${(Number(it.precio) * (it.cantidad || 1)).toLocaleString('es-AR')}</span>
           </div>
         ))}
-        <div style={{ display:'flex', justifyContent:'flex-end', borderTop:'1px solid var(--border)', marginTop:4, paddingTop:4, fontWeight:700, fontSize:14 }}>
-          Total: ${Number(p.total).toLocaleString('es-AR')}
+        <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid var(--border)', marginTop:4, paddingTop:4, fontWeight:700, fontSize:14 }}>
+          <span>Total</span><span>${Number(p.total).toLocaleString('es-AR')}</span>
         </div>
+        {p.es_sena && (
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#f59e0b' }}>
+            <span>Sena abonada</span><span>${Number(p.monto_sena).toLocaleString('es-AR')}</span>
+          </div>
+        )}
+        {estado === 'senado' && !yaEnvioSaldo && (
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'var(--text2)' }}>
+            <span>Saldo pendiente</span><span>${saldoRestante.toLocaleString('es-AR')}</span>
+          </div>
+        )}
       </div>
+      {estado === 'senado' && !yaEnvioSaldo && (
+        <button onClick={() => setSaldoOpen(true)}
+          style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.1)', color:'#f59e0b', cursor:'pointer', fontWeight:600 }}>
+          Transferir restante (${saldoRestante.toLocaleString('es-AR')})
+        </button>
+      )}
+      {estado === 'senado' && yaEnvioSaldo && (
+        <div style={{ marginTop:10, padding:'8px 12px', borderRadius:8, background:'rgba(96,165,250,0.08)', color:'#60a5fa', fontSize:13, textAlign:'center' }}>
+          Saldo enviado - esperando confirmacion del admin
+        </div>
+      )}
       {estado === 'confirmado' && (
         <button onClick={marcarEntregado} disabled={marcando}
           style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(96,165,250,0.3)', background:'rgba(96,165,250,0.1)', color:'#60a5fa', cursor:'pointer', fontWeight:600 }}>
-          {marcando ? '...' : '📦 Lo recibí — marcar como entregado'}
+          {marcando ? '...' : 'Lo recibi - marcar como entregado'}
         </button>
       )}
+    </div>
+    {saldoOpen && (
+      <TransferirSaldoSheet
+        pedidoId={p.id}
+        monto={saldoRestante}
+        onClose={() => setSaldoOpen(false)}
+        onEnviado={() => {
+          setSaldoOpen(false)
+          if (onPedidoActualizado) onPedidoActualizado(p.id, { comprobante_url_2: 'enviado' })
+        }} />
+    )}
+    </>
+  )
+}
+
+function TransferirSaldoSheet({ pedidoId, monto, onClose, onEnviado }) {
+  const [comprFile, setComprFile]       = useState(null)
+  const [comprPreview, setComprPreview] = useState(null)
+  const [sending, setSending]           = useState(false)
+  const comprRef = useRef()
+
+  async function handleEnviar() {
+    if (!comprFile) return
+    setSending(true)
+    try {
+      const data = await uploadCloudinary(comprFile, 'flamarun/comprobantes')
+      if (!data?.secure_url) throw new Error('Error al subir el comprobante')
+      const { error } = await supabase.from('pedidos').update({ comprobante_url_2: data.secure_url }).eq('id', pedidoId)
+      if (error) throw new Error(error.message)
+      onEnviado()
+    } catch (err) {
+      alert('No se pudo enviar: ' + (err.message || 'error desconocido'))
+    }
+    setSending(false)
+  }
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:'var(--bg2)', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:480, padding:20, display:'flex', flexDirection:'column', gap:16 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div style={{ fontWeight:700, fontSize:16 }}>Transferir saldo restante</div>
+          <button onClick={onClose} style={{ background:'transparent', border:'none', color:'var(--text2)', fontSize:20, cursor:'pointer' }}>X</button>
+        </div>
+        <div style={{ background:'var(--bg3)', borderRadius:10, padding:'12px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ fontSize:14, color:'var(--text2)' }}>Monto a transferir</span>
+          <span style={{ fontWeight:700, fontSize:18, color:'var(--accent)' }}>${monto.toLocaleString('es-AR')}</span>
+        </div>
+        <div>
+          <div style={{ fontSize:13, fontWeight:600, marginBottom:8 }}>Comprobante de transferencia</div>
+          {comprPreview ? (
+            <div style={{ position:'relative' }}>
+              <img src={comprPreview} alt="comprobante" style={{ width:'100%', maxHeight:200, objectFit:'contain', borderRadius:8, border:'1px solid var(--border)' }} />
+              <button onClick={() => { setComprFile(null); setComprPreview(null); comprRef.current.value = '' }}
+                style={{ position:'absolute', top:8, right:8, width:26, height:26, borderRadius:'50%', background:'rgba(0,0,0,0.7)', border:'none', color:'#fff', cursor:'pointer', fontSize:14 }}>X</button>
+            </div>
+          ) : (
+            <button onClick={() => comprRef.current?.click()}
+              style={{ width:'100%', padding:12, border:'1px dashed var(--border)', borderRadius:8, background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:13 }}>
+              Adjuntar comprobante
+            </button>
+          )}
+          <input ref={comprRef} type="file" accept="image/*" style={{ display:'none' }} onChange={e => {
+            const f = e.target.files[0]
+            if (f) { setComprFile(f); setComprPreview(URL.createObjectURL(f)) }
+          }} />
+        </div>
+        <button onClick={handleEnviar} disabled={!comprFile || sending} className="btn-primary" style={{ opacity: comprFile ? 1 : 0.4 }}>
+          {sending ? 'Enviando...' : 'Enviar comprobante'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -1163,9 +1306,12 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
   const [comprPreview, setComprPreview] = useState(null)
   const [step, setStep]               = useState('carrito')  // 'carrito' | 'confirmar'
   const [sending, setSending]         = useState(false)
+  const [esSena, setEsSena]           = useState(false)
   const comprRef = useRef()
 
-  const total = cart.reduce((s, i) => s + Number(i.producto.precio) * i.cantidad, 0)
+  const total       = cart.reduce((s, i) => s + Number(i.producto.precio) * i.cantidad, 0)
+  const montoSena   = Math.round(total / 2)
+  const montoAPagar = esSena ? montoSena : total
 
   async function handleEnviar() {
     if (!comprFile) return
@@ -1216,6 +1362,8 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
         comprobante_url:       data.secure_url,
         comprobante_public_id: data.public_id || null,
         estado:                'pendiente',
+        es_sena:               esSena || false,
+        monto_sena:            esSena ? montoSena : null,
       }])
 
       if (error) throw new Error(error.message)
@@ -1229,7 +1377,7 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
           : `${cart.length} productos`
         notificar(
           '🛍️ Nuevo pedido',
-          `${profile?.nombre || 'Alguien'} pidió ${resumen}`,
+          `${profile?.nombre || 'Alguien'} pidió ${resumen}${esSena ? ' (sena)' : ''}`,
           '/mas?tab=Tienda&subtab=Compras',
           { user_ids: adminIds }
         )
@@ -1283,9 +1431,26 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
           ))}
         </div>
 
-        {/* Total */}
-        <div style={{ display:'flex', justifyContent:'flex-end', borderTop:'1px solid var(--border)', paddingTop:10, fontWeight:700, fontSize:16 }}>
-          Total: <span style={{ color:'var(--accent)', marginLeft:6 }}>${total.toLocaleString('es-AR')}</span>
+        {/* Total + opcion sena */}
+        <div style={{ borderTop:'1px solid var(--border)', paddingTop:10, display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontWeight:700, fontSize:16 }}>
+            <span>Total</span>
+            <span style={{ color: esSena ? 'var(--text2)' : 'var(--accent)', textDecoration: esSena ? 'line-through' : 'none', fontSize: esSena ? 14 : 16 }}>${total.toLocaleString('es-AR')}</span>
+          </div>
+          <label style={{ display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', padding:'10px 12px', borderRadius:10, background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)' }}>
+            <input type="checkbox" checked={esSena} onChange={e => setEsSena(e.target.checked)}
+              style={{ width:16, height:16, accentColor:'#f59e0b', cursor:'pointer', marginTop:2, flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:'#f59e0b' }}>Abonar sena (50%)</div>
+              <div style={{ fontSize:12, color:'var(--text2)', marginTop:2 }}>El resto lo abonas cuando el admin lo solicite</div>
+            </div>
+          </label>
+          {esSena && (
+            <div style={{ display:'flex', justifyContent:'space-between', fontWeight:700, fontSize:16, color:'var(--accent)' }}>
+              <span>A transferir ahora</span>
+              <span>${montoSena.toLocaleString('es-AR')}</span>
+            </div>
+          )}
         </div>
 
         {/* Datos de pago */}
@@ -1333,7 +1498,9 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
                 <div key={i}>{item.producto.nombre}{item.talle ? ` · talle ${item.talle}` : ''}{item.cantidad > 1 ? ` × ${item.cantidad}` : ''}</div>
               ))}
               <div style={{ marginTop:6, fontWeight:700, color:'var(--accent)' }}>
-                Total: ${total.toLocaleString('es-AR')}
+                {esSena
+                  ? 'Sena (50%): $' + montoSena.toLocaleString('es-AR') + ' de $' + total.toLocaleString('es-AR') + ' total'
+                  : 'Total: $' + total.toLocaleString('es-AR')}
               </div>
             </div>
             <div style={{ display:'flex', gap:8 }}>
@@ -1392,3 +1559,4 @@ const iStyle = { flex:1, padding:'8px 10px', borderRadius:8, border:'1px solid v
 const selectStyle = { padding:'8px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:14, width:'100%' }
 const btnSecStyle = { padding:'5px 10px', fontSize:12, borderRadius:6, border:'1px solid var(--border)', background:'transparent', color:'var(--text2)', cursor:'pointer' }
 const btnDangerStyle = { padding:'5px 10px', fontSize:12, borderRadius:6, border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.1)', color:'#f87171', cursor:'pointer' }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
