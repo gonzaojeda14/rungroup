@@ -703,7 +703,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
   const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : p.estado === 'senado' ? '#f59e0b' : 'var(--accent)'
   const estadoLabel = { pendiente:'pendiente', senado:'señado', confirmado:'confirmado', cancelado:'cancelado', entregado:'entregado' }[p.estado] || p.estado
-  const saldoPendiente = !!p.comprobante_url_2
+  const saldoPendiente = !!p.comprobante_url_2 && p.estado !== 'confirmado' && p.estado !== 'entregado' && p.estado !== 'cancelado'
 
   return (
     <div className="card" style={{ padding:'14px 16px' }}>
