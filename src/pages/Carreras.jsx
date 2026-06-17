@@ -76,8 +76,9 @@ function TransferenciaModal({ carreraId, carreraNombre, originalUserId, onConfir
     cargar()
   }, [carreraId, originalUserId])
 
+  const norm = s => s?.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() ?? ''
   const filtrados = perfiles.filter(p =>
-    !busqueda || p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+    !busqueda || norm(p.nombre).includes(norm(busqueda))
   )
 
   return (
