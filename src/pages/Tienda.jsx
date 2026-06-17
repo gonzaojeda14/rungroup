@@ -70,6 +70,7 @@ function TiendaAdmin({ config, onConfigChange }) {
   })
   const [productos, setProductos] = useState([])
   const [pedidos, setPedidos] = useState([])
+  const [promos, setPromos]   = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editandoProducto, setEditandoProducto] = useState(null)
   const [confirmarEliminar, setConfirmarEliminar] = useState(null)
@@ -85,6 +86,7 @@ function TiendaAdmin({ config, onConfigChange }) {
   useEffect(() => {
     fetchProductos()
     fetchPedidos()
+    fetchPromos()
     const ch = supabase.channel('tienda-pedidos-admin-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, fetchPedidos)
       .subscribe()
@@ -104,6 +106,11 @@ function TiendaAdmin({ config, onConfigChange }) {
       .select('*, perfil:user_id(nombre)')
       .order('created_at', { ascending: false })
     setPedidos(data || [])
+  }
+
+  async function fetchPromos() {
+    const { data } = await supabase.from('promos').select('*').order('created_at')
+    setPromos(data || [])
   }
 
   async function guardarConfig() {
@@ -161,7 +168,7 @@ function TiendaAdmin({ config, onConfigChange }) {
 
       {/* Tabs — ancho completo con subrayado */}
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
-        {['Productos','Compras','🧹'].map(t => (
+        {['Productos','Compras','Promos','🧹'].map(t => (
           <button key={t} onClick={() => setTab(t)}
             style={{ position:'relative', flex:1, padding:'12px 4px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight: tab===t ? 700 : 400, color: tab===t ? 'var(--accent)' : 'var(--text2)', borderBottom: tab===t ? '2px solid var(--accent)' : '2px solid transparent', fontFamily:'inherit', transition:'all .15s' }}>
             {t}
@@ -217,6 +224,7 @@ function TiendaAdmin({ config, onConfigChange }) {
             <ProductoForm
               key={editandoProducto?.id || 'nuevo'}
               producto={editandoProducto}
+              promos={promos}
               onSaved={() => {
                 setShowForm(false)
                 setEditandoProducto(null)
@@ -277,6 +285,9 @@ function TiendaAdmin({ config, onConfigChange }) {
           })()}
         </>}
 
+        {/* ── PROMOS ── */}
+        {tab === 'Promos' && <PromoPanel promos={promos} onSaved={fetchPromos} />}
+
         {/* ── LIMPIEZA ── */}
         {tab === '🧹' && <LimpiezaPanel />}
 
@@ -304,6 +315,157 @@ function TiendaAdmin({ config, onConfigChange }) {
 }
 
 // ─── LIMPIEZA DE DATOS ───────────────────────────────────────────────────────
+
+function PromoPanel({ promos, onSaved }) {
+  const [editando, setEditando] = useState(null) // null | {} | {id,...}
+  const [saving, setSaving]     = useState(false)
+
+  async function toggleActiva(promo) {
+    await supabase.from('promos').update({ activa: !promo.activa }).eq('id', promo.id)
+    onSaved()
+  }
+
+  async function eliminar(id) {
+    if (!confirm('Eliminar esta promo?')) return
+    await supabase.from('promos').delete().eq('id', id)
+    onSaved()
+  }
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div style={{ fontWeight:700, fontSize:15 }}>Promociones</div>
+        <button onClick={() => setEditando({ nombre:'', activa:true, tramos:[{ cantidad:1, total:0 }] })}
+          className="btn-accent" style={{ padding:'6px 14px', fontSize:13 }}>
+          + Nueva promo
+        </button>
+      </div>
+
+      {promos.map(pr => (
+        <div key={pr.id} className="card" style={{ padding:'12px 14px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div style={{ fontWeight:700, fontSize:14 }}>{pr.nombre}</div>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <button onClick={() => toggleActiva(pr)}
+                style={{ fontSize:12, padding:'3px 10px', borderRadius:20, border:'none', cursor:'pointer',
+                  background: pr.activa ? 'rgba(74,222,128,0.15)' : 'var(--bg3)',
+                  color: pr.activa ? '#4ade80' : 'var(--text2)', fontWeight:600 }}>
+                {pr.activa ? 'Activa' : 'Inactiva'}
+              </button>
+              <button onClick={() => setEditando(pr)} style={{ background:'transparent', border:'none', color:'var(--text2)', cursor:'pointer', fontSize:13 }}>Editar</button>
+              <button onClick={() => eliminar(pr.id)} style={{ background:'transparent', border:'none', color:'#f87171', cursor:'pointer', fontSize:13 }}>Eliminar</button>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:8, marginTop:8, flexWrap:'wrap' }}>
+            {(pr.tramos || []).map((t, i) => (
+              <span key={i} style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:'rgba(245,158,11,0.12)', color:'#f59e0b' }}>
+                {t.cantidad}x = ${Number(t.total).toLocaleString('es-AR')}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {promos.length === 0 && !editando && (
+        <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'24px 0' }}>
+          No hay promociones creadas.
+        </div>
+      )}
+
+      {editando && (
+        <PromoForm
+          promo={editando}
+          saving={saving}
+          setSaving={setSaving}
+          onSaved={() => { setEditando(null); onSaved() }}
+          onCancel={() => setEditando(null)} />
+      )}
+    </div>
+  )
+}
+
+function PromoForm({ promo, saving, setSaving, onSaved, onCancel }) {
+  const esNueva = !promo.id
+  const [nombre, setNombre]   = useState(promo.nombre || '')
+  const [activa, setActiva]   = useState(promo.activa ?? true)
+  const [tramos, setTramos]   = useState(
+    promo.tramos?.length ? promo.tramos : [{ cantidad: 1, total: 0 }]
+  )
+
+  function setTramo(i, campo, val) {
+    setTramos(prev => prev.map((t, j) => j === i ? { ...t, [campo]: Number(val) } : t))
+  }
+
+  function addTramo() {
+    const max = Math.max(...tramos.map(t => t.cantidad), 0)
+    setTramos(prev => [...prev, { cantidad: max + 1, total: 0 }])
+  }
+
+  function removeTramo(i) {
+    setTramos(prev => prev.filter((_, j) => j !== i))
+  }
+
+  async function handleGuardar() {
+    if (!nombre || tramos.length === 0) return
+    setSaving(true)
+    const payload = { nombre, activa, tramos }
+    if (esNueva) {
+      await supabase.from('promos').insert([payload])
+    } else {
+      await supabase.from('promos').update(payload).eq('id', promo.id)
+    }
+    setSaving(false)
+    onSaved()
+  }
+
+  return (
+    <div className="card" style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ fontWeight:700, fontSize:14 }}>{esNueva ? 'Nueva promo' : 'Editar promo'}</div>
+
+      <div className="field">
+        <label>Nombre de la promo</label>
+        <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Promo musculosas" />
+      </div>
+
+      <div>
+        <div style={{ fontSize:13, fontWeight:600, marginBottom:8 }}>Tramos (cantidad → total)</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {tramos.map((t, i) => (
+            <div key={i} style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, flex:1, background:'var(--bg3)', borderRadius:8, padding:'6px 10px', border:'1px solid var(--border)' }}>
+                <input type="number" min="1" value={t.cantidad} onChange={e => setTramo(i, 'cantidad', e.target.value)}
+                  style={{ width:40, background:'transparent', border:'none', color:'var(--text)', fontSize:14, fontWeight:700, textAlign:'center' }} />
+                <span style={{ color:'var(--text2)', fontSize:13 }}>unid. =</span>
+                <span style={{ color:'var(--text2)', fontSize:13 }}>$</span>
+                <input type="number" min="0" value={t.total} onChange={e => setTramo(i, 'total', e.target.value)}
+                  style={{ flex:1, background:'transparent', border:'none', color:'var(--accent)', fontSize:14, fontWeight:700 }} />
+              </div>
+              {tramos.length > 1 && (
+                <button onClick={() => removeTramo(i)} style={{ background:'transparent', border:'none', color:'#f87171', cursor:'pointer', fontSize:18, lineHeight:1 }}>✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button onClick={addTramo} style={{ marginTop:8, fontSize:13, color:'var(--accent)', background:'transparent', border:'none', cursor:'pointer' }}>
+          + Agregar tramo
+        </button>
+      </div>
+
+      <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+        <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} />
+        <span style={{ fontSize:13 }}>Promo activa</span>
+      </label>
+
+      <div style={{ display:'flex', gap:8 }}>
+        <button onClick={onCancel} style={{ flex:1, padding:10, borderRadius:8, border:'1px solid var(--border)', background:'transparent', color:'var(--text2)', cursor:'pointer', fontSize:14 }}>Cancelar</button>
+        <button onClick={handleGuardar} disabled={saving} className="btn-primary" style={{ flex:2 }}>
+          {saving ? 'Guardando...' : esNueva ? 'Crear promo' : 'Guardar cambios'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 
 function LimpiezaPanel() {
   const ITEMS = [
@@ -428,7 +590,7 @@ function LimpiezaPanel() {
 
 // ─── FORM NUEVO PRODUCTO ──────────────────────────────────────────────────────
 
-function ProductoForm({ producto, onSaved, onCancel }) {
+function ProductoForm({ producto, promos = [], onSaved, onCancel }) {
   const editando = !!producto
   const [nombre, setNombre]           = useState(producto?.nombre || '')
   const [descripcion, setDescripcion] = useState(producto?.descripcion || '')
@@ -436,6 +598,7 @@ function ProductoForm({ producto, onSaved, onCancel }) {
   const [tipoTalle, setTipoTalle]     = useState(producto?.tipo_talle || 'unico')
   const [talles, setTalles]           = useState(producto?.talles_disponibles || [])
   const [genero, setGenero]           = useState(producto?.genero || 'Unisex')
+  const [promoId, setPromoId]         = useState(producto?.promo_id || '')
   // Fotos ya subidas en Cloudinary (solo URLs)
   const [fotosExistentes, setFotosExistentes] = useState(
     producto ? ((producto.fotos || []).length > 0 ? producto.fotos : (producto.foto_url ? [producto.foto_url] : [])) : []
@@ -492,6 +655,7 @@ function ProductoForm({ producto, onSaved, onCancel }) {
         genero,
         foto_url: fotosUrls[0] || null,
         fotos:    fotosUrls,
+        promo_id: promoId || null,
       }
 
       let error
@@ -585,6 +749,18 @@ function ProductoForm({ producto, onSaved, onCancel }) {
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {promos.length > 0 && (
+          <div className="field">
+            <label>Promo por cantidad</label>
+            <select value={promoId} onChange={e => setPromoId(e.target.value)} style={selectStyle}>
+              <option value="">Sin promo</option>
+              {promos.map(pr => (
+                <option key={pr.id} value={pr.id}>{pr.nombre}{!pr.activa ? ' (inactiva)' : ''}</option>
+              ))}
+            </select>
           </div>
         )}
 
@@ -816,7 +992,7 @@ function TiendaPublica({ config }) {
   useEffect(() => {
     async function init() {
       const [{ data: prods }, { data: carrito }] = await Promise.all([
-        supabase.from('productos').select('*').eq('disponible', true).order('created_at', { ascending: false }),
+        supabase.from('productos').select('*, promo:promos(*)').eq('disponible', true).order('created_at', { ascending: false }),
         user ? supabase.from('carritos').select('items').eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
       ])
       setProductos(prods || [])
@@ -1215,6 +1391,11 @@ function ProductoCardPublica({ p, onAgregar }) {
             <div style={{ fontWeight:700, fontSize:16, color:'var(--accent)', marginTop:6 }}>
               ${Number(p.precio).toLocaleString('es-AR')}
             </div>
+            {p.promo?.activa && p.promo.tramos?.length > 1 && (
+              <div style={{ fontSize:11, color:'#f59e0b', marginTop:4, lineHeight:1.4 }}>
+                🏷️ {p.promo.tramos.map(t => `${t.cantidad}x $${Number(t.total).toLocaleString('es-AR')}`).join(' · ')}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1309,9 +1490,62 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
   const [esSena, setEsSena]           = useState(false)
   const comprRef = useRef()
 
-  const total       = cart.reduce((s, i) => s + Number(i.producto.precio) * i.cantidad, 0)
+  function calcularTotal(items) {
+    const grupos = {}
+    let sub = 0
+    for (const item of items) {
+      const pr = item.producto.promo
+      if (pr?.activa && pr.tramos?.length) {
+        if (!grupos[pr.id]) grupos[pr.id] = { pr, qty: 0 }
+        grupos[pr.id].qty += item.cantidad
+      } else {
+        sub += Number(item.producto.precio) * item.cantidad
+      }
+    }
+    for (const { pr, qty } of Object.values(grupos)) {
+      const sorted = [...pr.tramos].sort((a, b) => b.cantidad - a.cantidad)
+      let rem = qty
+      for (const t of sorted) {
+        const n = Math.floor(rem / t.cantidad)
+        if (n > 0) { sub += n * t.total; rem -= n * t.cantidad }
+      }
+      if (rem > 0) {
+        const u = pr.tramos.find(t => t.cantidad === 1)
+        if (u) sub += rem * u.total
+      }
+    }
+    return sub
+  }
+
+  function promoDesglose(items) {
+    const grupos = {}
+    for (const item of items) {
+      const pr = item.producto.promo
+      if (pr?.activa && pr.tramos?.length) {
+        if (!grupos[pr.id]) grupos[pr.id] = { pr, qty: 0 }
+        grupos[pr.id].qty += item.cantidad
+      }
+    }
+    return Object.values(grupos).map(({ pr, qty }) => {
+      const sorted = [...pr.tramos].sort((a, b) => b.cantidad - a.cantidad)
+      let rem = qty
+      const bloques = []
+      for (const t of sorted) {
+        const n = Math.floor(rem / t.cantidad)
+        if (n > 0) { bloques.push({ label: `${n * t.cantidad} unid.`, total: n * t.total }); rem -= n * t.cantidad }
+      }
+      if (rem > 0) {
+        const u = pr.tramos.find(t => t.cantidad === 1)
+        if (u) bloques.push({ label: `${rem} unid.`, total: rem * u.total })
+      }
+      return { nombre: pr.nombre, bloques }
+    })
+  }
+
+  const total       = calcularTotal(cart)
   const montoSena   = Math.round(total / 2)
   const montoAPagar = esSena ? montoSena : total
+  const desglose    = promoDesglose(cart)
 
   async function handleEnviar() {
     if (!comprFile) return
@@ -1430,6 +1664,19 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
             </div>
           ))}
         </div>
+
+        {/* Desglose promos */}
+        {desglose.map((d, i) => (
+          <div key={i} style={{ margin:'4px 0 2px', padding:'8px 10px', borderRadius:8, background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)' }}>
+            <div style={{ fontSize:12, fontWeight:600, color:'#f59e0b', marginBottom:4 }}>🏷️ {d.nombre}</div>
+            {d.bloques.map((b, j) => (
+              <div key={j} style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
+                <span style={{ color:'var(--text2)' }}>{b.label}</span>
+                <span style={{ fontWeight:600 }}>${b.total.toLocaleString('es-AR')}</span>
+              </div>
+            ))}
+          </div>
+        ))}
 
         {/* Total + opcion sena */}
         <div style={{ borderTop:'1px solid var(--border)', paddingTop:10, display:'flex', flexDirection:'column', gap:8 }}>
