@@ -145,8 +145,8 @@ function TiendaAdmin({ config, onConfigChange }) {
     const pedido = pedidos.find(p => p.id === pedidoId)
     if (!pedido?.user_id) return
     notificar(
-      '💳 Saldo pendiente',
-      'Tu seña fue recibida. Ya podés abonar el saldo restante desde Mis Pedidos.',
+      '🎉 Ya falta poco para tener tu pedido',
+      'Podés abonar el saldo restante cuando quieras desde Mis Pedidos.',
       '/mas?tab=Tienda',
       { user_ids: [pedido.user_id] }
     )
