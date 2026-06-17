@@ -805,10 +805,7 @@ function TiendaPublica({ config }) {
   const [toast, setToast]       = useState('')
   const [generoFiltro, setGeneroFiltro] = useState(null)
   const [talleFiltro, setTalleFiltro]   = useState(null)
-  const [vistaPublica, setVistaPublica] = useState(() => {
-    const p = new URLSearchParams(window.location.search)
-    return p.get('vista') === 'pedidos' ? 'pedidos' : 'productos'
-  })
+  const [vistaPublica, setVistaPublica] = useState('productos')
   const [misPedidos, setMisPedidos]     = useState([])
   const [loadingPedidos, setLoadingPedidos] = useState(false)
   const saveTimer = useRef(null)
@@ -1124,7 +1121,7 @@ function TransferirSaldoSheet({ pedidoId, monto, onClose, onEnviado }) {
     try {
       const data = await uploadCloudinary(comprFile, 'flamarun/comprobantes')
       if (!data?.secure_url) throw new Error('Error al subir el comprobante')
-      const { error } = await supabase.from('pedidos').update({ comprobante_url_2: data.secure_url }).eq('id', pedidoId)
+      const { error } = await supabase.from('pedidos').update({ comprobante_url_2: data.secure_url, estado: 'senado' }).eq('id', pedidoId)
       if (error) throw new Error(error.message)
       onEnviado()
     } catch (err) {
@@ -1560,4 +1557,4 @@ function Cargando() {
 const iStyle = { flex:1, padding:'8px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:14 }
 const selectStyle = { padding:'8px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:14, width:'100%' }
 const btnSecStyle = { padding:'5px 10px', fontSize:12, borderRadius:6, border:'1px solid var(--border)', background:'transparent', color:'var(--text2)', cursor:'pointer' }
-const btnDangerStyle = { padding:'5px 10px', fontSize:12, borderRadius:6
+const btnDangerStyle = { padding:'5px 10px', fontSize:12, borderRadius:6, border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.1)', color:'#f87171', cursor:'pointer' }
