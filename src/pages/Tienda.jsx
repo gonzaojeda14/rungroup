@@ -758,7 +758,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         )}
       </div>
 
-      {(p.estado === 'pendiente' || p.estado === 'senado') && !saldoPendiente && (
+      {p.estado === 'pendiente' && !saldoPendiente && (
         <div style={{ display:'flex', gap:8, marginTop:10 }}>
           <button onClick={() => onEstado(p.es_sena ? 'senado' : 'confirmado')}
             style={{ flex:2, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
