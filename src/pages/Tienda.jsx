@@ -702,6 +702,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
   const items = p.items || []
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
   const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : p.estado === 'senado' ? '#f59e0b' : 'var(--accent)'
+  const estadoLabel = { pendiente:'pendiente', senado:'señado', confirmado:'confirmado', cancelado:'cancelado', entregado:'entregado' }[p.estado] || p.estado
   const saldoPendiente = !!p.comprobante_url_2
 
   return (
@@ -712,7 +713,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
           <div style={{ fontSize:11, color:'var(--text2)', marginTop:2 }}>{fecha}</div>
         </div>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-          <span style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:`${estadoColor}22`, color:estadoColor, fontWeight:600 }}>{p.estado}</span>
+          <span style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:`${estadoColor}22`, color:estadoColor, fontWeight:600 }}>{estadoLabel}</span>
           {p.es_sena && !saldoPendiente && (
             <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(245,158,11,0.15)', color:'#f59e0b', fontWeight:600 }}>Seña 50%</span>
           )}
