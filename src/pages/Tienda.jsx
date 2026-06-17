@@ -1568,35 +1568,3 @@ function CopiableRow({ label, value }) {
   )
 }
 
-function GaleriaModal({ fotos, inicial, onClose }) {
-  const [idx, setIdx] = useState(inicial || 0)
-
-  useEffect(() => {
-    const onKey = e => {
-      if (e.key === 'ArrowRight') setIdx(i => Math.min(i + 1, fotos.length - 1))
-      if (e.key === 'ArrowLeft')  setIdx(i => Math.max(i - 1, 0))
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [fotos.length, onClose])
-
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.92)', zIndex:200, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}
-      onClick={onClose}>
-      <img src={fotos[idx]} alt="" onClick={e => e.stopPropagation()}
-        style={{ maxWidth:'92vw', maxHeight:'80vh', objectFit:'contain', borderRadius:10 }} />
-      {fotos.length > 1 && (
-        <div style={{ display:'flex', gap:16, marginTop:16 }} onClick={e => e.stopPropagation()}>
-          <button onClick={() => setIdx(i => Math.max(i - 1, 0))} disabled={idx === 0}
-            style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:40, height:40, borderRadius:'50%', fontSize:20, cursor:'pointer', opacity: idx === 0 ? 0.3 : 1 }}>‹</button>
-          <span style={{ color:'rgba(255,255,255,0.7)', fontSize:13, alignSelf:'center' }}>{idx + 1} / {fotos.length}</span>
-          <button onClick={() => setIdx(i => Math.min(i + 1, fotos.length - 1))} disabled={idx === fotos.length - 1}
-            style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:40, height:40, borderRadius:'50%', fontSize:20, cursor:'pointer', opacity: idx === fotos.length - 1 ? 0.3 : 1 }}>›</button>
-        </div>
-      )}
-      <button onClick={onClose}
-        style={{ position:'absolute', top:16, right:16, background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:36, height:36, borderRadius:'50%', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-    </div>
-  )
-}
