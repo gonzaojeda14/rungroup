@@ -101,6 +101,7 @@ export default function Corredores() {
       const perfil = perfilMap[r.user_id]
       if (!perfil || !agrupado[r.distancia]) return
       agrupado[r.distancia].push({
+        user_id: r.user_id,
         nombre: perfil.nombre,
         avatar_url: perfil.avatar_url,
         tiempo_texto: r.tiempo_texto,
@@ -111,6 +112,15 @@ export default function Corredores() {
       agrupado[d] = agrupado[d].sort((a, b) => a.tiempo_segundos - b.tiempo_segundos).slice(0, 10)
     })
     setRanking(agrupado)
+  }
+
+  async function borrarRecord(userId, distancia) {
+    if (!confirm(`¿Eliminar el record de ${distancia} de este corredor?`)) return
+    await supabase.from('records_personales')
+      .delete()
+      .eq('user_id', userId)
+      .eq('distancia', distancia)
+    fetchRanking()
   }
 
   async function fetchBugs() {
@@ -342,6 +352,13 @@ export default function Corredores() {
                         }}>
                           {formatTiempo(e.tiempo_segundos)}
                         </span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => borrarRecord(e.user_id, dist)}
+                            style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}
+                            title="Borrar record"
+                          >✕</button>
+                        )}
                       </div>
                     ))}
                   </div>
