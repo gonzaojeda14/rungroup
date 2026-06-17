@@ -702,7 +702,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
   const items = p.items || []
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
   const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : p.estado === 'senado' ? '#f59e0b' : 'var(--accent)'
-  const saldoPendiente = p.estado === 'senado' && !!p.comprobante_url_2
+  const saldoPendiente = !!p.comprobante_url_2
 
   return (
     <div className="card" style={{ padding:'14px 16px' }}>
@@ -713,7 +713,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         </div>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
           <span style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:`${estadoColor}22`, color:estadoColor, fontWeight:600 }}>{p.estado}</span>
-          {p.es_sena && p.estado === 'pendiente' && (
+          {p.es_sena && !saldoPendiente && (
             <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(245,158,11,0.15)', color:'#f59e0b', fontWeight:600 }}>Seña 50%</span>
           )}
           {saldoPendiente && (
@@ -747,7 +747,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         {p.comprobante_url && (
           <button onClick={() => onVerFoto(p.comprobante_url)}
             style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:13, cursor:'pointer' }}>
-            {p.es_sena ? 'Comprobante sena' : 'Ver comprobante'}
+            {p.es_sena ? 'Comprobante seña' : 'Ver comprobante'}
           </button>
         )}
         {p.comprobante_url_2 && (
@@ -758,7 +758,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         )}
       </div>
 
-      {p.estado === 'pendiente' && (
+      {(p.estado === 'pendiente' || p.estado === 'senado') && !saldoPendiente && (
         <div style={{ display:'flex', gap:8, marginTop:10 }}>
           <button onClick={() => onEstado(p.es_sena ? 'senado' : 'confirmado')}
             style={{ flex:2, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
@@ -776,10 +776,10 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
           Solicitar saldo
         </button>
       )}
-      {p.estado === 'senado' && saldoPendiente && (
+      {saldoPendiente && (
         <button onClick={() => onEstado('confirmado')}
           style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
-          Confirmar pago total
+          Confirmar pago completo
         </button>
       )}
       {p.estado === 'confirmado' && (
