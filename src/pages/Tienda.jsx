@@ -245,7 +245,7 @@ function TiendaAdmin({ config, onConfigChange }) {
           {/* Filtro — ancho completo */}
           <div style={{ display:'flex', background:'var(--bg3)', borderRadius:10, padding:3, gap:2 }}>
             {['pendiente','senado','confirmado','entregado'].map(f => {
-              const labels = { pendiente:'Pendientes', senado:'Senados', confirmado:'Confirmados', entregado:'Entregados' }
+              const labels = { pendiente:'Pendientes', senado:'Señados', confirmado:'Confirmados', entregado:'Entregados' }
               const activo = filtroCompras === f
               const badge  = f === 'pendiente' ? pendientes : f === 'senado' ? senados : 0
               return (
@@ -262,7 +262,7 @@ function TiendaAdmin({ config, onConfigChange }) {
 
           {(() => {
             const filtrados = pedidos.filter(p => p.estado === filtroCompras)
-            const vacioLabel = { pendiente:'pendientes', senado:'senados', confirmado:'confirmados', entregado:'entregados' }
+            const vacioLabel = { pendiente:'pendientes', senado:'señados', confirmado:'confirmados', entregado:'entregados' }
             if (filtrados.length === 0) return (
               <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>
                 No hay pedidos {vacioLabel[filtroCompras] || filtroCompras}.
@@ -714,7 +714,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
           <span style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:`${estadoColor}22`, color:estadoColor, fontWeight:600 }}>{p.estado}</span>
           {p.es_sena && p.estado === 'pendiente' && (
-            <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(245,158,11,0.15)', color:'#f59e0b', fontWeight:600 }}>Sena 50%</span>
+            <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(245,158,11,0.15)', color:'#f59e0b', fontWeight:600 }}>Seña 50%</span>
           )}
           {saldoPendiente && (
             <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(96,165,250,0.15)', color:'#60a5fa', fontWeight:600 }}>Saldo enviado</span>
@@ -737,7 +737,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         </div>
         {p.es_sena && (
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#f59e0b' }}>
-            <span>Sena transferida</span><span>${Number(p.monto_sena).toLocaleString('es-AR')}</span>
+            <span>Seña transferida</span><span>${Number(p.monto_sena).toLocaleString('es-AR')}</span>
           </div>
         )}
       </div>
@@ -762,7 +762,7 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         <div style={{ display:'flex', gap:8, marginTop:10 }}>
           <button onClick={() => onEstado(p.es_sena ? 'senado' : 'confirmado')}
             style={{ flex:2, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(74,222,128,0.3)', background:'rgba(74,222,128,0.1)', color:'#4ade80', cursor:'pointer', fontWeight:600 }}>
-            {p.es_sena ? 'Sena recibida' : 'Confirmar pago'}
+            {p.es_sena ? 'Seña recibida' : 'Confirmar pago'}
           </button>
           <button onClick={() => onEstado('cancelado')}
             style={{ flex:1, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(248,113,113,0.3)', background:'transparent', color:'#f87171', cursor:'pointer' }}>
@@ -874,7 +874,6 @@ function TiendaPublica({ config }) {
 
   async function abrirPedidos() {
     setVistaPublica('pedidos')
-    if (misPedidos.length > 0) return
     setLoadingPedidos(true)
     const { data } = await supabase.from('pedidos').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
     setMisPedidos(data || [])
@@ -1036,7 +1035,7 @@ function PedidoCompradorCard({ pedido: p, onPedidoActualizado }) {
 
   const ESTADO_COMPRADOR = {
     pendiente:  { label:'Pendiente',     color:'#fbbf24', bg:'rgba(251,191,36,0.12)' },
-    senado:     { label:'Sena recibida', color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
+    senado:     { label:'Seña recibida', color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
     confirmado: { label:'Acreditado',    color:'#4ade80', bg:'rgba(74,222,128,0.12)' },
     entregado:  { label:'Entregado',     color:'#60a5fa', bg:'rgba(96,165,250,0.12)' },
     cancelado:  { label:'Cancelado',     color:'#f87171', bg:'rgba(248,113,113,0.12)' },
@@ -1072,22 +1071,22 @@ function PedidoCompradorCard({ pedido: p, onPedidoActualizado }) {
         </div>
         {p.es_sena && (
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#f59e0b' }}>
-            <span>Sena abonada</span><span>${Number(p.monto_sena).toLocaleString('es-AR')}</span>
+            <span>Seña abonada</span><span>${Number(p.monto_sena).toLocaleString('es-AR')}</span>
           </div>
         )}
-        {p.es_sena && !yaEnvioSaldo && (
+        {estado === 'senado' && !yaEnvioSaldo && (
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'var(--text2)' }}>
             <span>Saldo pendiente</span><span>${saldoRestante.toLocaleString('es-AR')}</span>
           </div>
         )}
       </div>
-      {p.es_sena && !yaEnvioSaldo && (
+      {estado === 'senado' && !yaEnvioSaldo && (
         <button onClick={() => setSaldoOpen(true)}
           style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.1)', color:'#f59e0b', cursor:'pointer', fontWeight:600 }}>
           Transferir restante (${saldoRestante.toLocaleString('es-AR')})
         </button>
       )}
-      {p.es_sena && yaEnvioSaldo && (
+      {estado === 'senado' && yaEnvioSaldo && (
         <div style={{ marginTop:10, padding:'8px 12px', borderRadius:8, background:'rgba(96,165,250,0.08)', color:'#60a5fa', fontSize:13, textAlign:'center' }}>
           Saldo enviado - esperando confirmacion del admin
         </div>
@@ -1380,7 +1379,7 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
           : `${cart.length} productos`
         notificar(
           '🛍️ Nuevo pedido',
-          `${profile?.nombre || 'Alguien'} pidió ${resumen}${esSena ? ' (sena)' : ''}`,
+          `${profile?.nombre || 'Alguien'} pidió ${resumen}${esSena ? ' (seña)' : ''}`,
           '/mas?tab=Tienda&subtab=Compras',
           { user_ids: adminIds }
         )
@@ -1444,7 +1443,7 @@ function CartSheet({ cart, config, user, profile, onQuitar, onCambiarCantidad, o
             <input type="checkbox" checked={esSena} onChange={e => setEsSena(e.target.checked)}
               style={{ width:16, height:16, accentColor:'#f59e0b', cursor:'pointer', marginTop:2, flexShrink:0 }} />
             <div>
-              <div style={{ fontSize:13, fontWeight:600, color:'#f59e0b' }}>Abonar sena (50%)</div>
+              <div style={{ fontSize:13, fontWeight:600, color:'#f59e0b' }}>Abonar seña (50%)</div>
               <div style={{ fontSize:12, color:'var(--text2)', marginTop:2 }}>El resto lo abonas cuando el admin lo solicite</div>
             </div>
           </label>
@@ -1561,4 +1560,4 @@ function Cargando() {
 const iStyle = { flex:1, padding:'8px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:14 }
 const selectStyle = { padding:'8px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontSize:14, width:'100%' }
 const btnSecStyle = { padding:'5px 10px', fontSize:12, borderRadius:6, border:'1px solid var(--border)', background:'transparent', color:'var(--text2)', cursor:'pointer' }
-const btnDangerStyle = { padding:'5px 10px', fontSize:12, borderRadius:6, border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.1)', color:'#f87171', cursor:'pointer' }
+const btnDangerStyle = { padding:'5px 10px', fontSize:12, borderRadius:6
