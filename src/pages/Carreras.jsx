@@ -1313,7 +1313,7 @@ export default function Carreras() {
                         onClick={e => e.stopPropagation()}
                       >📍 {c.lugar}</a>
                     )}
-                    {c.lugar && isWithin5Days(c.fecha) && (
+                    {c.lugar && isWithin5Days(c.fecha) && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && (
                       <span
                         className="tag"
                         style={{ cursor: 'pointer', opacity: weatherLoading === c.id ? 0.6 : 1 }}
