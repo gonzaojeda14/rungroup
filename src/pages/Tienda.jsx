@@ -147,7 +147,7 @@ function TiendaAdmin({ config, onConfigChange }) {
     notificar(
       '🎉 Ya falta poco para tener tu pedido',
       'Podés abonar el saldo restante cuando quieras desde Mis Pedidos.',
-      '/mas?tab=Tienda',
+      '/mas?tab=Tienda&vista=pedidos',
       { user_ids: [pedido.user_id] }
     )
   }
@@ -805,7 +805,10 @@ function TiendaPublica({ config }) {
   const [toast, setToast]       = useState('')
   const [generoFiltro, setGeneroFiltro] = useState(null)
   const [talleFiltro, setTalleFiltro]   = useState(null)
-  const [vistaPublica, setVistaPublica] = useState('productos')
+  const [vistaPublica, setVistaPublica] = useState(() => {
+    const p = new URLSearchParams(window.location.search)
+    return p.get('vista') === 'pedidos' ? 'pedidos' : 'productos'
+  })
   const [misPedidos, setMisPedidos]     = useState([])
   const [loadingPedidos, setLoadingPedidos] = useState(false)
   const saveTimer = useRef(null)
@@ -1072,19 +1075,19 @@ function PedidoCompradorCard({ pedido: p, onPedidoActualizado }) {
             <span>Sena abonada</span><span>${Number(p.monto_sena).toLocaleString('es-AR')}</span>
           </div>
         )}
-        {estado === 'senado' && !yaEnvioSaldo && (
+        {p.es_sena && !yaEnvioSaldo && (
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'var(--text2)' }}>
             <span>Saldo pendiente</span><span>${saldoRestante.toLocaleString('es-AR')}</span>
           </div>
         )}
       </div>
-      {estado === 'senado' && !yaEnvioSaldo && (
+      {p.es_sena && !yaEnvioSaldo && (
         <button onClick={() => setSaldoOpen(true)}
           style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.1)', color:'#f59e0b', cursor:'pointer', fontWeight:600 }}>
           Transferir restante (${saldoRestante.toLocaleString('es-AR')})
         </button>
       )}
-      {estado === 'senado' && yaEnvioSaldo && (
+      {p.es_sena && yaEnvioSaldo && (
         <div style={{ marginTop:10, padding:'8px 12px', borderRadius:8, background:'rgba(96,165,250,0.08)', color:'#60a5fa', fontSize:13, textAlign:'center' }}>
           Saldo enviado - esperando confirmacion del admin
         </div>
