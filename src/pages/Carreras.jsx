@@ -360,27 +360,48 @@ export default function Carreras() {
     return d >= today && d <= in5
   }
 
-  async function fetchWeather(carrera) {
-    // Si el caché es fresco (< 1h), mostrar directamente
+  async function fetchWeather(carrera, silent = false) {
+    const CACHE_MS = 30 * 60 * 1000 // 30 min cliente
     if (carrera.weather_data && carrera.weather_updated_at) {
-      const isStale = new Date(carrera.weather_updated_at) < new Date(Date.now() - 60 * 60 * 1000)
-      if (!isStale) { setWeatherModal({ carrera, data: carrera.weather_data }); return }
+      const isStale = new Date(carrera.weather_updated_at) < new Date(Date.now() - CACHE_MS)
+      if (!isStale) {
+        if (!silent) setWeatherModal({ carrera, data: carrera.weather_data })
+        return
+      }
     }
-    setWeatherLoading(carrera.id)
+    if (!silent) setWeatherLoading(carrera.id)
     try {
       const { data, error } = await supabase.functions.invoke('sync-weather', {
         body: { carrera_id: carrera.id },
       })
-      if (error || !data?.weather) { setToast('❌ No se pudo obtener el clima'); setTimeout(() => setToast(''), 3000); return }
+      if (error || !data?.weather) {
+        if (!silent) { setToast('❌ No se pudo obtener el clima'); setTimeout(() => setToast(''), 3000) }
+        return
+      }
       setCarreras(prev => prev.map(c => c.id === carrera.id
         ? { ...c, weather_data: data.weather, weather_updated_at: new Date().toISOString() }
         : c
       ))
-      setWeatherModal({ carrera, data: data.weather })
+      if (!silent) setWeatherModal({ carrera: { ...carrera, weather_data: data.weather }, data: data.weather })
     } finally {
-      setWeatherLoading(null)
+      if (!silent) setWeatherLoading(null)
     }
   }
+
+  // Auto-cargar clima para carreras dentro de los próximos 5 días
+  useEffect(() => {
+    if (!carreras.length) return
+    const proximas = carreras.filter(c =>
+      c.lugar && isWithin5Days(c.fecha) && (!c.tipo_actividad || c.tipo_actividad === 'carrera')
+    )
+    proximas.forEach(c => fetchWeather(c, true))
+
+    // Refrescar cada 30 min
+    const interval = setInterval(() => {
+      proximas.forEach(c => fetchWeather(c, true))
+    }, 30 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [carreras.length])
 
 
   async function fetchSugerencias() {
