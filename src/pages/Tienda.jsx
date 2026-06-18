@@ -393,7 +393,8 @@ function PromoForm({ promo, saving, setSaving, onSaved, onCancel }) {
   )
 
   function setTramo(i, campo, val) {
-    setTramos(prev => prev.map((t, j) => j === i ? { ...t, [campo]: Number(val) } : t))
+    // Guardar como string mientras edita, convertir a número al guardar
+    setTramos(prev => prev.map((t, j) => j === i ? { ...t, [campo]: val } : t))
   }
 
   function addTramo() {
@@ -408,7 +409,7 @@ function PromoForm({ promo, saving, setSaving, onSaved, onCancel }) {
   async function handleGuardar() {
     if (!nombre || tramos.length === 0) return
     setSaving(true)
-    const payload = { nombre, activa, tramos }
+    const payload = { nombre, activa, tramos: tramos.map(t => ({ cantidad: Number(t.cantidad) || 1, total: Number(t.total) || 0 })) }
     if (esNueva) {
       await supabase.from('promos').insert([payload])
     } else {
@@ -433,11 +434,11 @@ function PromoForm({ promo, saving, setSaving, onSaved, onCancel }) {
           {tramos.map((t, i) => (
             <div key={i} style={{ display:'flex', gap:8, alignItems:'center' }}>
               <div style={{ display:'flex', alignItems:'center', gap:6, flex:1, background:'var(--bg3)', borderRadius:8, padding:'6px 10px', border:'1px solid var(--border)' }}>
-                <input type="number" min="1" value={t.cantidad} onChange={e => setTramo(i, 'cantidad', e.target.value)}
-                  style={{ width:40, background:'transparent', border:'none', color:'var(--text)', fontSize:14, fontWeight:700, textAlign:'center' }} />
+                <input type="text" inputMode="numeric" value={t.cantidad} onChange={e => setTramo(i, 'cantidad', e.target.value)}
+                  style={{ width:44, background:'transparent', border:'none', color:'var(--text)', fontSize:14, fontWeight:700, textAlign:'center' }} />
                 <span style={{ color:'var(--text2)', fontSize:13 }}>unid. =</span>
                 <span style={{ color:'var(--text2)', fontSize:13 }}>$</span>
-                <input type="number" min="0" value={t.total} onChange={e => setTramo(i, 'total', e.target.value)}
+                <input type="text" inputMode="numeric" value={t.total} onChange={e => setTramo(i, 'total', e.target.value)}
                   style={{ flex:1, background:'transparent', border:'none', color:'var(--accent)', fontSize:14, fontWeight:700 }} />
               </div>
               {tramos.length > 1 && (
@@ -452,7 +453,7 @@ function PromoForm({ promo, saving, setSaving, onSaved, onCancel }) {
       </div>
 
       <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
-        <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} />
+        <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} style={{ width:16, height:16, accentColor:'var(--accent)', cursor:'pointer', flexShrink:0 }} />
         <span style={{ fontSize:13 }}>Promo activa</span>
       </label>
 
