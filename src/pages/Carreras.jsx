@@ -360,6 +360,8 @@ export default function Carreras() {
     return d >= today && d <= in5
   }
 
+  const tieneClima = c => c.lugar && isWithin5Days(c.fecha) && c.tipo_actividad !== 'evento' && !c.weather_error
+
   async function fetchWeather(carrera, silent = false) {
     const CACHE_MS = 30 * 60 * 1000 // 30 min cliente
     if (carrera.weather_data && carrera.weather_updated_at) {
@@ -375,11 +377,12 @@ export default function Carreras() {
         body: { carrera_id: carrera.id },
       })
       if (error || !data?.weather) {
-        if (!silent) { setToast('❌ No se pudo obtener el clima'); setTimeout(() => setToast(''), 3000) }
+        // Lugar no encontrado: ocultar el tag silenciosamente
+        setCarreras(prev => prev.map(c => c.id === carrera.id ? { ...c, weather_error: true } : c))
         return
       }
       setCarreras(prev => prev.map(c => c.id === carrera.id
-        ? { ...c, weather_data: data.weather, weather_updated_at: new Date().toISOString() }
+        ? { ...c, weather_data: data.weather, weather_updated_at: new Date().toISOString(), weather_error: false }
         : c
       ))
       if (!silent) setWeatherModal({ carrera: { ...carrera, weather_data: data.weather }, data: data.weather })
@@ -388,15 +391,12 @@ export default function Carreras() {
     }
   }
 
-  // Auto-cargar clima para carreras dentro de los próximos 5 días
+  // Auto-cargar clima para carreras y entrenamientos dentro de los próximos 5 días
   useEffect(() => {
     if (!carreras.length) return
-    const proximas = carreras.filter(c =>
-      c.lugar && isWithin5Days(c.fecha) && (!c.tipo_actividad || c.tipo_actividad === 'carrera')
-    )
+    const proximas = carreras.filter(tieneClima)
     proximas.forEach(c => fetchWeather(c, true))
 
-    // Refrescar cada 30 min
     const interval = setInterval(() => {
       proximas.forEach(c => fetchWeather(c, true))
     }, 30 * 60 * 1000)
@@ -1335,7 +1335,7 @@ export default function Carreras() {
                         onClick={e => e.stopPropagation()}
                       >📍 {c.lugar}</a>
                     )}
-                    {c.lugar && isWithin5Days(c.fecha) && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && (
+                    {tieneClima(c) && (
                       <span
                         className="tag"
                         style={{ cursor: 'pointer', opacity: weatherLoading === c.id ? 0.6 : 1 }}
