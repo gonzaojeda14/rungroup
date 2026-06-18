@@ -880,6 +880,8 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
   const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : p.estado === 'senado' ? '#f59e0b' : 'var(--accent)'
   const estadoLabel = { pendiente:'pendiente', senado:'señado', confirmado:'confirmado', cancelado:'cancelado', entregado:'entregado' }[p.estado] || p.estado
+  const subtotalSinDescuento = items.reduce((s, it) => s + Number(it.precio) * (it.cantidad || 1), 0)
+  const descuento = subtotalSinDescuento - Number(p.total)
   const saldoPendiente = !!p.comprobante_url_2 && p.estado !== 'confirmado' && p.estado !== 'entregado' && p.estado !== 'cancelado'
 
   return (
@@ -905,11 +907,17 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         {items.map((it, i) => (
           <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
             <span style={{ color:'var(--text)' }}>
-              {it.nombre}{it.talle ? <span style={{ color:'var(--text2)' }}> · {it.talle}</span> : null}
+              {it.nombre}{it.talle ? <span style={{ color:'var(--text2)' }}> · {it.talle}</span> : null}{it.cantidad > 1 ? <span style={{ color:'var(--text2)' }}> x{it.cantidad}</span> : null}
             </span>
-            <span style={{ color:'var(--text2)', flexShrink:0 }}>${Number(it.precio).toLocaleString('es-AR')}</span>
+            <span style={{ color:'var(--text2)', flexShrink:0 }}>${(Number(it.precio) * (it.cantidad || 1)).toLocaleString('es-AR')}</span>
           </div>
         ))}
+        {descuento > 0 && (
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#4ade80' }}>
+            <span>🏷️ Descuento promo</span>
+            <span>-${descuento.toLocaleString('es-AR')}</span>
+          </div>
+        )}
         <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid var(--border)', marginTop:4, paddingTop:4, fontWeight:700, fontSize:14 }}>
           <span>Total</span><span>${Number(p.total).toLocaleString('es-AR')}</span>
         </div>
