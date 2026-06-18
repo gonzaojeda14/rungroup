@@ -996,8 +996,16 @@ function TiendaPublica({ config }) {
         supabase.from('productos').select('*, promo:promos(*)').eq('disponible', true).order('created_at', { ascending: false }),
         user ? supabase.from('carritos').select('items').eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
       ])
-      setProductos(prods || [])
-      if (carrito?.items?.length) setCart(carrito.items)
+      const prodList = prods || []
+      setProductos(prodList)
+      if (carrito?.items?.length) {
+        const prodMap = {}
+        prodList.forEach(p => { prodMap[p.id] = p })
+        setCart(carrito.items.map(item => ({
+          ...item,
+          producto: prodMap[item.producto?.id] || item.producto,
+        })))
+      }
       setLoading(false)
     }
     init()
