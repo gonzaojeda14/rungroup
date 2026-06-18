@@ -1338,10 +1338,14 @@ export default function Carreras() {
                     {tieneClima(c) && (
                       <span
                         className="tag"
-                        style={{ cursor: 'pointer', opacity: weatherLoading === c.id ? 0.6 : 1 }}
+                        style={{ cursor: 'pointer', opacity: weatherLoading === c.id ? 0.6 : 1, border: '1px solid rgba(255,255,255,0.12)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         onClick={e => { e.stopPropagation(); if (weatherLoading !== c.id) fetchWeather(c) }}
                       >
-                        {weatherLoading === c.id ? '⏳ Cargando...' : c.weather_data ? `🌡️ ${c.weather_data.temp}°C · 🌧️ ${c.weather_data.rain_prob}%` : '🌤️ Ver clima'}
+                        {weatherLoading === c.id
+                          ? '⏳ Cargando...'
+                          : c.weather_data
+                            ? <><span>🌡️ {c.weather_data.temp}°C · 🌧️ {c.weather_data.rain_prob}%</span><span style={{ fontSize: 10, color: 'var(--text2)', lineHeight: 1 }}>›</span></>
+                            : '🌤️ Ver clima'}
                       </span>
                     )}
                     {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
