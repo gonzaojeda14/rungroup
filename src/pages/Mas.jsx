@@ -1269,4 +1269,20 @@ export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
                 background: '#ff2d2d', borderRadius: '999px',
                 fontSize: 9, fontWeight: 700, color: '#fff',
               }}>
-                {flam
+                {flamaPendientes > 9 ? '9+' : flamaPendientes}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenido */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {tab === 'Alianzas' && <Alianzas />}
+        {tab === 'Flamitas' && <FlamaPoints />}
+        {tab === 'Inscripciones' && <Ventas />}
+        {tab === 'Tienda' && <Tienda />}
+      </div>
+    </div>
+  )
+}
