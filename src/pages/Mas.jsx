@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Ventas from './Ventas'
 import Tienda from './Tienda'
 import { supabase } from '../lib/supabase'
@@ -1009,12 +1010,19 @@ export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
   const { user, isAdmin } = useAuth()
   // Recordamos la última pestaña elegida (en sessionStorage) para que, al
   // navegar a otra sección y volver a "Más", no se reinicie en "Alianzas".
-  const [tab, setTab] = useState(() => {
-    const urlTab = new URLSearchParams(window.location.search).get('tab')
-    if (urlTab && TABS.includes(urlTab)) return urlTab
-    const guardada = localStorage.getItem('mas_tab')
-    return TABS.includes(guardada) ? guardada : 'Alianzas'
-  })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const tab = tabParam && TABS.includes(tabParam)
+    ? tabParam
+    : (TABS.includes(localStorage.getItem('mas_tab')) ? localStorage.getItem('mas_tab') : 'Alianzas')
+
+  // Sincronizar URL al montar si no hay param (sin crear entrada en historial)
+  useEffect(() => {
+    if (!tabParam) {
+      const saved = TABS.includes(localStorage.getItem('mas_tab')) ? localStorage.getItem('mas_tab') : 'Alianzas'
+      setSearchParams({ tab: saved }, { replace: true })
+    }
+  }, [])
   // Carreras completadas a las que todavía no le mandaste la prueba de dorsal —
   // se muestra como notificación (igual que "Inscripciones") para que no se te pase.
   // OJO: se calcula acá (no dentro de FlamaPoints) y de forma independiente de la
@@ -1053,8 +1061,8 @@ export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
   }, [user.id])
 
   function cambiarTab(t) {
-    setTab(t)
     localStorage.setItem('mas_tab', t)
+    setSearchParams({ tab: t }) // push → el botón atrás vuelve al tab anterior
   }
 
   return (
