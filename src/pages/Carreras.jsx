@@ -1416,9 +1416,9 @@ export default function Carreras() {
                           </div>
                         ))}
                       </div>
-                      {weatherModal.data.hora_local && (
+                      {(weatherModal.carrera.hora || weatherModal.data.hora_local) && (
                         <div style={{ fontSize: '11px', color: 'var(--text2)', textAlign: 'center' }}>
-                          Pronóstico para las {weatherModal.data.hora_local} hs · 📍 {weatherModal.carrera.lugar}
+                          Pronóstico para las {weatherModal.carrera.hora ? weatherModal.carrera.hora.substring(0, 5) : weatherModal.data.hora_local} hs · 📍 {weatherModal.carrera.lugar}
                         </div>
                       )}
                     </div>

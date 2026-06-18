@@ -4,7 +4,7 @@ import FotosModal from '../components/FotosModal'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFechaHora, agregarAlCalendario, yaEmpezo } from '../lib/utils'
+import { formatFechaHora, agregarAlCalendario, yaEmpezo, parsearDistanciaKm } from '../lib/utils'
 
 const ESTADO_COLOR = {
   'Inscripto': '#4ade80',
@@ -49,18 +49,6 @@ function autoformatTiempo(valor) {
   if (nums.length <= 2) return nums
   if (nums.length <= 4) return `${nums.slice(0,2)}:${nums.slice(2)}`
   return `${nums.slice(0,2)}:${nums.slice(2,4)}:${nums.slice(4)}`
-}
-
-// Extrae km numérico de una distancia como "15K", "Maratón", etc.
-function parsearDistanciaKm(dist) {
-  if (!dist) return null
-  const str = String(dist).toLowerCase().trim()
-  if (str.includes('maratón') || str.includes('maraton') || str === '42k' || str === '42.2k') return 42.195
-  if (str.includes('media') || str === '21k' || str === '21.1k') return 21.097
-  const m = str.match(/^(\d+(?:\.\d+)?)\s*k/)
-  if (m) return parseFloat(m[1])
-  const n = parseFloat(str)
-  return isNaN(n) ? null : n
 }
 
 // Calcula ritmo en formato "MM:SS /km"

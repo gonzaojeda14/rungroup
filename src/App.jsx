@@ -171,7 +171,7 @@ function Shell() {
   useEffect(() => {
     if (!user || !isAdmin) return
     async function checkPedidos() {
-      const { count } = await supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente')
+      const { count } = await supabase.from('pedidos').select('id', { count: 'exact', head: true }).in('estado', ['pendiente', 'señado'])
       setPedidosPendientes(count || 0)
     }
     checkPedidos()

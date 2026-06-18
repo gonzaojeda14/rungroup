@@ -4,7 +4,7 @@ import FotosModal from '../components/FotosModal'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { formatFecha, validarTelefono, capitalizarNombre, yaEmpezo } from '../lib/utils'
+import { formatFecha, validarTelefono, capitalizarNombre, yaEmpezo, parsearDistanciaKm } from '../lib/utils'
 import PasswordInput from '../components/PasswordInput'
 import { suscribirPush } from '../lib/push'
 import { useSearchParams } from 'react-router-dom'
@@ -298,7 +298,7 @@ export default function MiPerfil() {
     e.preventDefault()
     setMsgPwd('')
     if (pwd.nueva !== pwd.confirmar) { setMsgPwd('Las contraseñas no coinciden'); return }
-    if (pwd.nueva.length < 6) { setMsgPwd('Mínimo 6 caracteres'); return }
+    if (pwd.nueva.length < 8) { setMsgPwd('Mínimo 8 caracteres'); return }
     setSavingPwd(true)
     const { error } = await supabase.auth.updateUser({ password: pwd.nueva })
     setMsgPwd(error ? 'Error al cambiar contraseña' : '✅ Contraseña actualizada')
@@ -733,8 +733,8 @@ export default function MiPerfil() {
         const carreras = pasadas.filter(p => !p.carrera?.tipo_actividad || p.carrera?.tipo_actividad === 'carrera')
         const eventosEntrenos = pasadas.filter(p => p.carrera?.tipo_actividad === 'evento' || p.carrera?.tipo_actividad === 'entrenamiento')
         const kmTotales = pasadas.reduce((s, p) => {
-          const n = parseFloat(p.distancia_elegida || p.carrera?.distancia)
-          return s + (isNaN(n) ? 0 : n)
+          const n = parsearDistanciaKm(p.distancia_elegida || p.carrera?.distancia)
+          return s + (n ?? 0)
         }, 0)
         return (
           <>

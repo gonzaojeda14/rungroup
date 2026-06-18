@@ -136,6 +136,19 @@ export function agregarAlCalendario(nombre, fecha, hora, lugar) {
   }
 }
 
+// Extrae km numérico de una distancia como "5K", "21K", "Maratón", "Media Maratón", etc.
+// Devuelve null si no se puede parsear.
+export function parsearDistanciaKm(dist) {
+  if (!dist) return null
+  const str = String(dist).toLowerCase().trim()
+  if (str.includes('maratón') || str.includes('maraton') || str === '42k' || str === '42.2k') return 42.195
+  if (str.includes('media') || str === '21k' || str === '21.1k') return 21.097
+  const m = str.match(/^(\d+(?:\.\d+)?)\s*k/)
+  if (m) return parseFloat(m[1])
+  const n = parseFloat(str)
+  return isNaN(n) ? null : n
+}
+
 // Valida que un teléfono tenga entre 8 y 15 dígitos
 export function validarTelefono(tel) {
   if (!tel) return false
