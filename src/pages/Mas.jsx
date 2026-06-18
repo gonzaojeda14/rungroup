@@ -32,25 +32,6 @@ const WP_MSG = encodeURIComponent('Hola! Te escribo de parte de Flama Training')
 const wp = (num) => `https://wa.me/${num.replace(/\D/g, '')}?text=${WP_MSG}`
 const ig = (user) => `https://instagram.com/${user.replace('@', '')}`
 
-// ─── DATOS ───────────────────────────────────────────────────────────────────
-
-const ALIANZAS = [
-  // Profesionales
-  { nombre: 'Eugenia Gancedo', categoria: 'Nutrición', emoji: '🥗', wp: wp('+5491164860148'), ig: ig('@eg.nutriciondeportiva'), web: null, descuento: null, codigo: null, ubicacion: null },
-  { nombre: 'Diego Dobler', categoria: 'Kinesiología', emoji: '🦴', wp: wp('+5491163081610'), ig: null, web: null, descuento: null, codigo: null, ubicacion: null },
-  { nombre: 'NC Body Therapy', categoria: 'Masajes', emoji: '💆', wp: wp('+5491166874129'), ig: ig('@nc.bodytherapy'), web: null, descuento: '10% en masajes y reflexología', codigo: null, ubicacion: null },
-  // Marcas
-  { nombre: 'Fuel Store Arg', categoria: 'Suplementos', emoji: '⚡', wp: wp('+5491126816998'), ig: ig('@fuelstorearg'), web: 'https://www.fuelstorearg.com', descuento: 'Descuento en suplementos', codigo: 'FLAMA', ubicacion: null },
-  { nombre: 'Pantro Indumentaria', categoria: 'Indumentaria', emoji: '👕', wp: wp('+5491125039851'), ig: ig('@pantrotienda'), web: 'https://www.pantrotienda.com.ar', descuento: '35% en efectivo', codigo: null, ubicacion: 'Iberá 3168, Núñez' },
-  { nombre: 'A Nation', categoria: 'Calzado', emoji: '👟', wp: null, ig: ig('@anationoficial'), web: 'https://www.anation.com.ar', descuento: '15% en todos los productos', codigo: 'FLAMA', ubicacion: null },
-  { nombre: 'Fitnesas', categoria: 'Productos deportivos', emoji: '🏋️', wp: wp('+5491168599619'), ig: ig('@fitnesas.ar'), web: 'https://www.fitnesas.com.ar', descuento: '10% en local y web', codigo: 'FLAMA2025', ubicacion: ['Bulnes 2026, Palermo', 'Guillermo White 4335, Munro'] },
-  { nombre: 'Olmos Ortopedia', categoria: 'Plantillas deportivas', emoji: '🦶', wp: wp('+5491126280043'), ig: ig('@ortopediaolmos'), web: null, descuento: '15% a 25% en plantillas', codigo: null, ubicacion: null },
-  // Gastronomía
-  { nombre: 'La Panera Rosa', categoria: 'Gastronomía', emoji: '🥐', wp: null, ig: null, web: null, descuento: '20% en todo el menú', codigo: null, ubicacion: 'Arenales 511, Vicente López' },
-  { nombre: 'La Pianca', categoria: 'Gastronomía', emoji: '🍽', wp: null, ig: null, web: null, descuento: '15% en todo el menú', codigo: null, ubicacion: 'Tapiales 1136, Vicente López' },
-  // Próximamente
-  { nombre: 'Brina Makeup Beauty Studio', categoria: 'Belleza', emoji: '✨', wp: wp('+5491168552470'), ig: ig('@brinamakeup'), web: null, descuento: '10% en tratamientos faciales y corporales', codigo: 'FLAMA', ubicacion: 'Gral. Juan Lavalle 1800, Vicente López' },
-]
 
 // ─── ICONOS ──────────────────────────────────────────────────────────────────
 
@@ -91,17 +72,108 @@ const ESTADO_INFO = {
 
 // ─── SECCIÓN ALIANZAS ─────────────────────────────────────────────────────────
 
-function Alianzas() {
-  const [copiado, setCopiado] = useState(null)
+const ALIANZA_EMPTY = { nombre: '', categoria: '', emoji: '⭐', wp: '', ig: '', web: '', descuento: '', codigo: '', ubicacion: '', activa: true, orden: 0 }
 
-  function copiarCodigo(codigo, nombre) {
+function Alianzas() {
+  const { isAdmin } = useAuth()
+  const [alianzas, setAlianzas] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [copiado, setCopiado] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editando, setEditando] = useState(null)
+  const [form, setForm] = useState(ALIANZA_EMPTY)
+  const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  useEffect(() => { fetchAlianzas() }, [])
+
+  async function fetchAlianzas() {
+    const q = supabase.from('alianzas').select('*').order('orden').order('created_at')
+    if (!isAdmin) q.eq('activa', true)
+    const { data } = await q
+    setAlianzas(data || [])
+    setLoading(false)
+  }
+
+  function copiarCodigo(codigo, id) {
     navigator.clipboard.writeText(codigo)
     const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
-    if (!esMobile) {
-      setCopiado(nombre)
-      setTimeout(() => setCopiado(null), 2000)
-    }
+    if (!esMobile) { setCopiado(id); setTimeout(() => setCopiado(null), 2000) }
   }
+
+  function abrirNueva() {
+    setEditando(null)
+    setForm({ ...ALIANZA_EMPTY, orden: alianzas.length + 1 })
+    setShowForm(true)
+  }
+
+  function abrirEditar(a) {
+    setEditando(a.id)
+    setForm({
+      nombre: a.nombre || '',
+      categoria: a.categoria || '',
+      emoji: a.emoji || '⭐',
+      wp: a.wp || '',
+      ig: a.ig || '',
+      web: a.web || '',
+      descuento: a.descuento || '',
+      codigo: a.codigo || '',
+      ubicacion: Array.isArray(a.ubicacion) ? a.ubicacion.join('\n') : (a.ubicacion || ''),
+      activa: a.activa !== false,
+      orden: a.orden ?? 0,
+    })
+    setShowForm(true)
+  }
+
+  async function guardar() {
+    if (!form.nombre.trim()) return
+    setSaving(true)
+    const payload = {
+      nombre: form.nombre.trim(),
+      categoria: form.categoria.trim(),
+      emoji: form.emoji.trim() || '⭐',
+      wp: form.wp.trim() || null,
+      ig: form.ig.trim() || null,
+      web: form.web.trim() || null,
+      descuento: form.descuento.trim() || null,
+      codigo: form.codigo.trim() || null,
+      ubicacion: form.ubicacion.trim() ? form.ubicacion.trim().split('\n').map(s => s.trim()).filter(Boolean) : null,
+      activa: form.activa,
+      orden: Number(form.orden) || 0,
+    }
+    if (editando) {
+      await supabase.from('alianzas').update(payload).eq('id', editando)
+    } else {
+      await supabase.from('alianzas').insert(payload)
+    }
+    setSaving(false)
+    setShowForm(false)
+    fetchAlianzas()
+  }
+
+  async function toggleActiva(a) {
+    await supabase.from('alianzas').update({ activa: !a.activa }).eq('id', a.id)
+    fetchAlianzas()
+  }
+
+  async function eliminar(id) {
+    await supabase.from('alianzas').delete().eq('id', id)
+    setConfirmDelete(null)
+    fetchAlianzas()
+  }
+
+  const campo = (key, label, placeholder = '', type = 'text') => (
+    <div style={{ marginBottom: '10px' }}>
+      <div style={{ fontSize: '11px', color: 'var(--text2)', marginBottom: '4px' }}>{label}</div>
+      <input
+        type={type}
+        value={form[key]}
+        placeholder={placeholder}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', color: 'var(--text1)', fontSize: '14px', boxSizing: 'border-box' }}
+      />
+    </div>
+  )
 
   return (
     <div className="page">
@@ -109,76 +181,161 @@ function Alianzas() {
         <h2>Alianzas</h2>
         <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: 400 }}>Profesionales y beneficios</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {ALIANZAS.map((a, i) => (
-          <div key={i} className="card">
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '22px' }}>{a.emoji}</span>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px' }}>{a.nombre}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{a.categoria}</div>
+
+      {isAdmin && (
+        <button onClick={abrirNueva} className="btn-primary" style={{ marginBottom: '14px', width: '100%' }}>
+          + Nueva alianza
+        </button>
+      )}
+
+      {loading ? (
+        <div style={{ textAlign: 'center', color: 'var(--text2)', padding: '40px 0' }}>Cargando…</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {alianzas.map(a => (
+            <div key={a.id} className="card" style={{ opacity: isAdmin && !a.activa ? 0.5 : 1 }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '22px' }}>{a.emoji}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '14px' }}>{a.nombre}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{a.categoria}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  {a.wp && (
+                    <a href={wp(a.wp)} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', display: 'flex' }}>
+                      <WpIcon />
+                    </a>
+                  )}
+                  {a.ig && (
+                    <a href={ig(a.ig)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}>
+                      <IgIcon />
+                    </a>
+                  )}
+                  {a.web && (
+                    <a href={a.web} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}>
+                      <WebIcon />
+                    </a>
+                  )}
                 </div>
               </div>
-              {/* Links */}
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                {a.wp && (
-                  <a href={a.wp} target="_blank" rel="noopener noreferrer" style={{ color: '#4ade80', display: 'flex' }}>
-                    <WpIcon />
-                  </a>
-                )}
-                {a.ig && (
-                  <a href={a.ig} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}>
-                    <IgIcon />
-                  </a>
-                )}
-                {a.web && (
-                  <a href={a.web} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text2)', display: 'flex' }}>
-                    <WebIcon />
-                  </a>
-                )}
-              </div>
+
+              {/* Descuento */}
+              {a.descuento && (
+                <div style={{ marginTop: '8px', fontSize: '13px', color: '#4ade80', fontWeight: 600 }}>
+                  {a.descuento}
+                </div>
+              )}
+
+              {/* Cupón */}
+              {a.codigo && (
+                <div
+                  style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,45,45,0.1)', border: '1px solid rgba(255,45,45,0.2)', borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}
+                  onClick={() => copiarCodigo(a.codigo, a.id)}
+                >
+                  🎟 {a.codigo}
+                  {copiado === a.id
+                    ? <span style={{ fontSize: '11px', color: '#4ade80', fontWeight: 400 }}>✓</span>
+                    : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  }
+                </div>
+              )}
+
+              {/* Ubicación */}
+              {a.ubicacion && a.ubicacion.length > 0 && (
+                <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {a.ubicacion.map((u, j) => (
+                    <a key={j}
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(u)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text2)', textDecoration: 'none' }}
+                    >
+                      <MapIcon /> {u}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {/* Admin controls */}
+              {isAdmin && (
+                <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
+                  <button onClick={() => abrirEditar(a)} style={{ fontSize: '12px', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text1)', cursor: 'pointer' }}>
+                    ✏️ Editar
+                  </button>
+                  <button onClick={() => toggleActiva(a)} style={{ fontSize: '12px', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', color: a.activa ? 'var(--text2)' : '#4ade80', cursor: 'pointer' }}>
+                    {a.activa ? '🙈 Ocultar' : '👁 Mostrar'}
+                  </button>
+                  <button onClick={() => setConfirmDelete(a.id)} style={{ fontSize: '12px', padding: '4px 10px', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '6px', color: '#f87171', cursor: 'pointer', marginLeft: 'auto' }}>
+                    🗑
+                  </button>
+                </div>
+              )}
             </div>
+          ))}
+        </div>
+      )}
 
-            {/* Descuento */}
-            {a.descuento && (
-              <div style={{ marginTop: '8px', fontSize: '13px', color: '#4ade80', fontWeight: 600 }}>
-                {a.descuento}
-              </div>
-            )}
-
-            {/* Cupón */}
-            {a.codigo && (
-              <div
-                style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,45,45,0.1)', border: '1px solid rgba(255,45,45,0.2)', borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}
-                onClick={() => copiarCodigo(a.codigo, a.nombre)}
-              >
-                🎟 {a.codigo}
-                {copiado === a.nombre
-                  ? <span style={{ fontSize: '11px', color: '#4ade80', fontWeight: 400 }}>✓</span>
-                  : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                }
-              </div>
-            )}
-
-            {/* Ubicación */}
-            {a.ubicacion && (
-              <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                {(Array.isArray(a.ubicacion) ? a.ubicacion : [a.ubicacion]).map((u, j) => (
-                  <a key={j}
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(u)}`}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text2)', textDecoration: 'none' }}
-                  >
-                    <MapIcon /> {u}
-                  </a>
-                ))}
-              </div>
-            )}
+      {/* Form modal */}
+      {showForm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }} onClick={e => { if (e.target === e.currentTarget) setShowForm(false) }}>
+          <div style={{ background: 'var(--bg)', borderRadius: '16px 16px 0 0', padding: '20px', width: '100%', maxHeight: '85vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+            <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '16px' }}>
+              {editando ? 'Editar alianza' : 'Nueva alianza'}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+              <div style={{ gridColumn: '1 / -1' }}>{campo('nombre', 'Nombre *', 'NC Body Therapy')}</div>
+              {campo('categoria', 'Categoría', 'Masajes')}
+              {campo('emoji', 'Emoji', '💆')}
+              {campo('wp', 'WhatsApp (número)', '+5491166874129')}
+              {campo('ig', 'Instagram (@handle)', '@nc.bodytherapy')}
+              <div style={{ gridColumn: '1 / -1' }}>{campo('web', 'Sitio web (URL completa)', 'https://...')}</div>
+              <div style={{ gridColumn: '1 / -1' }}>{campo('descuento', 'Texto del beneficio', '10% en masajes y reflexología')}</div>
+              {campo('codigo', 'Código cupón', 'FLAMA')}
+              {campo('orden', 'Orden', '1', 'number')}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text2)', marginBottom: '4px' }}>Ubicación (una por línea)</div>
+              <textarea
+                value={form.ubicacion}
+                placeholder={'Iberá 3168, Núñez\nOtro local, Ciudad'}
+                onChange={e => setForm(f => ({ ...f, ubicacion: e.target.value }))}
+                rows={3}
+                style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', color: 'var(--text1)', fontSize: '14px', boxSizing: 'border-box', resize: 'vertical' }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={form.activa} onChange={e => setForm(f => ({ ...f, activa: e.target.checked }))} />
+                Activa (visible para corredores)
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setShowForm(false)} style={{ flex: 1, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text1)', fontSize: '14px', cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={guardar} disabled={saving || !form.nombre.trim()} style={{ flex: 2, padding: '12px', background: 'var(--accent)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Guardando…' : (editando ? 'Guardar cambios' : 'Crear alianza')}
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Delete confirm */}
+      {confirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 210, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg)', borderRadius: '14px', padding: '20px', width: '100%', maxWidth: '320px' }}>
+            <div style={{ fontWeight: 700, marginBottom: '8px' }}>¿Eliminar alianza?</div>
+            <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px' }}>Esta acción no se puede deshacer.</div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setConfirmDelete(null)} style={{ flex: 1, padding: '10px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text1)', cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={() => eliminar(confirmDelete)} style={{ flex: 1, padding: '10px', background: '#f87171', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1112,20 +1269,4 @@ export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
                 background: '#ff2d2d', borderRadius: '999px',
                 fontSize: 9, fontWeight: 700, color: '#fff',
               }}>
-                {flamaPendientes > 9 ? '9+' : flamaPendientes}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Contenido */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {tab === 'Alianzas' && <Alianzas />}
-        {tab === 'Flamitas' && <FlamaPoints />}
-        {tab === 'Inscripciones' && <Ventas />}
-        {tab === 'Tienda' && <Tienda />}
-      </div>
-    </div>
-  )
-}
+                {flam
