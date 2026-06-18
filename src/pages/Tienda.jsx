@@ -148,6 +148,14 @@ function TiendaAdmin({ config, onConfigChange }) {
     }
   }
 
+  async function convertirASena(pedidoId) {
+    const pedido = pedidos.find(p => p.id === pedidoId)
+    if (!pedido) return
+    const monto_sena = Math.round(Number(pedido.total) * 0.5)
+    await supabase.from('pedidos').update({ es_sena: true, monto_sena, estado: 'senado' }).eq('id', pedidoId)
+    setPedidos(prev => prev.map(p => p.id === pedidoId ? { ...p, es_sena: true, monto_sena, estado: 'senado' } : p))
+  }
+
   async function solicitarSaldo(pedidoId) {
     const pedido = pedidos.find(p => p.id === pedidoId)
     if (!pedido?.user_id) return
@@ -280,7 +288,8 @@ function TiendaAdmin({ config, onConfigChange }) {
               <PedidoAdminCard key={p.id} pedido={p}
                 onVerFoto={url => setFotoAmpliada(url)}
                 onEstado={estado => actualizarEstado(p.id, estado)}
-                onSolicitarSaldo={() => solicitarSaldo(p.id)} />
+                onSolicitarSaldo={() => solicitarSaldo(p.id)}
+                onConvertirSena={() => convertirASena(p.id)} />
             ))
           })()}
         </>}
@@ -875,7 +884,7 @@ function ProductoCardAdmin({ p, onToggle, onEditar, onEliminar, onVerFoto }) {
 
 // ─── CARD PEDIDO (admin) ──────────────────────────────────────────────────────
 
-function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
+function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo, onConvertirSena }) {
   const items = p.items || []
   const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
   const estadoColor = p.estado === 'confirmado' ? '#4ade80' : p.estado === 'cancelado' ? '#f87171' : p.estado === 'entregado' ? '#60a5fa' : p.estado === 'senado' ? '#f59e0b' : 'var(--accent)'
@@ -956,6 +965,12 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
           </button>
         </div>
       )}
+      {p.estado === 'pendiente' && !p.es_sena && !saldoPendiente && (
+        <button onClick={onConvertirSena}
+          style={{ marginTop:6, width:'100%', padding:7, fontSize:12, borderRadius:8, border:'1px solid rgba(245,158,11,0.3)', background:'transparent', color:'#f59e0b', cursor:'pointer' }}>
+          Convertir a seña (50%)
+        </button>
+      )}
       {p.estado === 'senado' && !saldoPendiente && (
         <button onClick={onSolicitarSaldo}
           style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.1)', color:'#f59e0b', cursor:'pointer', fontWeight:600 }}>
@@ -969,10 +984,16 @@ function PedidoAdminCard({ pedido: p, onVerFoto, onEstado, onSolicitarSaldo }) {
         </button>
       )}
       {p.estado === 'confirmado' && (
-        <button onClick={() => onEstado('entregado')}
-          style={{ marginTop:10, width:'100%', padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(96,165,250,0.3)', background:'rgba(96,165,250,0.1)', color:'#60a5fa', cursor:'pointer', fontWeight:600 }}>
-          Marcar como entregado
-        </button>
+        <div style={{ display:'flex', gap:8, marginTop:10 }}>
+          <button onClick={() => onEstado('entregado')}
+            style={{ flex:2, padding:8, fontSize:13, borderRadius:8, border:'1px solid rgba(96,165,250,0.3)', background:'rgba(96,165,250,0.1)', color:'#60a5fa', cursor:'pointer', fontWeight:600 }}>
+            Marcar como entregado
+          </button>
+          <button onClick={onConvertirSena}
+            style={{ flex:1, padding:8, fontSize:12, borderRadius:8, border:'1px solid rgba(245,158,11,0.2)', background:'transparent', color:'#f59e0b', cursor:'pointer' }}>
+            Revertir a señado
+          </button>
+        </div>
       )}
     </div>
   )
