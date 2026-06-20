@@ -391,17 +391,25 @@ export default function Carreras() {
     }
   }
 
-  // Auto-cargar clima para carreras y entrenamientos dentro de los próximos 5 días
+  // Auto-cargar clima para carreras y entrenamientos dentro de los próximos 5 días.
+  // Dep: clave de lugares de las próximas con clima — así si cambia el lugar de una
+  // carrera (sin que cambie la cantidad total) se vuelve a disparar la carga.
+  const lugaresClaveRef = carreras
+    .filter(tieneClima)
+    .map(c => `${c.id}:${c.lugar}`)
+    .join('|')
+
   useEffect(() => {
     if (!carreras.length) return
     const proximas = carreras.filter(tieneClima)
     proximas.forEach(c => fetchWeather(c, true))
 
     const interval = setInterval(() => {
-      proximas.forEach(c => fetchWeather(c, true))
+      carreras.filter(tieneClima).forEach(c => fetchWeather(c, true))
     }, 30 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [carreras.length])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lugaresClaveRef])
 
 
   async function fetchSugerencias() {

@@ -84,10 +84,12 @@ export default function Participaciones() {
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState(() => localStorage.getItem('agenda_filtro') || 'recientes')
   const [mesActivo, setMesActivo] = useState(() => localStorage.getItem('agenda_mes') || null)
+  const [tipoActividad, setTipoActividad] = useState(() => localStorage.getItem('agenda_tipo') || 'todas')
   const [showFiltros, setShowFiltros] = useState(false)
 
   function setFiltroGuardado(val) { setFiltro(val); localStorage.setItem('agenda_filtro', val) }
   function setMesActivoGuardado(val) { setMesActivo(val); val ? localStorage.setItem('agenda_mes', val) : localStorage.removeItem('agenda_mes') }
+  function setTipoActividadGuardado(val) { setTipoActividad(val); val !== 'todas' ? localStorage.setItem('agenda_tipo', val) : localStorage.removeItem('agenda_tipo') }
   const [toast, setToast] = useState('')
   const [notas, setNotas] = useState({}) // { carreraId: texto }
   const [tiempos, setTiempos] = useState({}) // { carreraId_distancia: texto }
@@ -439,6 +441,10 @@ export default function Participaciones() {
   const filtradas = items.filter(p => {
     if (filtro === 'proximas' && p.carrera?.fecha && p.carrera.fecha < hoy) return false
     if (filtro === 'recientes' && p.carrera?.fecha && p.carrera.fecha < hace7dias) return false
+    if (tipoActividad !== 'todas') {
+      const tipo = p.carrera?.tipo_actividad || 'carrera'
+      if (tipo !== tipoActividad) return false
+    }
     return true
   })
 
@@ -483,30 +489,35 @@ export default function Participaciones() {
       </div>
 
       {/* Botón filtros */}
-      <div style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <button
-          onClick={() => setShowFiltros(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            background: (filtro !== 'recientes' || mesActivo) ? 'rgba(255,45,45,0.12)' : 'var(--bg3)',
-            border: (filtro !== 'recientes' || mesActivo) ? '1px solid rgba(255,45,45,0.4)' : '1px solid var(--border)',
-            color: (filtro !== 'recientes' || mesActivo) ? 'var(--accent)' : 'var(--text2)',
-            borderRadius: '8px', padding: '7px 14px', fontSize: '13px',
-            cursor: 'pointer', fontFamily: 'inherit', fontWeight: (filtro !== 'recientes' || mesActivo) ? 600 : 400,
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          Filtros
-        </button>
-        {(filtro !== 'recientes' || mesActivo) && (
-          <button
-            onClick={() => { setFiltroGuardado('recientes'); setMesActivoGuardado(null) }}
-            style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            Limpiar
-          </button>
-        )}
-      </div>
+      {(() => {
+        const hayFiltros = filtro !== 'recientes' || mesActivo || tipoActividad !== 'todas'
+        return (
+          <div style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowFiltros(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: hayFiltros ? 'rgba(255,45,45,0.12)' : 'var(--bg3)',
+                border: hayFiltros ? '1px solid rgba(255,45,45,0.4)' : '1px solid var(--border)',
+                color: hayFiltros ? 'var(--accent)' : 'var(--text2)',
+                borderRadius: '8px', padding: '7px 14px', fontSize: '13px',
+                cursor: 'pointer', fontFamily: 'inherit', fontWeight: hayFiltros ? 600 : 400,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+              Filtros
+            </button>
+            {hayFiltros && (
+              <button
+                onClick={() => { setFiltroGuardado('recientes'); setMesActivoGuardado(null); setTipoActividadGuardado('todas') }}
+                style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+        )
+      })()}
 
       {showFiltros && (
         <>
@@ -525,6 +536,14 @@ export default function Participaciones() {
                   ))}
                 </div>
               </div>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Tipo</div>
+                <div className="filtro-group">
+                  {[['todas', 'Todos'], ['carrera', '🏅 Carreras'], ['entrenamiento', '🏃 Entrenos'], ['evento', '🎉 Eventos']].map(([val, label]) => (
+                    <button key={val} className={`filtro-btn ${tipoActividad === val ? 'active' : ''}`} onClick={() => setTipoActividadGuardado(val)}>{label}</button>
+                  ))}
+                </div>
+              </div>
               {mesesDisponibles.length > 1 && (
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Mes</div>
@@ -538,7 +557,7 @@ export default function Participaciones() {
               )}
             </div>
             <button className="btn-primary" style={{ width: '100%', marginTop: '20px', height: '44px' }} onClick={() => setShowFiltros(false)}>
-              Ver {porFiltroMes.length} carrera{porFiltroMes.length !== 1 ? 's' : ''}
+              Ver {porFiltroMes.length} {porFiltroMes.length !== 1 ? 'actividades' : 'actividad'}
             </button>
           </div>
         </>
@@ -546,7 +565,12 @@ export default function Participaciones() {
 
       {porFiltroMes.length === 0 && (
         <div className="empty-state">
-          {filtro === 'proximas' ? 'No tenés carreras próximas marcadas' : filtro === 'recientes' ? 'No tenés carreras recientes marcadas' : 'No tenés carreras marcadas todavía'}
+          {(() => {
+            const tipoLabel = tipoActividad === 'carrera' ? 'carreras' : tipoActividad === 'entrenamiento' ? 'entrenamientos' : tipoActividad === 'evento' ? 'eventos' : 'actividades'
+            if (filtro === 'proximas') return `No tenés ${tipoLabel} próximos marcados`
+            if (filtro === 'recientes') return `No tenés ${tipoLabel} recientes marcados`
+            return `No tenés ${tipoLabel} marcados todavía`
+          })()}
         </div>
       )}
 

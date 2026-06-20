@@ -53,8 +53,21 @@ export default function Resumen() {
 
   async function fetchResumen() {
     const { data: cars } = await supabase.from('carreras').select('*').order('fecha')
-    const [{ data: partsRaw }, { count: totalCorredores }] = await Promise.all([
-      supabase.from('participaciones').select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id').range(0, 4999),
+    // Paginación para soportar más de 1000 participaciones sin truncar silenciosamente
+    let partsRaw = []
+    let offset = 0
+    const PAGE = 1000
+    while (true) {
+      const { data: page, error } = await supabase
+        .from('participaciones')
+        .select('carrera_id, estado, distancia_elegida, feedback, feedback_nota, user_id')
+        .range(offset, offset + PAGE - 1)
+      if (error || !page?.length) break
+      partsRaw = partsRaw.concat(page)
+      if (page.length < PAGE) break
+      offset += PAGE
+    }
+    const [{ count: totalCorredores }] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('role', 'admin'),
     ])
     const { data: tcRaw } = await supabase
