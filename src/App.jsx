@@ -22,24 +22,32 @@ function OfertaAlert() {
   const navigate = useNavigate()
   const [oferta, setOferta] = useState(null)
 
+  async function check() {
+    const { data } = await supabase
+      .from('ventas_inscripciones')
+      .select('id, carrera:carreras(nombre)')
+      .eq('ofertado_a', user.id)
+      .in('estado', ['ofertada', 'contactada'])
+      .maybeSingle()
+    setOferta(data || null)
+  }
+
   useEffect(() => {
-    async function check() {
-      const { data } = await supabase
-        .from('ventas_inscripciones')
-        .select('id, carrera:carreras(nombre)')
-        .eq('ofertado_a', user.id)
-        .in('estado', ['ofertada', 'contactada'])
-        .maybeSingle()
-      setOferta(data || null)
-    }
     check()
+    const channel = supabase.channel('oferta-alert')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'ventas_inscripciones',
+        filter: `ofertado_a=eq.${user.id}`,
+      }, check)
+      .subscribe()
+    return () => supabase.removeChannel(channel)
   }, [user.id])
 
   if (!oferta) return null
 
   return (
     <div
-      onClick={() => navigate('/mas')}
+      onClick={() => navigate('/mas?tab=Inscripciones')}
       style={{
         background: 'rgba(251,191,36,0.15)', borderBottom: '1px solid rgba(251,191,36,0.3)',
         padding: '10px 16px', cursor: 'pointer',

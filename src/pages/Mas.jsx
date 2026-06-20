@@ -88,9 +88,8 @@ function Alianzas() {
   useEffect(() => { fetchAlianzas() }, [])
 
   async function fetchAlianzas() {
-    const q = supabase.from('alianzas').select('*').order('orden').order('created_at')
-    if (!isAdmin) q.eq('activa', true)
-    const { data } = await q
+    const base = supabase.from('alianzas').select('*').order('orden').order('created_at')
+    const { data } = await (isAdmin ? base : base.eq('activa', true))
     setAlianzas(data || [])
     setLoading(false)
   }

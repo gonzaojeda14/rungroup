@@ -52,6 +52,7 @@ export default function Ventas() {
   const [editandoVenta, setEditandoVenta] = useState(null)
   const [editForm, setEditForm] = useState({ precio: '', nota: '', distancia: '' })
   const [confirmarCancelar, setConfirmarCancelar] = useState(null) // id a cancelar
+  const [, setTick] = useState(0) // fuerza re-render cada minuto para actualizar el countdown
 
   const avanzarCola = useCallback(async (venta, rechazadoId) => {
     const yaRechazados = [...(venta.rechazados || []), rechazadoId].filter(Boolean)
@@ -158,6 +159,13 @@ export default function Ventas() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
+  // Actualizar el countdown cada 30 segundos mientras haya una oferta activa
+  useEffect(() => {
+    if (!miOferta) return
+    const interval = setInterval(() => setTick(t => t + 1), 30_000)
+    return () => clearInterval(interval)
+  }, [miOferta])
+
   async function handlePublicar(e) {
     e.preventDefault()
     if (!form.carrera_id) { setError('Tenés que elegir una carrera'); return }
@@ -231,12 +239,10 @@ export default function Ventas() {
   // El VENDEDOR confirma que se vendió
   async function handleConfirmarVenta(venta) {
     await supabase.from('ventas_inscripciones').update({ estado: 'vendida' }).eq('id', venta.id)
-    // Marcar al comprador como Inscripto y al vendedor como No voy
+    // Marcar al comprador como Inscripto (upsert por si nunca tuvo fila) y al vendedor como No voy
     await Promise.all([
       supabase.from('participaciones')
-        .update({ estado: 'Inscripto' })
-        .eq('carrera_id', venta.carrera_id)
-        .eq('user_id', venta.ofertado_a),
+        .upsert({ carrera_id: venta.carrera_id, user_id: venta.ofertado_a, estado: 'Inscripto' }, { onConflict: 'carrera_id,user_id' }),
       supabase.from('participaciones')
         .update({ estado: 'No voy' })
         .eq('carrera_id', venta.carrera_id)

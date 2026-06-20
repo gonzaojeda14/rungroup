@@ -415,7 +415,7 @@ export default function Carreras() {
   async function fetchSugerencias() {
     const { data } = await supabase
       .from('carreras_sugeridas')
-      .select('*')
+      .select('*, profiles(nombre)')
       .eq('estado', 'pendiente')
       .order('created_at', { ascending: false })
     setSugerencias(data || [])
@@ -1393,75 +1393,6 @@ export default function Carreras() {
                   </div>
                 </div>
 
-                {weatherModal && (
-                  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setWeatherModal(null)}>
-                    <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '24px', maxWidth: '340px', width: '100%' }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div style={{ fontWeight: 700, fontSize: '15px' }}>{weatherModal.carrera.nombre}</div>
-                        <button onClick={() => setWeatherModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>×</button>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                        <img
-                          src={`https://openweathermap.org/img/wn/${weatherModal.data.icon}@2x.png`}
-                          alt={weatherModal.data.condition}
-                          style={{ width: 64, height: 64 }}
-                        />
-                        <div>
-                          <div style={{ fontSize: '36px', fontWeight: 800, lineHeight: 1 }}>{weatherModal.data.temp}°C</div>
-                          <div style={{ fontSize: '13px', color: 'var(--text2)', textTransform: 'capitalize', marginTop: '4px' }}>{weatherModal.data.condition}</div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-                        {[
-                          { label: 'Sensación', value: `${weatherModal.data.feels_like}°C`, icon: '🌡️' },
-                          { label: 'Humedad', value: `${weatherModal.data.humidity}%`, icon: '💧' },
-                          { label: 'Lluvia', value: `${weatherModal.data.rain_prob}%`, icon: '🌧️' },
-                          { label: 'Viento', value: `${weatherModal.data.wind_kmh} km/h`, icon: '💨' },
-                        ].map(({ label, value, icon }) => (
-                          <div key={label} style={{ background: 'var(--bg)', borderRadius: '10px', padding: '12px', border: '1px solid var(--border)' }}>
-                            <div style={{ fontSize: '11px', color: 'var(--text2)', marginBottom: '4px' }}>{icon} {label}</div>
-                            <div style={{ fontSize: '16px', fontWeight: 700 }}>{value}</div>
-                          </div>
-                        ))}
-                      </div>
-                      {(weatherModal.carrera.hora || weatherModal.data.hora_local) && (
-                        <div style={{ fontSize: '11px', color: 'var(--text2)', textAlign: 'center' }}>
-                          Pronóstico para las {weatherModal.carrera.hora ? weatherModal.carrera.hora.substring(0, 5) : weatherModal.data.hora_local} hs · 📍 {weatherModal.carrera.lugar}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {modalRunningTeam && (
-                  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setModalRunningTeam(false)}>
-                    <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '24px', maxWidth: '400px', width: '100%' }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h3 style={{ margin: 0, fontSize: '15px' }}>🏃 Descuento Club de Corredores</h3>
-                        <button onClick={() => setModalRunningTeam(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
-                      </div>
-                      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '12px' }}>
-                        Para acceder al descuento por grupo en EntryFee:
-                      </p>
-                      <div style={{ fontSize: '13px', lineHeight: 1.7, color: 'var(--text)', whiteSpace: 'pre-line' }}>
-                        {INSTRUCTIVO_RUNNING_TEAM}
-                      </div>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(INSTRUCTIVO_RUNNING_TEAM)
-                          const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
-                          if (!esMobile) { setToast('✅ Instructivo copiado'); setTimeout(() => setToast(''), 2000) }
-                          setModalRunningTeam(false)
-                        }}
-                        className="btn-ghost"
-                        style={{ marginTop: '16px', width: '100%', height: 38, fontSize: 13 }}
-                      >
-                        Copiar instructivo
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {isAdmin && (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button className="btn-icon" onClick={() => toggleDestacada(c)} title={c.destacada ? 'Quitar destacada' : 'Marcar como destacada'} style={c.destacada ? { color: '#eab308', borderColor: 'rgba(234,179,8,0.4)' } : {}}>⭐</button>
@@ -1699,6 +1630,77 @@ export default function Carreras() {
           )
         })}
       </div>
+
+      {/* Modal clima */}
+      {weatherModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setWeatherModal(null)}>
+          <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '24px', maxWidth: '340px', width: '100%' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ fontWeight: 700, fontSize: '15px' }}>{weatherModal.carrera.nombre}</div>
+              <button onClick={() => setWeatherModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <img
+                src={`https://openweathermap.org/img/wn/${weatherModal.data.icon}@2x.png`}
+                alt={weatherModal.data.condition}
+                style={{ width: 64, height: 64 }}
+              />
+              <div>
+                <div style={{ fontSize: '36px', fontWeight: 800, lineHeight: 1 }}>{weatherModal.data.temp}°C</div>
+                <div style={{ fontSize: '13px', color: 'var(--text2)', textTransform: 'capitalize', marginTop: '4px' }}>{weatherModal.data.condition}</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+              {[
+                { label: 'Sensación', value: `${weatherModal.data.feels_like}°C`, icon: '🌡️' },
+                { label: 'Humedad', value: `${weatherModal.data.humidity}%`, icon: '💧' },
+                { label: 'Lluvia', value: `${weatherModal.data.rain_prob}%`, icon: '🌧️' },
+                { label: 'Viento', value: `${weatherModal.data.wind_kmh} km/h`, icon: '💨' },
+              ].map(({ label, value, icon }) => (
+                <div key={label} style={{ background: 'var(--bg)', borderRadius: '10px', padding: '12px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text2)', marginBottom: '4px' }}>{icon} {label}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700 }}>{value}</div>
+                </div>
+              ))}
+            </div>
+            {(weatherModal.carrera.hora || weatherModal.data.hora_local) && (
+              <div style={{ fontSize: '11px', color: 'var(--text2)', textAlign: 'center' }}>
+                Pronóstico para las {weatherModal.carrera.hora ? weatherModal.carrera.hora.substring(0, 5) : weatherModal.data.hora_local} hs · 📍 {weatherModal.carrera.lugar}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Running Team */}
+      {modalRunningTeam && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setModalRunningTeam(false)}>
+          <div style={{ background: 'var(--bg2)', borderRadius: '16px', padding: '24px', maxWidth: '400px', width: '100%' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '15px' }}>🏃 Descuento Club de Corredores</h3>
+              <button onClick={() => setModalRunningTeam(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '12px' }}>
+              Para acceder al descuento por grupo en EntryFee:
+            </p>
+            <div style={{ fontSize: '13px', lineHeight: 1.7, color: 'var(--text)', whiteSpace: 'pre-line' }}>
+              {INSTRUCTIVO_RUNNING_TEAM}
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(INSTRUCTIVO_RUNNING_TEAM)
+                const esMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+                if (!esMobile) { setToast('✅ Instructivo copiado'); setTimeout(() => setToast(''), 2000) }
+                setModalRunningTeam(false)
+              }}
+              className="btn-ghost"
+              style={{ marginTop: '16px', width: '100%', height: 38, fontSize: 13 }}
+            >
+              Copiar instructivo
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Botón sugerir carrera — usuarios no admin */}
       {!isAdmin && (
