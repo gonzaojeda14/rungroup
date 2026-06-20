@@ -202,14 +202,26 @@ export default function Novedades() {
 
   const [planesUrls, setPlanesUrls] = useState({}) // { archivo_url: signedUrl }
 
-  function abrirArchivo(archivoUrl) {
+  async function abrirArchivo(archivoUrl) {
     const url = planesUrls[archivoUrl]
     if (!url) return
-    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-      window.location.href = url
-    } else {
-      window.open(url, '_blank', 'noopener,noreferrer')
+    const esIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    // En iOS, intentamos el share sheet nativo (Save to Files, AirDrop, etc.)
+    // para no sacar al usuario de la PWA con window.location.href
+    if (esIOS && navigator.share) {
+      try {
+        const res = await fetch(url)
+        const blob = await res.blob()
+        const ext = blob.type.includes('pdf') ? 'pdf' : blob.type.split('/')[1] || 'bin'
+        const file = new File([blob], `plan.${ext}`, { type: blob.type })
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Plan semanal' })
+          return
+        }
+      } catch (_) { /* fallback */ }
     }
+    // Desktop y Android: abrir en pestaña nueva. iOS sin share: igual.
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const planes = itemsVisibles.filter(i => i.tipo === 'plan')
@@ -404,20 +416,7 @@ export default function Novedades() {
                     <button
                       className="btn-ghost"
                       style={{ height: 32, fontSize: 12, padding: '0 12px' }}
-                      onClick={() => {
-                        const url = planesUrls[p.archivo_url]
-                        // En iOS PWA target="_blank" abre un webview in-app que queda en blanco.
-                        // En mobile navegamos directo (Safari abre el archivo y el back vuelve a la app).
-                        // En desktop abrimos en pestaña nueva.
-                        // iOS PWA: target="_blank" abre un webview que queda en blanco con archivos de Supabase.
-                        // Solución: navegar directo (Safari abre el archivo, back button vuelve a la app).
-                        // Android y desktop: window.open funciona bien y abre en nueva pestaña sin efectos raros.
-                        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                          window.location.href = url
-                        } else {
-                          window.open(url, '_blank', 'noopener,noreferrer')
-                        }
-                      }}
+                      onClick={() => abrirArchivo(p.archivo_url)}
                     >
                       Abrir →
                     </button>

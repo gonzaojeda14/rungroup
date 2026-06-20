@@ -4,6 +4,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { parsearDistanciaKm } from '../lib/utils'
 
 const DISTANCIAS_RANKING = ['5K', '10K', '15K', '21K', '42K']
 const MEDALLAS = ['🥇', '🥈', '🥉']
@@ -35,11 +36,12 @@ export default function Corredores() {
   const [perfilAbierto, setPerfilAbierto] = useState(null)
   const [confirmarBloquear, setConfirmarBloquear] = useState(null)
   const [flamitasMap, setFlamitasMap] = useState({})
+  const [kmMap, setKmMap] = useState({})
   const [tab, setTab] = useState('corredores')
   const [ranking, setRanking] = useState({})
 
   useEffect(() => {
-    fetchCorredores(); fetchBugs(); fetchFlamitas(); fetchRanking()
+    fetchCorredores(); fetchBugs(); fetchFlamitas(); fetchRanking(); fetchKms()
 
     // Realtime: actualizar lista cuando cambia un perfil
     const ch = supabase.channel('corredores-profiles-rt')
@@ -81,6 +83,20 @@ export default function Corredores() {
       if (califica) map[p.id] = (map[p.id] || 0) + 5
     }
     setFlamitasMap(map)
+  }
+
+  async function fetchKms() {
+    const { data } = await supabase
+      .from('participaciones')
+      .select('user_id, distancia_elegida, carrera:carreras(distancia, tipo_actividad)')
+      .in('estado', ['Inscripto', 'Finalizado'])
+    const map = {}
+    for (const p of data || []) {
+      if (p.carrera?.tipo_actividad === 'evento') continue
+      const km = parsearDistanciaKm(p.distancia_elegida || p.carrera?.distancia)
+      if (km) map[p.user_id] = (map[p.user_id] || 0) + km
+    }
+    setKmMap(map)
   }
 
   async function fetchRanking() {
@@ -251,6 +267,12 @@ export default function Corredores() {
                       const total = flamitasMap[c.id] || 0
                       return total > 0 ? (
                         <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', whiteSpace: 'nowrap' }}>💎 {total}</span>
+                      ) : null
+                    })()}
+                    {(() => {
+                      const km = kmMap[c.id] || 0
+                      return km > 0 ? (
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>📏 {km} km</span>
                       ) : null
                     })()}
                     {c.lesion_actual && (
