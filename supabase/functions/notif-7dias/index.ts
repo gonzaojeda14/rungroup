@@ -46,34 +46,36 @@ Deno.serve(async (req) => {
     for (const carrera of carreras) {
       const { data: participaciones } = await supabase
         .from('participaciones')
-        .select('user_id')
+        .select('user_id, estado')
         .eq('carrera_id', carrera.id)
         .in('estado', ['Inscripto', 'Quizás', 'Stand Flama'])
 
       if (!participaciones?.length) continue
 
-      const userIds = participaciones.map((p: any) => p.user_id)
+      const grupos: Record<string, { title: string; body: string }> = {
+        'Inscripto':   { title: `🏃 ¡Faltan 7 días! ${carrera.nombre}`, body: 'La carrera se acerca. Revisá los detalles y preparate.' },
+        'Quizás':      { title: `⏳ ¿Vas o no vas? ${carrera.nombre}`, body: 'Faltan 7 días. ¡Es momento de confirmar si participás!' },
+        'Stand Flama': { title: `📣 ¡Faltan 7 días! ${carrera.nombre}`, body: 'El aguante cuenta. ¡Prepará la voz para alentar!' },
+      }
 
-      const res = await fetch(PUSH_NOTIF_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-          'apikey': SERVICE_ROLE_KEY,
-        },
-        body: JSON.stringify({
-          title: `🏃 ¡Faltan 7 días! ${carrera.nombre}`,
-          body: 'La carrera se acerca. Revisá los detalles y preparate.',
-          url: '/carreras',
-          user_ids: userIds,
-        }),
-      })
+      for (const [estado, notif] of Object.entries(grupos)) {
+        const ids = participaciones.filter((p: any) => p.estado === estado).map((p: any) => p.user_id)
+        if (!ids.length) continue
 
-      const resultText = await res.text()
-      console.log(`[notif-7dias] push-notif status: ${res.status}, body: ${resultText}`)
-      const result = JSON.parse(resultText)
-      console.log(`[notif-7dias] ${carrera.nombre}: ${result.sent ?? 0} enviadas`)
-      totalEnviadas += result.sent ?? 0
+        const res = await fetch(PUSH_NOTIF_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+            'apikey': SERVICE_ROLE_KEY,
+          },
+          body: JSON.stringify({ ...notif, url: '/carreras', user_ids: ids }),
+        })
+
+        const result = JSON.parse(await res.text())
+        console.log(`[notif-7dias] ${carrera.nombre} [${estado}]: ${result.sent ?? 0} enviadas`)
+        totalEnviadas += result.sent ?? 0
+      }
     }
 
     return json({ ok: true, carreras: carreras.length, enviadas: totalEnviadas })
