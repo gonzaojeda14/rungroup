@@ -26,10 +26,11 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
-    // Ventana: carreras entre hoy+6d12h y hoy+7d12h (±12hs alrededor de los 7 días)
+    // Ventana: ±6hs alrededor de los 7 días exactos.
+    // Con ±12hs se solapaban días consecutivos y la misma carrera recibía la notif dos veces.
     const ahora = new Date()
-    const desde = new Date(ahora.getTime() + 6.5 * 24 * 60 * 60 * 1000)
-    const hasta = new Date(ahora.getTime() + 7.5 * 24 * 60 * 60 * 1000)
+    const desde = new Date(ahora.getTime() + 6.75 * 24 * 60 * 60 * 1000)
+    const hasta = new Date(ahora.getTime() + 7.25 * 24 * 60 * 60 * 1000)
 
     const { data: carreras, error: errCar } = await supabase
       .from('carreras')
