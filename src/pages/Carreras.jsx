@@ -766,7 +766,7 @@ export default function Carreras() {
   async function refreshInscriptos(carreraId) {
     const { data: parts } = await supabase
       .from('participaciones')
-      .select('user_id, estado')
+      .select('user_id, estado, distancia_elegida')
       .eq('carrera_id', carreraId)
       .in('estado', ['Inscripto', 'Stand Flama'])
     const userIds = (parts || []).map(p => p.user_id)
@@ -775,10 +775,10 @@ export default function Carreras() {
       .from('profiles')
       .select('id, nombre, avatar_url')
       .in('id', userIds)
-    const estadoMap = {}
-    parts?.forEach(p => { estadoMap[p.user_id] = p.estado })
+    const partMap = {}
+    parts?.forEach(p => { partMap[p.user_id] = { estado: p.estado, distancia_elegida: p.distancia_elegida } })
     const ordenados = (perfiles || [])
-      .map(p => ({ ...p, estadoPart: estadoMap[p.id] }))
+      .map(p => ({ ...p, estadoPart: partMap[p.id]?.estado, distancia_elegida: partMap[p.id]?.distancia_elegida }))
       .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
     setInscriptosAbiertos(prev => ({ ...prev, [carreraId]: ordenados }))
   }
@@ -1582,6 +1582,7 @@ export default function Carreras() {
                                 }
                               </div>
                               <span style={{ flex: 1, color: esStand ? 'var(--text2)' : 'var(--text)' }}>{p.nombre}</span>
+                              {p.distancia_elegida && !esStand && <span style={{ fontSize: '11px', color: 'var(--text2)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '6px', padding: '1px 6px', whiteSpace: 'nowrap' }}>{p.distancia_elegida}</span>}
                               {esStand && <span style={{ fontSize: '11px' }}>🧉</span>}
                               {!esStand && isAdmin && p.id && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && (
                                 <button
