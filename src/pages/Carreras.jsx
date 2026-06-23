@@ -607,6 +607,11 @@ export default function Carreras() {
       if (carrera) {
         const dists = getDistancias(carrera)
         if (dists.length === 1) distanciaElegida = dists[0]
+        else if (estado === 'Inscripto' && dists.length > 1) {
+          // Recordatorio no bloqueante: se puede inscribir igual pero se le avisa
+          setToast('📏 No olvidés elegir tu distancia')
+          setTimeout(() => setToast(''), 3500)
+        }
       }
     }
     if (noVoy) setDistanciasSeleccionadas(prev => { const n = { ...prev }; delete n[carreraId]; return n })
