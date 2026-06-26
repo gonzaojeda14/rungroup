@@ -1587,7 +1587,7 @@ export default function Carreras() {
                                 }
                               </div>
                               <span style={{ flex: 1, color: esStand ? 'var(--text2)' : 'var(--text)' }}>{p.nombre}</span>
-                              {p.distancia_elegida && !esStand && <span style={{ fontSize: '11px', color: 'var(--text2)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '6px', padding: '1px 6px', whiteSpace: 'nowrap' }}>{p.distancia_elegida}</span>}
+                              {!esStand && (() => { const dist = p.distancia_elegida || (dists.length === 1 ? dists[0] : null); return dist ? <span style={{ fontSize: '11px', color: 'var(--text2)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '6px', padding: '1px 6px', whiteSpace: 'nowrap' }}>{dist}</span> : null })()}
                               {esStand && <span style={{ fontSize: '11px' }}>🧉</span>}
                               {!esStand && isAdmin && p.id && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && (
                                 <button
