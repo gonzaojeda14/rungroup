@@ -849,6 +849,18 @@ export default function Carreras() {
 
   const todosMeses = [...new Set(carreras.filter(c => c.fecha).map(c => c.fecha.slice(0, 7)))].sort()
 
+  // Fechas que tienen 2+ carreras (solo tipo "carrera"; ignora eventos/entrenamientos).
+  // Se usa para marcar con ⚠️ las carreras que comparten día.
+  const fechasMultiCarrera = (() => {
+    const counts = {}
+    carreras.forEach(c => {
+      if (c.fecha && (!c.tipo_actividad || c.tipo_actividad === 'carrera')) {
+        counts[c.fecha] = (counts[c.fecha] || 0) + 1
+      }
+    })
+    return new Set(Object.keys(counts).filter(f => counts[f] > 1))
+  })()
+
   // Aplicar filtros
   const carrerasFiltradas = carreras.filter(c => {
     if (filtros.tipo && c.tipo !== filtros.tipo) return false
@@ -1329,6 +1341,18 @@ export default function Carreras() {
                   </div>
                   <div className="race-meta">
                     {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
+                    {c.fecha && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && fechasMultiCarrera.has(c.fecha) && (
+                      <span
+                        className="tag"
+                        title="Hay otra carrera en esta fecha"
+                        style={{ cursor: 'pointer', background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        onClick={e => {
+                          e.stopPropagation()
+                          setToast('⚠️ Hay otra carrera en esta fecha')
+                          setTimeout(() => setToast(''), 2500)
+                        }}
+                      >⚠️</span>
+                    )}
                     {c.cupo_maximo && (() => {
                       const usados = cuposUsados[c.id] || 0
                       const lleno = usados >= c.cupo_maximo
