@@ -1963,7 +1963,7 @@ export default function Carreras() {
           boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
           animation: 'fadeIn .2s ease',
         }}>
-          ✅ {toast}
+          {toast}
         </div>
       )}
     </div>
