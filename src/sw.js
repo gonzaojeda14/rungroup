@@ -61,8 +61,14 @@ self.addEventListener('notificationclick', event => {
   const url = event.notification.data?.url || '/novedades'
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      // Si ya hay una ventana de la app abierta, la enfocamos Y la navegamos al url
+      // (antes solo enfocaba y quedaba en la última pantalla donde estabas).
       for (const client of windowClients) {
-        if ('focus' in client) { client.focus(); return }
+        if (client.url.includes(self.location.origin)) {
+          client.focus()
+          if ('navigate' in client) return client.navigate(url)
+          return
+        }
       }
       if (clients.openWindow) return clients.openWindow(url)
     })
