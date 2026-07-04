@@ -684,11 +684,11 @@ function FlamaPoints() {
   async function fetchTodo() {
     const [{ data: parts }, { data: env }, { count: recordCount }] = await Promise.all([
       supabase.from('participaciones')
-        .select('carrera_id, estado, carrera:carreras(id, nombre, fecha, hora, distancia, tipo, flama_points, es_prueba)')
+        .select('carrera_id, estado, carrera:carreras(id, nombre, fecha, hora, distancia, tipo, flama_points, es_prueba, destacada)')
         .eq('user_id', user.id)
         .in('estado', ['Inscripto', 'Stand Flama']),
       supabase.from('puntos_carreras')
-        .select('*, carrera:carreras(id, nombre, fecha)')
+        .select('*, carrera:carreras(id, nombre, fecha, destacada)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
       supabase.from('records_personales')
@@ -784,7 +784,7 @@ function FlamaPoints() {
     const carrera = esReintento ? accion.envio.carrera : accion.carrera
     const carreraId = esReintento ? accion.envio.carrera_id : accion.carrera.id
     const tipoParticipacion = esReintento ? accion.envio.tipo_participacion : accion.carrera._tipoParticipacion
-    const puntos = tipoParticipacion === 'Stand Flama' ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO
+    const puntos = (tipoParticipacion === 'Stand Flama' ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO) + (carrera?.destacada ? 1 : 0)
 
     try {
       let fotoUrl, fotoPublicId
@@ -876,7 +876,8 @@ function FlamaPoints() {
     ? (accion.tipo === 'reintento' ? accion.envio.tipo_participacion : accion.carrera._tipoParticipacion)
     : null
   const esStandFlama = tipoAccion === 'Stand Flama'
-  const puntosAccion = esStandFlama ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO
+  const carreraAccion = accion ? (accion.tipo === 'reintento' ? accion.envio.carrera : accion.carrera) : null
+  const puntosAccion = (esStandFlama ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO) + (carreraAccion?.destacada ? 1 : 0)
 
   // Formulario de carga (compartido entre "solicitar por primera vez" y "reintentar").
   // OJO: esto es JSX directo, NO un componente función — si fuera `const Formulario = () => (...)`,
@@ -966,6 +967,7 @@ function FlamaPoints() {
             <strong style={{ color: 'var(--text)' }}>Por carreras:</strong><br />
             🏅 <strong style={{ color: 'var(--text)' }}>Inscripto</strong> — subí una foto con tu dorsal o medalla → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_INSCRIPTO} Flamitas</strong><br />
             🧉 <strong style={{ color: 'var(--text)' }}>Stand Flama</strong> — subí una foto del stand o acompañando al grupo → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_STAND_FLAMA} Flamita</strong><br />
+            ⭐ Las carreras <strong style={{ color: 'var(--text)' }}>destacadas</strong> suman <strong style={{ color: 'var(--text)' }}>+1 Flamita extra</strong> (tanto Inscripto como Stand Flama).<br />
             Los puntos se acreditan al instante. Tenés hasta {PLAZO_RECLAMO_DIAS} días post-carrera para subir la foto. Si ya subiste fotos en "Ver fotos", podés usarlas directamente sin volver a cargarlas.<br />
             <span style={{ color: 'var(--text)', fontStyle: 'italic' }}>Comienza a contar desde el Circuito de las Estaciones (Invierno).</span>
             <br /><br />
@@ -990,14 +992,14 @@ function FlamaPoints() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {pendientes.map(c => {
               const esStand = c._tipoParticipacion === 'Stand Flama'
-              const pts = esStand ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO
+              const pts = (esStand ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO) + (c.destacada ? 1 : 0)
               return (
                 <div key={c.id} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '14px' }}>{c.nombre}</div>
+                      <div style={{ fontWeight: 700, fontSize: '14px' }}>{c.destacada ? '⭐ ' : ''}{c.nombre}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text2)' }}>
-                        {formatFechaCorta(c.fecha)} · {esStand ? '🧉 Stand Flama' : '🏅 Inscripto'} · +{pts} pt{pts === 1 ? '' : 's'}
+                        {formatFechaCorta(c.fecha)} · {esStand ? '🧉 Stand Flama' : '🏅 Inscripto'} · +{pts} pt{pts === 1 ? '' : 's'}{c.destacada ? ' (⭐ +1)' : ''}
                       </div>
                     </div>
                     {accion?.tipo !== 'nuevo' || accion.carrera.id !== c.id ? (

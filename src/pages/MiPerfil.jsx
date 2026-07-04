@@ -1,6 +1,7 @@
 import PageLoader from '../components/PageLoader'
 import RecordsPersonales from '../components/RecordsPersonales'
 import FotosModal from '../components/FotosModal'
+import HistorialFlamitas from '../components/HistorialFlamitas'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -49,6 +50,7 @@ export default function MiPerfil() {
   // Stats
   const [statsParticipaciones, setStatsParticipaciones] = useState([])
   const [statsFlamitas, setStatsFlamitas] = useState(0)
+  const [showHistFlamitas, setShowHistFlamitas] = useState(false)
 
   // Metas personales
   const [metas, setMetas] = useState([])
@@ -534,6 +536,10 @@ export default function MiPerfil() {
         <FotosModal carrera={fotosCarrera} onClose={() => setFotosCarrera(null)} />
       )}
 
+      {showHistFlamitas && (
+        <HistorialFlamitas userId={user.id} onClose={() => setShowHistFlamitas(false)} />
+      )}
+
       {/* CAMBIAR CONTRASEÑA */}
       <div className="card" style={{ marginBottom: '12px' }}>
         <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Cambiar contraseña</h3>
@@ -780,10 +786,12 @@ export default function MiPerfil() {
                 { label: 'Kilómetros totales', value: kmTotales > 0 ? `${kmTotales.toFixed(0)} km` : '—', icon: '📏' },
                 { label: 'Flamitas ganadas', value: statsFlamitas > 0 ? statsFlamitas : '—', icon: '💎' },
               ].map(({ label, value, icon }) => (
-                <div key={label} className="card" style={{ textAlign: 'center', padding: '16px 10px' }}>
+                <div key={label} className="card"
+                  onClick={label === 'Flamitas ganadas' && statsFlamitas > 0 ? () => setShowHistFlamitas(true) : undefined}
+                  style={{ textAlign: 'center', padding: '16px 10px', cursor: label === 'Flamitas ganadas' && statsFlamitas > 0 ? 'pointer' : 'default' }}>
                   {icon && <div style={{ fontSize: '22px', marginBottom: '6px' }}>{icon}</div>}
                   <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>{value}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}{label === 'Flamitas ganadas' && statsFlamitas > 0 ? ' ›' : ''}</div>
                 </div>
               ))}
             </div>

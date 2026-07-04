@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import RecordsPersonales from './RecordsPersonales'
+import HistorialFlamitas from './HistorialFlamitas'
 import { formatTelefonoWA } from '../lib/utils'
 import { useAuth } from '../lib/auth'
 
@@ -29,6 +30,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
   const [extra, setExtra] = useState({})
   const [bloqueado, setBloqueado] = useState(corredor.activo === false)
   const [totalFlamitas, setTotalFlamitas] = useState(null)
+  const [showHistFlamitas, setShowHistFlamitas] = useState(false)
   const [metas, setMetas] = useState([])
   const [tab, setTab] = useState('datos')
   const [tiemposCarreras, setTiemposCarreras] = useState([])
@@ -409,10 +411,12 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
                   { label: 'Kilómetros totales', value: kmTotales > 0 ? `${kmTotales.toFixed(0)} km` : '—', icon: '📏' },
                   { label: 'Flamitas ganadas', value: totalFlamitas > 0 ? totalFlamitas : '—', icon: '💎' },
                 ].map(({ label, value, icon }) => (
-                  <div key={label} className="card" style={{ textAlign: 'center', padding: '14px 10px' }}>
+                  <div key={label} className="card"
+                    onClick={label === 'Flamitas ganadas' && totalFlamitas > 0 ? () => setShowHistFlamitas(true) : undefined}
+                    style={{ textAlign: 'center', padding: '14px 10px', cursor: label === 'Flamitas ganadas' && totalFlamitas > 0 ? 'pointer' : 'default' }}>
                     {icon && <div style={{ fontSize: '20px', marginBottom: '4px' }}>{icon}</div>}
                     <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--accent)', marginBottom: '3px' }}>{value}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}{label === 'Flamitas ganadas' && totalFlamitas > 0 ? ' ›' : ''}</div>
                   </div>
                 ))}
               </div>
@@ -421,6 +425,10 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
         })()}
 
       </div>}
+
+      {showHistFlamitas && (
+        <HistorialFlamitas userId={corredor.id} nombre={corredor.nombre} onClose={() => setShowHistFlamitas(false)} />
+      )}
     </div>
   )
 }
