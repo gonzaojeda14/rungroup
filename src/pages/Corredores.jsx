@@ -272,7 +272,7 @@ export default function Corredores() {
                     {(() => {
                       const km = kmMap[c.id] || 0
                       return km > 0 ? (
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>📏 {km} km</span>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>📏 {Number(km.toFixed(2))} km</span>
                       ) : null
                     })()}
                     {c.lesion_actual && (
