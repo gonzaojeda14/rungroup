@@ -168,7 +168,8 @@ function TiendaAdmin({ config, onConfigChange }) {
   }
 
   const pendientes = pedidos.filter(p => p.estado === 'pendiente').length
-  const senados    = pedidos.filter(p => p.estado === 'senado').length
+  // Badge de 'Señados': solo los que requieren acción (comprador subió el saldo y falta confirmar).
+  const senadosAccion = pedidos.filter(p => p.estado === 'senado' && !!p.comprobante_url_2).length
   const [filtroCompras, setFiltroCompras] = useState('pendiente')
 
   return (
@@ -263,7 +264,7 @@ function TiendaAdmin({ config, onConfigChange }) {
             {['pendiente','senado','confirmado','entregado'].map(f => {
               const labels = { pendiente:'Pendientes', senado:'Señados', confirmado:'Confirmados', entregado:'Entregados' }
               const activo = filtroCompras === f
-              const badge  = f === 'pendiente' ? pendientes : f === 'senado' ? senados : 0
+              const badge  = f === 'pendiente' ? pendientes : f === 'senado' ? senadosAccion : 0
               return (
                 <button key={f} onClick={() => setFiltroCompras(f)}
                   style={{ flex:1, padding:'6px 0', fontSize:11, fontWeight: activo ? 700 : 500, color: activo ? '#fff' : 'var(--text2)', background: activo ? 'var(--accent)' : 'transparent', border:'none', cursor:'pointer', borderRadius:8, position:'relative' }}>

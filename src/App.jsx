@@ -180,8 +180,12 @@ function Shell() {
   useEffect(() => {
     if (!user || !isAdmin) return
     async function checkPedidos() {
-      const { count } = await supabase.from('pedidos').select('id', { count: 'exact', head: true }).in('estado', ['pendiente', 'señado'])
-      setPedidosPendientes(count || 0)
+      // Pendientes (todos requieren acción) + señados con el saldo subido esperando confirmación.
+      const [{ count: cPend }, { count: cSaldo }] = await Promise.all([
+        supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+        supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('estado', 'senado').not('comprobante_url_2', 'is', null),
+      ])
+      setPedidosPendientes((cPend || 0) + (cSaldo || 0))
     }
     checkPedidos()
     const ch = supabase.channel('app-pedidos-badge')
