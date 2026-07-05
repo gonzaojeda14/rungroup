@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/utils'
+import { createPortal } from 'react-dom'
 
 // Modal reutilizable con el histórico de Flamitas de un usuario.
 // Autosuficiente: solo necesita userId. Muestra cada acreditación validada
@@ -48,7 +49,7 @@ export default function HistorialFlamitas({ userId, nombre, onClose }) {
     </div>
   )
 
-  return (
+  return createPortal(
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200 }} />
       <div style={{
@@ -112,6 +113,7 @@ export default function HistorialFlamitas({ userId, nombre, onClose }) {
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   )
 }
