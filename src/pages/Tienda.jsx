@@ -64,6 +64,7 @@ function TiendaProximamente() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TiendaAdmin({ config, onConfigChange }) {
+  const { esSuperAdmin } = useAuth()
   const [tab, setTab] = useState(() => {
     const p = new URLSearchParams(window.location.search)
     return p.get('subtab') === 'Compras' ? 'Compras' : 'Productos'
