@@ -1178,9 +1178,14 @@ function TiendaPublica({ config }) {
           (!generoFiltro || p.genero === generoFiltro) &&
           (!talleFiltro || (p.talles_disponibles || []).includes(talleFiltro))
         )
-        if (filtrados.length === 0) return (
-          <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>No hay productos con ese filtro.</div>
-        )
+        if (filtrados.length === 0) {
+          const hayFiltro = generoFiltro || talleFiltro
+          return (
+            <div style={{ textAlign:'center', color:'var(--text2)', fontSize:14, padding:'32px 0' }}>
+              {hayFiltro ? 'No hay productos con ese filtro.' : 'Todavía no hay productos publicados.'}
+            </div>
+          )
+        }
         return filtrados.map(p => (
           <ProductoCardPublica key={p.id} p={p} onAgregar={(talle) => agregarAlCarrito(p, talle)} />
         ))
