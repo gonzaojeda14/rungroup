@@ -41,6 +41,7 @@ export default function Resumen() {
   const [mesFiltro, setMesFiltro] = useState('todos')
   const [tiempoFiltro, setTiempoFiltro] = useState('todas')
   const [tipoFiltro, setTipoFiltro] = useState('')
+  const [showFiltros, setShowFiltros] = useState(false)
   const today = new Date().toISOString().slice(0, 10)
   const [tiempos, setTiempos] = useState([]) // todos los tiempos cargados
   const [rankingAbierto, setRankingAbierto] = useState({}) // carreraId_distancia -> bool
@@ -147,39 +148,72 @@ export default function Resumen() {
           </select>
         )}
       </div>
-      {/* Filtro de meses */}
-      {carreraFiltro === 'todas' && (() => {
+      {/* Panel de filtros (mismo patrón que Carreras) */}
+      {carreraFiltro === 'todas' && carreras.length > 1 && (() => {
         const meses = [...new Set(carreras.filter(c => c.fecha).map(c => c.fecha.slice(0, 7)))]
-        if (meses.length <= 1) return null
+        const activos = (mesFiltro !== 'todos' ? 1 : 0) + (tiempoFiltro !== 'todas' ? 1 : 0) + (tipoFiltro !== '' ? 1 : 0)
         return (
-          <div className="filtros-bar" style={{ marginBottom: '12px' }}>
-            <div className="filtro-group">
-              <button className={`filtro-btn ${mesFiltro === 'todos' ? 'active' : ''}`} onClick={() => setMesFiltro('todos')}>Todos</button>
-              {meses.map(m => {
-                const [y, mo] = m.split('-')
-                const label = `${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]} ${y}`
-                return <button key={m} className={`filtro-btn ${mesFiltro === m ? 'active' : ''}`} onClick={() => setMesFiltro(m)}>{label}</button>
-              })}
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <button onClick={() => setShowFiltros(true)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: '8px', padding: '7px 12px', fontSize: '13px', fontFamily: 'inherit', cursor: 'pointer' }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Filtros
+                {activos > 0 && <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '999px', fontSize: '11px', fontWeight: 700, padding: '1px 6px' }}>{activos}</span>}
+              </button>
+              {activos > 0 && (
+                <button onClick={() => { setMesFiltro('todos'); setTiempoFiltro('todas'); setTipoFiltro('') }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Limpiar
+                </button>
+              )}
             </div>
-          </div>
+            {showFiltros && (
+              <>
+                <div onClick={() => setShowFiltros(false)} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)' }} />
+                <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 70, background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', padding: '20px 16px 32px', maxHeight: '80vh', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <span style={{ fontWeight: 700, fontSize: '15px' }}>Filtros</span>
+                    <button onClick={() => setShowFiltros(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Período</div>
+                      <div className="filtro-group">
+                        {[['todas','Todas'],['proximas','Próximas'],['pasadas','Pasadas']].map(([val, label]) => (
+                          <button key={val} className={`filtro-btn ${tiempoFiltro === val ? 'active' : ''}`} onClick={() => setTiempoFiltro(val)}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Tipo</div>
+                      <div className="filtro-group">
+                        {[['','Todo tipo'],['carrera','Carreras'],['evento','Eventos'],['entrenamiento','Entrenamientos']].map(([val, label]) => (
+                          <button key={val || 'todo'} className={`filtro-btn ${tipoFiltro === val ? 'active' : ''}`} onClick={() => setTipoFiltro(val)}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {meses.length > 1 && (
+                      <div>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Mes</div>
+                        <div className="filtro-group" style={{ flexWrap: 'wrap' }}>
+                          <button className={`filtro-btn ${mesFiltro === 'todos' ? 'active' : ''}`} onClick={() => setMesFiltro('todos')}>Todos</button>
+                          {meses.map(m => {
+                            const [y, mo] = m.split('-')
+                            const label = `${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]} ${y}`
+                            return <button key={m} className={`filtro-btn ${mesFiltro === m ? 'active' : ''}`} onClick={() => setMesFiltro(m)}>{label}</button>
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button className="btn-primary" style={{ width: '100%', marginTop: '20px', height: '44px' }} onClick={() => setShowFiltros(false)}>Ver resultados</button>
+                </div>
+              </>
+            )}
+          </>
         )
       })()}
-
-      {/* Filtros de tiempo y tipo (solo en vista de todas las carreras) */}
-      {carreraFiltro === 'todas' && carreras.length > 1 && (
-        <div className="filtros-bar" style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div className="filtro-group">
-            {[['todas','Todas'],['proximas','Próximas'],['pasadas','Pasadas']].map(([val, label]) => (
-              <button key={val} className={`filtro-btn ${tiempoFiltro === val ? 'active' : ''}`} onClick={() => setTiempoFiltro(val)}>{label}</button>
-            ))}
-          </div>
-          <div className="filtro-group">
-            {[['','Todo tipo'],['carrera','Carreras'],['evento','Eventos'],['entrenamiento','Entrenamientos']].map(([val, label]) => (
-              <button key={val || 'todo'} className={`filtro-btn ${tipoFiltro === val ? 'active' : ''}`} onClick={() => setTipoFiltro(val)}>{label}</button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {carreras.length === 0 && <div className="empty-state">No hay datos todavía</div>}
       {carreras.filter(c => {
