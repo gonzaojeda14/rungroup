@@ -869,6 +869,7 @@ export default function Carreras() {
     if (filtros.fecha === 'proximas' && c.fecha && c.fecha < today) return false
     if (filtros.fecha === 'pasadas' && (!c.fecha || c.fecha >= today)) return false
     if (filtros.meses?.length > 0 && (!c.fecha || !filtros.meses.some(m => c.fecha.startsWith(m)))) return false
+    if (filtros.anotadas && !participaciones.some(p => p.carrera_id === c.id && p.estado === 'Inscripto')) return false
     return true
   })
 
@@ -877,6 +878,7 @@ export default function Carreras() {
     filtros.tipo !== '',
     filtros.distancias.length > 0,
     (filtros.meses?.length || 0) > 0,
+    !!filtros.anotadas,
   ].filter(Boolean).length
 
   if (loading) return <PageLoader />
@@ -1129,6 +1131,15 @@ export default function Carreras() {
               <button onClick={() => setShowFiltros(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Mis carreras</div>
+                <div className="filtro-group">
+                  <button className={'filtro-btn ' + (filtros.anotadas ? 'active' : '')}
+                    onClick={() => setFiltrosGuardados(f => ({ ...f, anotadas: !f.anotadas }))}>
+                    🏃 En las que estoy anotado
+                  </button>
+                </div>
+              </div>
               <div>
                 <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Período</div>
                 <div className="filtro-group">
