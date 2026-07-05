@@ -1170,7 +1170,7 @@ function formatFechaCorta(fecha) {
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, clubSettings } = useAuth()
   // Recordamos la última pestaña elegida (en sessionStorage) para que, al
   // navegar a otra sección y volver a "Más", no se reinicie en "Alianzas".
   const [searchParams, setSearchParams] = useSearchParams()
@@ -1210,7 +1210,7 @@ export default function Mas({ ventasDisponibles = 0, pedidosPendientes = 0 }) {
         .filter(p => p.carrera && p.carrera.flama_points
           && (!p.carrera.es_prueba || isAdmin)
           && yaEmpezo(p.carrera.fecha, p.carrera.hora)
-          && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
+          && dentroDePlazo(p.carrera.fecha, clubSettings.ventanas.plazo_reclamo_dias)
           && !enviadasIds.has(p.carrera_id))
         .length
       if (activo) setFlamaPendientes(cantidad)

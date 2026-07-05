@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/utils'
+import { useAuth } from '../lib/auth'
 import { createPortal } from 'react-dom'
 
 // Modal reutilizable con el histórico de Flamitas de un usuario.
@@ -12,6 +13,7 @@ export default function HistorialFlamitas({ userId, nombre, onClose }) {
   const [loading, setLoading] = useState(true)
   const [entradas, setEntradas] = useState([])
   const [bonus, setBonus] = useState(0)
+  const { clubSettings } = useAuth()
 
   useEffect(() => {
     let vivo = true
@@ -32,7 +34,7 @@ export default function HistorialFlamitas({ userId, nombre, onClose }) {
         return fa.localeCompare(fb)
       })
       setEntradas(orden)
-      setBonus(((recCount || 0) > 0 && !!prof?.certificado_url) ? 5 : 0)
+      setBonus(((recCount || 0) > 0 && !!prof?.certificado_url) ? clubSettings.puntos.bonus_perfil : 0)
       setLoading(false)
     }
     fetchHistorial()

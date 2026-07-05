@@ -197,8 +197,8 @@ function TiendaAdmin({ config, onConfigChange }) {
           <button key={t} onClick={() => setTab(t)}
             style={{ position:'relative', flex:1, padding:'12px 4px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight: tab===t ? 700 : 400, color: tab===t ? 'var(--accent)' : 'var(--text2)', borderBottom: tab===t ? '2px solid var(--accent)' : '2px solid transparent', fontFamily:'inherit', transition:'all .15s' }}>
             {t}
-            {t === 'Compras' && pendientes > 0 && (
-              <span style={{ position:'absolute', top:6, marginLeft:4, background:'var(--accent)', color:'#fff', fontSize:9, fontWeight:800, borderRadius:99, minWidth:14, height:14, display:'inline-flex', alignItems:'center', justifyContent:'center', padding:'0 3px', lineHeight:1 }}>{pendientes}</span>
+            {t === 'Compras' && (pendientes + senadosAccion) > 0 && (
+              <span style={{ position:'absolute', top:6, marginLeft:4, background:'var(--accent)', color:'#fff', fontSize:9, fontWeight:800, borderRadius:99, minWidth:14, height:14, display:'inline-flex', alignItems:'center', justifyContent:'center', padding:'0 3px', lineHeight:1 }}>{pendientes + senadosAccion}</span>
             )}
           </button>
         ))}

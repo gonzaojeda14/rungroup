@@ -23,7 +23,7 @@ function formatFecha(f) {
 }
 
 export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
-  const { isAdmin } = useAuth()
+  const { isAdmin, clubSettings } = useAuth()
   const [participaciones, setParticipaciones] = useState([])
   const [certUrl, setCertUrl] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -69,7 +69,7 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
     const base = (puntos || []).reduce((acc, r) => acc + (r.puntos || 0), 0)
     const tieneRec = (recordCount || 0) > 0
     const calificaBonus = tieneRec && !!cert?.certificado_url
-    setTotalFlamitas(base + (calificaBonus ? 5 : 0))
+    setTotalFlamitas(base + (calificaBonus ? clubSettings.puntos.bonus_perfil : 0))
     // Si califica pero el flag no está seteado, corregirlo en la DB
     if (calificaBonus && !cert?.bonus_perfil_otorgado) {
       supabase.from('profiles').update({ bonus_perfil_otorgado: true }).eq('id', corredor.id)

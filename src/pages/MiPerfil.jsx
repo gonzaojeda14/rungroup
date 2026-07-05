@@ -15,7 +15,7 @@ const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
 export default function MiPerfil() {
-  const { user, profile } = useAuth()
+  const { user, profile, clubSettings } = useAuth()
   const [form, setForm] = useState({ nombre: '', fechaNacimiento: '', telefono: '' })
   const [emergencia, setEmergencia] = useState({ nombre: '', telefono: '' })
   const [msgEmergencia, setMsgEmergencia] = useState('')
@@ -145,7 +145,7 @@ export default function MiPerfil() {
     setStatsParticipaciones(parts || [])
     const base = (pts || []).reduce((s, p) => s + (p.puntos || 0), 0)
     const calificaBonus = (recCount || 0) > 0 && !!prof?.certificado_url
-    setStatsFlamitas(base + (calificaBonus ? 5 : 0))
+    setStatsFlamitas(base + (calificaBonus ? clubSettings.puntos.bonus_perfil : 0))
   }
 
   async function fetchBugs() {

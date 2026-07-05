@@ -63,14 +63,14 @@ function OfertaAlert() {
 }
 
 function Shell() {
-  const { user, loading, isAdmin, esRealmenteAdmin, esSuperAdmin, vistaCorredor, setVistaCorredor, signOut, profile } = useAuth()
+  const { user, loading, isAdmin, esRealmenteAdmin, esSuperAdmin, clubSettings, vistaCorredor, setVistaCorredor, signOut, profile } = useAuth()
   const [adminMenu, setAdminMenu] = useState(false)
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
   const [ventasDisponibles, setVentasDisponibles] = useState(0)
   const [flamaPendientes, setFlamaPendientes] = useState(0)
   const [pedidosPendientes, setPedidosPendientes] = useState(0)
   const [rawFlamaPoints, setRawFlamaPoints] = useState(null)
-  const totalFlamaPoints = rawFlamaPoints === null ? null : rawFlamaPoints + (profile?.bonus_perfil_otorgado ? 5 : 0)
+  const totalFlamaPoints = rawFlamaPoints === null ? null : rawFlamaPoints + (profile?.bonus_perfil_otorgado ? clubSettings.puntos.bonus_perfil : 0)
   const [modoClaro, setModoClaro] = useState(() => document.body.classList.contains('light'))
   const [nuevaVersion, setNuevaVersion] = useState(false)
 
@@ -146,7 +146,7 @@ function Shell() {
         .filter(p => p.carrera && p.carrera.flama_points
           && (!p.carrera.es_prueba || isAdmin)
           && yaEmpezo(p.carrera.fecha, p.carrera.hora)
-          && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
+          && dentroDePlazo(p.carrera.fecha, clubSettings.ventanas.plazo_reclamo_dias)
           && !enviadasIds.has(p.carrera_id))
         .length
       if (activo) setFlamaPendientes(cantidad)

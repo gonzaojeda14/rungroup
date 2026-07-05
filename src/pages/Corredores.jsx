@@ -25,7 +25,7 @@ function esCumpleaños(fecha_nacimiento) {
 }
 
 export default function Corredores() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, clubSettings } = useAuth()
   const [corredores, setCorredores] = useState([])
   const [loading, setLoading] = useState(true)
   const [newEmail, setNewEmail] = useState('')
@@ -80,7 +80,7 @@ export default function Corredores() {
     for (const r of puntos || []) { map[r.user_id] = (map[r.user_id] || 0) + (r.puntos || 0) }
     for (const p of perfiles || []) {
       const califica = p.bonus_perfil_otorgado || (!!p.certificado_url && usersConRecord.has(p.id))
-      if (califica) map[p.id] = (map[p.id] || 0) + 5
+      if (califica) map[p.id] = (map[p.id] || 0) + clubSettings.puntos.bonus_perfil
     }
     setFlamitasMap(map)
   }
