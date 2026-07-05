@@ -89,6 +89,7 @@ export function AuthProvider({ children }) {
   const [vistaCorredor, setVistaCorredor] = useState(false)
   const isAdmin = !vistaCorredor && profile?.role === 'admin'
   const esRealmenteAdmin = profile?.role === 'admin'
+  const esSuperAdmin = !!profile?.is_platform_admin
 
   async function marcarAvisosLeidos() {
     const ahora = new Date().toISOString()
@@ -101,7 +102,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signIn, signOut, marcarAvisosLeidos, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, esRealmenteAdmin, esSuperAdmin, vistaCorredor, setVistaCorredor, signIn, signOut, marcarAvisosLeidos, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

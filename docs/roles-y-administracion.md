@@ -119,3 +119,60 @@ Flama conserva su identidad y el prospecto ve un producto neutro que puede imagi
 
 Nada de esto toca la experiencia de Flama: son capas nuevas por encima. El corredor de Flama sigue
 viendo exactamente lo mismo que hoy.
+
+---
+
+## 7. Alcance del super-admin: qué puede y qué no ver (privacidad)
+
+Principio rector: separar **"ver que la app funciona"** de **"ver datos privados de la gente"**. Un club
+que paga no quiere que el dueño de la plataforma navegue libremente los certificados médicos, teléfonos
+o récords de sus socios. Pero el dueño necesita poder debuggear. Se reconcilia con niveles de acceso.
+
+**Regla técnica clave:** el flag `is_platform_admin` **no** otorga acceso a los datos de los clubes. El
+acceso a datos de un club se rige por **membresía** (`club_members`), nunca por el flag. El poder del
+super-admin vive en las tablas de **plataforma** (clubs, planes, métricas, salud), no en las tablas de
+datos de cada club. Nunca se escribe una RLS del tipo "el super-admin lee todo": eso rompe la privacidad.
+
+### Tres niveles de acceso
+
+**1. Metadata de plataforma (siempre).** Lista de clubes, plan, estado, cantidad de socios/carreras, uso,
+errores agregados. Cero PII, cero contenido del club. Es lo que hace el panel `/plataforma`.
+
+**2. Chequeo de UI / bugs (camino seguro y por defecto).** La mayoría de los bugs de pantalla no dependen
+de datos reales: la pantalla se renderiza igual. Para eso está el **club demo** con datos sembrados —
+reproducís y verificás la UI ahí, sin tocar información de nadie. Debería ser el default para "¿anda esta
+pantalla?".
+
+**3. Soporte dentro de un club real (con candados).** Solo cuando el bug depende de los datos específicos
+de ese club. Se hace con impersonación **explícita, auditada y con vencimiento**, no con un permiso
+permanente y silencioso. La diferencia con un backdoor: es deliberado, temporal y trazable.
+
+### Mecanismo de la impersonación de soporte
+
+Una tabla `support_sessions` registra cada acceso y lo hace temporal:
+
+```sql
+create table public.support_sessions (
+  id         uuid primary key default gen_random_uuid(),
+  club_id    uuid references public.clubs on delete cascade not null,
+  admin_id   uuid references auth.users not null,   -- el super-admin que entra
+  motivo     text,                                  -- por qué (ticket, bug, etc.)
+  creado_at  timestamptz default now(),
+  expira_at  timestamptz not null                   -- p. ej. now() + 2 horas
+);
+```
+
+Durante la ventana activa, la RLS de las tablas del club puede considerar "miembro efectivo" también a
+quien tenga una `support_sessions` vigente para ese `club_id`. Al expirar, el acceso se corta solo — no
+hay que acordarse de revocarlo. Todo queda logueado (quién, cuándo, por qué).
+
+Refuerzo opcional: en **modo soporte**, redactar en el frontend los campos más sensibles (certificados
+médicos, teléfonos, contacto de emergencia) para poder ver la pantalla sin ver el dato en sí. Así se
+cubre el 99% de los casos de "chequear un bug" sin exponer PII.
+
+### Qué significa hoy
+
+Hoy solo existe Flama (donde el super-admin es corredor), así que todavía no hay nada que aislar. El
+mecanismo que *hace cumplir* esto es la RLS por `club_members`, que llega con la **Fase 1**. Lo que hay
+que respetar desde ya: no agregar ninguna policy que le dé al super-admin lectura sobre las tablas de
+datos de los clubes. Su alcance se mantiene en las tablas de plataforma + la impersonación auditada.

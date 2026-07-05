@@ -12,6 +12,7 @@ import MiPerfil from './pages/MiPerfil'
 import Ventas from './pages/Ventas'
 import Mas from './pages/Mas'
 import Novedades from './pages/Novedades'
+import SuperAdmin from './pages/SuperAdmin'
 import ResetPassword from './pages/ResetPassword'
 import { yaEmpezo, dentroDePlazo, transferenciaCerrada } from './lib/utils'
 
@@ -62,7 +63,7 @@ function OfertaAlert() {
 }
 
 function Shell() {
-  const { user, loading, isAdmin, esRealmenteAdmin, vistaCorredor, setVistaCorredor, signOut, profile } = useAuth()
+  const { user, loading, isAdmin, esRealmenteAdmin, esSuperAdmin, vistaCorredor, setVistaCorredor, signOut, profile } = useAuth()
   const [adminMenu, setAdminMenu] = useState(false)
   const [avisosNoLeidos, setAvisosNoLeidos] = useState(0)
   const [ventasDisponibles, setVentasDisponibles] = useState(0)
@@ -276,13 +277,14 @@ function Shell() {
           <Route path="/ventas" element={<Ventas />} />
           <Route path="/mas" element={<Mas ventasDisponibles={ventasDisponibles} pedidosPendientes={pedidosPendientes} />} />
           <Route path="/novedades" element={<Novedades />} />
+          <Route path="/plataforma" element={<SuperAdmin />} />
           <Route path="/registro" element={<Navigate to="/carreras" replace />} />
           <Route path="*" element={<Navigate to="/carreras" replace />} />
         </Routes>
       </main>
 
       {/* Admin drawer */}
-      {esRealmenteAdmin && adminMenu && (
+      {(esRealmenteAdmin || esSuperAdmin) && adminMenu && (
         <>
           <div onClick={() => setAdminMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)' }} />
           <div style={{
@@ -292,6 +294,7 @@ function Shell() {
           }}>
             <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Admin</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {esRealmenteAdmin && (<>
               {[
                 ['/resumen', 'Resumen', <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>],
                 ['/corredores', 'Corredores', <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>],
@@ -311,6 +314,16 @@ function Shell() {
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span>Vista corredor</span>
               </button>
+              </>)}
+              {esSuperAdmin && (
+                <NavLink to="/plataforma" onClick={() => setAdminMenu(false)}
+                  className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+                  style={{ background: 'var(--bg3)', borderRadius: '10px', padding: '12px 8px', height: 'auto', gap: '6px' }}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                  <span>Plataforma</span>
+                </NavLink>
+              )}
             </div>
           </div>
         </>
@@ -371,7 +384,7 @@ function Shell() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
           <span>Mi perfil</span>
         </NavLink>
-        {isAdmin && (
+        {(isAdmin || esSuperAdmin) && (
           <button className="nav-item" onClick={() => setAdminMenu(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: adminMenu ? 'var(--accent)' : 'var(--text2)' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
             <span>Admin</span>
