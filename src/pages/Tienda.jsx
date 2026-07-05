@@ -30,7 +30,7 @@ async function uploadCloudinary(file, folder) {
 const TIENDA_BETA = ['ojeda.gonza@hotmail.com']
 
 export default function Tienda() {
-  const { isAdmin, user } = useAuth()
+  const { isAdmin, user, esSuperAdmin } = useAuth()
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -177,7 +177,7 @@ function TiendaAdmin({ config, onConfigChange }) {
 
       {/* Tabs — ancho completo con subrayado */}
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
-        {['Productos','Compras','Promos','🧹'].map(t => (
+        {['Productos','Compras','Promos', ...(esSuperAdmin ? ['🧹'] : [])].map(t => (
           <button key={t} onClick={() => setTab(t)}
             style={{ position:'relative', flex:1, padding:'12px 4px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight: tab===t ? 700 : 400, color: tab===t ? 'var(--accent)' : 'var(--text2)', borderBottom: tab===t ? '2px solid var(--accent)' : '2px solid transparent', fontFamily:'inherit', transition:'all .15s' }}>
             {t}
@@ -299,7 +299,7 @@ function TiendaAdmin({ config, onConfigChange }) {
         {tab === 'Promos' && <PromoPanel promos={promos} onSaved={fetchPromos} />}
 
         {/* ── LIMPIEZA ── */}
-        {tab === '🧹' && <LimpiezaPanel />}
+        {tab === '🧹' && esSuperAdmin && <LimpiezaPanel />}
 
       </div>
 

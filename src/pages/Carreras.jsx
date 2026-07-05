@@ -845,6 +845,7 @@ export default function Carreras() {
 
   // Distancias únicas para el filtro
   const todasDistancias = [...new Set(carreras.flatMap(c => getDistancias(c)))]
+    .filter(d => parseFloat(d) > 0)
     .sort((a, b) => parseFloat(a) - parseFloat(b))
 
   const todosMeses = [...new Set(carreras.filter(c => c.fecha).map(c => c.fecha.slice(0, 7)))].sort()
