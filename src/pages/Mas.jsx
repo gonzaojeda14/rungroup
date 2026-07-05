@@ -656,7 +656,12 @@ function FlamaPointsProximamente() {
 // ─── SECCIÓN FLAMA POINTS ─────────────────────────────────────────────────────
 
 function FlamaPoints() {
-  const { user, isAdmin, profile, refreshProfile } = useAuth()
+  const { user, isAdmin, profile, refreshProfile, clubSettings } = useAuth()
+  // Reglas de puntos desde club_settings (fallback a defaults idénticos a lo actual).
+  const P_INSCRIPTO = clubSettings.puntos.inscripto
+  const P_STAND = clubSettings.puntos.stand_flama
+  const PLAZO = clubSettings.ventanas.plazo_reclamo_dias
+  const BONUS = clubSettings.puntos.bonus_perfil
   const [loading, setLoading] = useState(true)
   const [pendientes, setPendientes] = useState([])  // carreras completadas, sin ningún envío todavía
   const [envios, setEnvios] = useState([])          // envíos ya hechos (cualquier estado)
@@ -715,7 +720,7 @@ function FlamaPoints() {
       .filter(p => p.carrera && p.carrera.flama_points
         && (!p.carrera.es_prueba || isAdmin)
         && yaEmpezo(p.carrera.fecha, p.carrera.hora)
-        && dentroDePlazo(p.carrera.fecha, PLAZO_RECLAMO_DIAS)
+        && dentroDePlazo(p.carrera.fecha, PLAZO)
         && !enviadasIds.has(p.carrera_id))
       .map(p => ({ ...p.carrera, _tipoParticipacion: p.estado }))
       .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
@@ -784,7 +789,7 @@ function FlamaPoints() {
     const carrera = esReintento ? accion.envio.carrera : accion.carrera
     const carreraId = esReintento ? accion.envio.carrera_id : accion.carrera.id
     const tipoParticipacion = esReintento ? accion.envio.tipo_participacion : accion.carrera._tipoParticipacion
-    const puntos = (tipoParticipacion === 'Stand Flama' ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO) + (carrera?.destacada ? 1 : 0)
+    const puntos = (tipoParticipacion === 'Stand Flama' ? P_STAND : P_INSCRIPTO) + (carrera?.destacada ? 1 : 0)
 
     try {
       let fotoUrl, fotoPublicId
@@ -867,7 +872,7 @@ function FlamaPoints() {
   }
 
   const totalPuntos = envios.filter(e => e.estado === 'validado').reduce((acc, e) => acc + (e.puntos || 0), 0)
-    + (profile?.bonus_perfil_otorgado ? 5 : 0)
+    + (profile?.bonus_perfil_otorgado ? BONUS : 0)
 
   if (loading) return <div className="empty-state">Cargando...</div>
 
@@ -877,7 +882,7 @@ function FlamaPoints() {
     : null
   const esStandFlama = tipoAccion === 'Stand Flama'
   const carreraAccion = accion ? (accion.tipo === 'reintento' ? accion.envio.carrera : accion.carrera) : null
-  const puntosAccion = (esStandFlama ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO) + (carreraAccion?.destacada ? 1 : 0)
+  const puntosAccion = (esStandFlama ? P_STAND : P_INSCRIPTO) + (carreraAccion?.destacada ? 1 : 0)
 
   // Formulario de carga (compartido entre "solicitar por primera vez" y "reintentar").
   // OJO: esto es JSX directo, NO un componente función — si fuera `const Formulario = () => (...)`,
@@ -965,10 +970,10 @@ function FlamaPoints() {
             Sumás Flamitas de dos formas:
             <br /><br />
             <strong style={{ color: 'var(--text)' }}>Por carreras:</strong><br />
-            🏅 <strong style={{ color: 'var(--text)' }}>Inscripto</strong> — subí una foto con tu dorsal o medalla → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_INSCRIPTO} Flamitas</strong><br />
-            🧉 <strong style={{ color: 'var(--text)' }}>Stand Flama</strong> — subí una foto del stand o acompañando al grupo → <strong style={{ color: 'var(--text)' }}>+{PUNTOS_STAND_FLAMA} Flamita</strong><br />
+            🏅 <strong style={{ color: 'var(--text)' }}>Inscripto</strong> — subí una foto con tu dorsal o medalla → <strong style={{ color: 'var(--text)' }}>+{P_INSCRIPTO} Flamitas</strong><br />
+            🧉 <strong style={{ color: 'var(--text)' }}>Stand Flama</strong> — subí una foto del stand o acompañando al grupo → <strong style={{ color: 'var(--text)' }}>+{P_STAND} Flamita</strong><br />
             ⭐ Las carreras <strong style={{ color: 'var(--text)' }}>destacadas</strong> suman <strong style={{ color: 'var(--text)' }}>+1 Flamita extra</strong> (tanto Inscripto como Stand Flama).<br />
-            Los puntos se acreditan al instante. Tenés hasta {PLAZO_RECLAMO_DIAS} días post-carrera para subir la foto. Si ya subiste fotos en "Ver fotos", podés usarlas directamente sin volver a cargarlas.<br />
+            Los puntos se acreditan al instante. Tenés hasta {PLAZO} días post-carrera para subir la foto. Si ya subiste fotos en "Ver fotos", podés usarlas directamente sin volver a cargarlas.<br />
             <span style={{ color: 'var(--text)', fontStyle: 'italic' }}>Comienza a contar desde el Circuito de las Estaciones (Invierno).</span>
             <br /><br />
             <strong style={{ color: 'var(--text)' }}>Por perfil completo (única vez):</strong><br />
@@ -992,7 +997,7 @@ function FlamaPoints() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {pendientes.map(c => {
               const esStand = c._tipoParticipacion === 'Stand Flama'
-              const pts = (esStand ? PUNTOS_STAND_FLAMA : PUNTOS_INSCRIPTO) + (c.destacada ? 1 : 0)
+              const pts = (esStand ? P_STAND : P_INSCRIPTO) + (c.destacada ? 1 : 0)
               return (
                 <div key={c.id} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
@@ -1027,7 +1032,7 @@ function FlamaPoints() {
       {(() => {
         const enCurso = e => e.estado === 'pendiente' || e.estado === 'revision_admin' || (e.estado === 'rechazado' && e.intentos === 1)
         // Validados van al "Historial de Flamitas" de abajo; acá solo mostramos los accionables + rechazos recientes
-        const vigentes = envios.filter(e => enCurso(e) || (e.estado !== 'validado' && dentroDePlazo(e.carrera?.fecha, PLAZO_RECLAMO_DIAS)))
+        const vigentes = envios.filter(e => enCurso(e) || (e.estado !== 'validado' && dentroDePlazo(e.carrera?.fecha, PLAZO)))
 
         const Envio = ({ e }) => {
           const info = ESTADO_INFO[e.estado] || ESTADO_INFO.pendiente
