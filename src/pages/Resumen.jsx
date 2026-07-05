@@ -39,6 +39,9 @@ export default function Resumen() {
   const [loading, setLoading] = useState(true)
   const [carreraFiltro, setCarreraFiltro] = useState('todas')
   const [mesFiltro, setMesFiltro] = useState('todos')
+  const [tiempoFiltro, setTiempoFiltro] = useState('todas')
+  const [tipoFiltro, setTipoFiltro] = useState('')
+  const today = new Date().toISOString().slice(0, 10)
   const [tiempos, setTiempos] = useState([]) // todos los tiempos cargados
   const [rankingAbierto, setRankingAbierto] = useState({}) // carreraId_distancia -> bool
 
@@ -162,10 +165,29 @@ export default function Resumen() {
         )
       })()}
 
+      {/* Filtros de tiempo y tipo (solo en vista de todas las carreras) */}
+      {carreraFiltro === 'todas' && carreras.length > 1 && (
+        <div className="filtros-bar" style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="filtro-group">
+            {[['todas','Todas'],['proximas','Próximas'],['pasadas','Pasadas']].map(([val, label]) => (
+              <button key={val} className={`filtro-btn ${tiempoFiltro === val ? 'active' : ''}`} onClick={() => setTiempoFiltro(val)}>{label}</button>
+            ))}
+          </div>
+          <div className="filtro-group">
+            {[['','Todo tipo'],['carrera','Carreras'],['evento','Eventos'],['entrenamiento','Entrenamientos']].map(([val, label]) => (
+              <button key={val || 'todo'} className={`filtro-btn ${tipoFiltro === val ? 'active' : ''}`} onClick={() => setTipoFiltro(val)}>{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {carreras.length === 0 && <div className="empty-state">No hay datos todavía</div>}
       {carreras.filter(c => {
         if (carreraFiltro !== 'todas') return c.id === carreraFiltro
         if (mesFiltro !== 'todos' && (!c.fecha || !c.fecha.startsWith(mesFiltro))) return false
+        if (tiempoFiltro === 'proximas' && (!c.fecha || c.fecha < today)) return false
+        if (tiempoFiltro === 'pasadas' && (!c.fecha || c.fecha >= today)) return false
+        if (tipoFiltro && (c.tipo_actividad || 'carrera') !== tipoFiltro) return false
         return true
       }).map(c => (
         <div key={c.id} className="card summary-card">
