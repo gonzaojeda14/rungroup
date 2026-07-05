@@ -172,6 +172,21 @@ function TiendaAdmin({ config, onConfigChange }) {
   const senadosAccion = pedidos.filter(p => p.estado === 'senado' && !!p.comprobante_url_2).length
   const [filtroCompras, setFiltroCompras] = useState('pendiente')
 
+  // Recordatorio masivo de saldo: a todos los que señaron y todavía no subieron
+  // el comprobante del saldo (los que ya lo subieron esperan tu confirmación).
+  async function recordarSaldoATodos() {
+    const deudores = pedidos.filter(p => p.estado === 'senado' && !p.comprobante_url_2)
+    const userIds = [...new Set(deudores.map(p => p.user_id).filter(Boolean))]
+    if (userIds.length === 0) { showToast('No hay saldos pendientes de pedir'); return }
+    const ok = await notificar(
+      '💳 Recordá abonar el saldo',
+      'Te queda pendiente el saldo de tu pedido con seña. Podés abonarlo desde Mis Pedidos.',
+      '/mas?tab=Tienda&vista=pedidos',
+      { user_ids: userIds },
+    )
+    showToast(ok ? ('Recordatorio enviado a ' + userIds.length) : 'Error al enviar')
+  }
+
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
 
@@ -276,6 +291,17 @@ function TiendaAdmin({ config, onConfigChange }) {
               )
             })}
           </div>
+
+          {filtroCompras === 'senado' && (() => {
+            const nDeudores = pedidos.filter(p => p.estado === 'senado' && !p.comprobante_url_2).length
+            if (nDeudores === 0) return null
+            return (
+              <button onClick={recordarSaldoATodos}
+                style={{ width:'100%', marginBottom:12, padding:'10px', borderRadius:10, border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--text)', fontFamily:'inherit', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                💳 Pedir saldo a todos ({nDeudores})
+              </button>
+            )
+          })()}
 
           {(() => {
             const filtrados = pedidos.filter(p => p.estado === filtroCompras)
