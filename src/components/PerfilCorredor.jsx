@@ -409,14 +409,14 @@ export default function PerfilCorredor({ corredor, onClose, onToggleAcceso }) {
                   { label: 'Carreras', value: carreras.length, icon: '🏅' },
                   { label: 'Eventos / Entrenos', value: eventosEntrenos.length, icon: '🏃' },
                   { label: 'Kilómetros totales', value: kmTotales > 0 ? `${kmTotales.toFixed(0)} km` : '—', icon: '📏' },
-                  { label: 'Flamitas ganadas', value: totalFlamitas > 0 ? totalFlamitas : '—', icon: '💎' },
+                  { label: `${clubSettings.terminologia.puntos_plural} ganadas`, value: totalFlamitas > 0 ? totalFlamitas : '—', icon: '💎' },
                 ].map(({ label, value, icon }) => (
                   <div key={label} className="card"
-                    onClick={label === 'Flamitas ganadas' && totalFlamitas > 0 ? () => setShowHistFlamitas(true) : undefined}
-                    style={{ textAlign: 'center', padding: '14px 10px', cursor: label === 'Flamitas ganadas' && totalFlamitas > 0 ? 'pointer' : 'default' }}>
+                    onClick={label === `${clubSettings.terminologia.puntos_plural} ganadas` && totalFlamitas > 0 ? () => setShowHistFlamitas(true) : undefined}
+                    style={{ textAlign: 'center', padding: '14px 10px', cursor: label === `${clubSettings.terminologia.puntos_plural} ganadas` && totalFlamitas > 0 ? 'pointer' : 'default' }}>
                     {icon && <div style={{ fontSize: '20px', marginBottom: '4px' }}>{icon}</div>}
                     <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--accent)', marginBottom: '3px' }}>{value}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}{label === 'Flamitas ganadas' && totalFlamitas > 0 ? ' ›' : ''}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}{label === `${clubSettings.terminologia.puntos_plural} ganadas` && totalFlamitas > 0 ? ' ›' : ''}</div>
                   </div>
                 ))}
               </div>

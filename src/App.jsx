@@ -235,7 +235,7 @@ function Shell() {
         </div>
         <div className="topbar-social">
           {totalFlamaPoints !== null && (
-            <span className="social-btn" title="Mis Flamitas" style={{ fontSize: '13px', fontWeight: 700, cursor: 'default', letterSpacing: '-0.3px' }}>
+            <span className="social-btn" title={`Mis ${clubSettings.terminologia.puntos_plural}`} style={{ fontSize: '13px', fontWeight: 700, cursor: 'default', letterSpacing: '-0.3px' }}>
               💎 {totalFlamaPoints}
             </span>
           )}

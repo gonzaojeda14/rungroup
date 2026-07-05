@@ -61,7 +61,7 @@ export default function HistorialFlamitas({ userId, nombre, onClose }) {
         maxHeight: '80vh', overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-          <div style={{ fontSize: '16px', fontWeight: 700 }}>Historial de Flamitas</div>
+          <div style={{ fontSize: '16px', fontWeight: 700 }}>Historial de {clubSettings.terminologia.puntos_plural}</div>
           <button onClick={onClose} className="btn-ghost" style={{ padding: '4px 12px', fontSize: '13px', height: 'auto' }}>Cerrar</button>
         </div>
         {nombre && <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '2px' }}>{nombre}</div>}
@@ -88,7 +88,7 @@ export default function HistorialFlamitas({ userId, nombre, onClose }) {
                           {e.carrera?.destacada ? '⭐ ' : ''}{e.carrera?.nombre || 'Carrera'}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
-                          {e.carrera?.fecha ? formatFecha(e.carrera.fecha) : ''}{e.carrera?.fecha ? ' · ' : ''}{esStand ? 'Stand Flama' : 'Inscripto'}
+                          {e.carrera?.fecha ? formatFecha(e.carrera.fecha) : ''}{e.carrera?.fecha ? ' · ' : ''}{esStand ? clubSettings.terminologia.estado_apoyo : 'Inscripto'}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>

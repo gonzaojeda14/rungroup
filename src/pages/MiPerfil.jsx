@@ -784,14 +784,14 @@ export default function MiPerfil() {
                 { label: 'Carreras', value: carreras.length, icon: '🏅' },
                 { label: 'Eventos / Entrenos', value: eventosEntrenos.length, icon: '🏃' },
                 { label: 'Kilómetros totales', value: kmTotales > 0 ? `${kmTotales.toFixed(0)} km` : '—', icon: '📏' },
-                { label: 'Flamitas ganadas', value: statsFlamitas > 0 ? statsFlamitas : '—', icon: '💎' },
+                { label: `${clubSettings.terminologia.puntos_plural} ganadas`, value: statsFlamitas > 0 ? statsFlamitas : '—', icon: '💎' },
               ].map(({ label, value, icon }) => (
                 <div key={label} className="card"
-                  onClick={label === 'Flamitas ganadas' && statsFlamitas > 0 ? () => setShowHistFlamitas(true) : undefined}
-                  style={{ textAlign: 'center', padding: '16px 10px', cursor: label === 'Flamitas ganadas' && statsFlamitas > 0 ? 'pointer' : 'default' }}>
+                  onClick={label === `${clubSettings.terminologia.puntos_plural} ganadas` && statsFlamitas > 0 ? () => setShowHistFlamitas(true) : undefined}
+                  style={{ textAlign: 'center', padding: '16px 10px', cursor: label === `${clubSettings.terminologia.puntos_plural} ganadas` && statsFlamitas > 0 ? 'pointer' : 'default' }}>
                   {icon && <div style={{ fontSize: '22px', marginBottom: '6px' }}>{icon}</div>}
                   <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>{value}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}{label === 'Flamitas ganadas' && statsFlamitas > 0 ? ' ›' : ''}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.3 }}>{label}{label === `${clubSettings.terminologia.puntos_plural} ganadas` && statsFlamitas > 0 ? ' ›' : ''}</div>
                 </div>
               ))}
             </div>
