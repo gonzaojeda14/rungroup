@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
     if (dbErr) return json({ error: dbErr.message }, 500)
 
     // Escribir en notif_payload para que el SW muestre el mensaje correcto
-    await supabase.from('notif_payload').upsert({ id: 1, titulo: title, contenido: body, tipo: tipo || 'push' })
+    await supabase.from('notif_payload').upsert({ id: 1, titulo: title, contenido: body, tipo: tipo || 'push', url })
 
     const payload = { title, body, url }
     const results = await Promise.allSettled(

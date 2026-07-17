@@ -18,9 +18,22 @@ registerRoute(
 const SUPABASE_URL = 'https://dsanxuaadoytmuqfpjda.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzYW54dWFhZG95dG11cWZwamRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTI4OTksImV4cCI6MjA5NTkyODg5OX0.srHQwvrVNcMwD3WJLuyfaS5sX0CHN5UPx5XxGqCdiTc'
 
-async function mostrarNotificacion() {
+async function mostrarNotificacion(push) {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/notif_payload?id=eq.1&select=titulo,contenido,tipo`, {
+    // Si el push trae payload encriptado (push-notif), usarlo directo:
+    // ya viene con { title, body, url } finales. Así cada notificación
+    // navega a su pantalla correcta en vez de caer siempre en /novedades.
+    if (push?.title) {
+      return self.registration.showNotification(push.title, {
+        body: push.body || 'Tocá para ver.',
+        icon: '/icon-notif.png',
+        badge: '/badge-f.png',
+        vibrate: [200, 100, 200],
+        data: { url: push.url || '/novedades' }
+      })
+    }
+    // Fallback: push sin payload → leer última notif de notif_payload
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/notif_payload?id=eq.1&select=titulo,contenido,tipo,url`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
     })
     const data = await res.json()
@@ -52,7 +65,9 @@ async function mostrarNotificacion() {
 }
 
 self.addEventListener('push', event => {
-  event.waitUntil(mostrarNotificacion())
+  let payload = null
+  try { payload = event.data?.json() } catch { payload = null }
+  event.waitUntil(mostrarNotificacion(payload))
 })
 
 // Al tocar la notificación, abrir la app
