@@ -850,12 +850,12 @@ export default function Carreras() {
 
   const todosMeses = [...new Set(carreras.filter(c => c.fecha).map(c => c.fecha.slice(0, 7)))].sort()
 
-  // Fechas que tienen 2+ carreras (solo tipo "carrera"; ignora eventos/entrenamientos).
-  // Se usa para marcar con ⚠️ las carreras que comparten día.
+  // Fechas que tienen 2+ actividades (carreras y entrenamientos; ignora eventos).
+  // Se usa para marcar con ⚠️ las actividades que comparten día.
   const fechasMultiCarrera = (() => {
     const counts = {}
     carreras.forEach(c => {
-      if (c.fecha && (!c.tipo_actividad || c.tipo_actividad === 'carrera')) {
+      if (c.fecha && c.tipo_actividad !== 'evento') {
         counts[c.fecha] = (counts[c.fecha] || 0) + 1
       }
     })
@@ -1353,14 +1353,14 @@ export default function Carreras() {
                   </div>
                   <div className="race-meta">
                     {c.fecha && <span className="tag">📅 {formatFechaHora(c.fecha, c.hora)}</span>}
-                    {c.fecha && (!c.tipo_actividad || c.tipo_actividad === 'carrera') && fechasMultiCarrera.has(c.fecha) && (
+                    {c.fecha && c.tipo_actividad !== 'evento' && fechasMultiCarrera.has(c.fecha) && (
                       <span
                         className="tag"
-                        title="Hay otra carrera en esta fecha"
+                        title="Hay otra actividad en esta fecha"
                         style={{ cursor: 'pointer', background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         onClick={e => {
                           e.stopPropagation()
-                          setToast('⚠️ Hay otra carrera en esta fecha')
+                          setToast('⚠️ Hay otra actividad en esta fecha')
                           setTimeout(() => setToast(''), 2500)
                         }}
                       >⚠️</span>
@@ -1384,7 +1384,10 @@ export default function Carreras() {
                         onClick={e => e.stopPropagation()}
                       >📍 {c.lugar}</a>
                     )}
-                    {tieneClima(c) && (
+                    {/* El tag aparece recién con el clima resuelto (la carga automática
+                        lo trae al montar). Antes se mostraba "Ver clima" de entrada y
+                        desaparecía si el lugar no era geocodificable → parpadeo. */}
+                    {tieneClima(c) && c.weather_data && (
                       <span
                         className="tag"
                         style={{ cursor: 'pointer', opacity: weatherLoading === c.id ? 0.6 : 1, border: '1px solid rgba(255,255,255,0.12)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
@@ -1392,9 +1395,7 @@ export default function Carreras() {
                       >
                         {weatherLoading === c.id
                           ? '⏳ Cargando...'
-                          : c.weather_data
-                            ? <><span>🌡️ {c.weather_data.temp}°C · 🌧️ {c.weather_data.rain_prob}%</span><span style={{ fontSize: 10, color: 'var(--text2)', lineHeight: 1 }}>›</span></>
-                            : '🌤️ Ver clima'}
+                          : <><span>🌡️ {c.weather_data.temp}°C · 🌧️ {c.weather_data.rain_prob}%</span><span style={{ fontSize: 10, color: 'var(--text2)', lineHeight: 1 }}>›</span></>}
                       </span>
                     )}
                     {(!c.tipo_actividad || c.tipo_actividad === 'carrera') && c.tipo && <span className="tag" style={{ background: TIPO_COLOR[c.tipo] + '22', color: TIPO_COLOR[c.tipo], border: `1px solid ${TIPO_COLOR[c.tipo]}44`, fontWeight: 600 }}>{c.tipo}</span>}
