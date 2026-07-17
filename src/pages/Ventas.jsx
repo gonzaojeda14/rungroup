@@ -39,6 +39,26 @@ const WpIcon = () => (
   </svg>
 )
 
+// Fallback cuando no hay nadie en "Lista de espera": aviso broadcast (sin reserva)
+// a quienes están como "Quizás" o "No voy". La venta queda disponible, primero en llegar.
+async function notificarFallback(carreraId, carreraNombre, distancia, excluirIds = []) {
+  const { data } = await supabase
+    .from('participaciones')
+    .select('user_id')
+    .eq('carrera_id', carreraId)
+    .in('estado', ['Quizás', 'No voy'])
+
+  const ids = (data || []).map(p => p.user_id).filter(id => !excluirIds.includes(id))
+  if (!ids.length) return
+
+  notificar(
+    '👀 Se liberó un cupo',
+    `Alguien liberó su inscripción${distancia ? ` (${distancia})` : ''} en ${carreraNombre || 'una carrera'}. No hay lista de espera: es para el primero que la tome.`,
+    '/ventas',
+    { user_ids: ids }
+  )
+}
+
 export default function Ventas() {
   const { user } = useAuth()
   const [ventas, setVentas] = useState([])
@@ -95,6 +115,8 @@ export default function Ventas() {
         rechazados: yaRechazados,
         estado: 'disponible',
       }).eq('id', venta.id)
+      // Cola agotada: avisar a los "Quizás" / "No voy" que quedó disponible
+      notificarFallback(venta.carrera_id, venta.carrera?.nombre, venta.distancia || null, [venta.vendedor_id, ...yaRechazados])
     }
   }, [])
 
@@ -213,6 +235,9 @@ export default function Ventas() {
         '/ventas',
         { user_ids: [primero.user_id] }
       )
+    } else {
+      // Nadie en lista de espera: avisar a los "Quizás" / "No voy"
+      notificarFallback(form.carrera_id, carrera?.nombre, form.distancia || null, [user.id])
     }
 
     setForm({ carrera_id: '', distancia: '', precio: '', nota: '' })
@@ -297,7 +322,7 @@ export default function Ventas() {
 
       <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px', marginTop: '-8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <p style={{ margin: 0 }}>🔁 <strong>Para quien transfiere:</strong> Publicá tu lugar si no podés correr. El primer interesado de la lista de espera puede contactarte por WhatsApp. Si no lo hace, pasa al siguiente.</p>
-        <p style={{ margin: 0 }}>⏳ <strong>Para quien espera:</strong> Se notificará a las personas de la lista de espera según el orden en el que se anotaron.</p>
+        <p style={{ margin: 0 }}>⏳ <strong>Para quien espera:</strong> Se notificará a las personas de la lista de espera según el orden en el que se anotaron. Si no hay lista de espera, se avisa a quienes están como "Quizás" o "No voy" y el lugar queda para el primero que lo tome.</p>
       </div>
 
       {/* ALERTA: oferta activa para mí como comprador */}
