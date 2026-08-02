@@ -225,7 +225,7 @@ function SugerenciaModal({ onClose, onSend, userId }) {
   )
 }
 
-const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: false, tipo_actividad: 'carrera', calzado: '', tiene_cupo: false, cupo_maximo: '' }
+const EMPTY = { nombre: '', fecha: '', hora: '', distancias: '', lugar: '', link: '', codigo: '', tipo: '', running_team: false, flama_points: true, tipo_actividad: 'carrera', calzado: '', tiene_cupo: false, cupo_maximo: '' }
 
 const INSTRUCTIVO_RUNNING_TEAM = `1. Entrar a EntryFee.com.ar con tu usuario y contraseña.
 2. Ir a la solapa GRUPO.
