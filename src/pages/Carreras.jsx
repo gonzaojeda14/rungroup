@@ -750,13 +750,14 @@ export default function Carreras() {
   }
 
   async function notificarFlamitas(carrera) {
-    const { data: parts } = await supabase
-      .from('participaciones')
-      .select('user_id')
-      .eq('carrera_id', carrera.id)
-      .in('estado', ['Inscripto', 'Stand Flama'])
-    const user_ids = (parts || []).map(p => p.user_id)
-    if (user_ids.length === 0) { setToast('⚠️ No hay inscriptos para notificar'); setTimeout(() => setToast(''), 2500); return }
+    // Solo a los Inscripto/Stand Flama que TODAVÍA no reclamaron (sin fila en puntos_carreras).
+    const [{ data: parts }, { data: envios }] = await Promise.all([
+      supabase.from('participaciones').select('user_id').eq('carrera_id', carrera.id).in('estado', ['Inscripto', 'Stand Flama']),
+      supabase.from('puntos_carreras').select('user_id').eq('carrera_id', carrera.id),
+    ])
+    const yaReclamaron = new Set((envios || []).map(e => e.user_id))
+    const user_ids = (parts || []).map(p => p.user_id).filter(uid => !yaReclamaron.has(uid))
+    if (user_ids.length === 0) { setToast('⚠️ No hay a quién notificar (ya reclamaron todos)'); setTimeout(() => setToast(''), 2500); return }
     const ok = await notificar(
       '💎 ¡Ya podés sumar tus Flamitas!',
       `Subí tu foto de ${carrera.nombre} antes de que pasen 7 días.`,
