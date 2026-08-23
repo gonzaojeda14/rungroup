@@ -400,6 +400,7 @@ export default function Participaciones() {
     }
 
     setTiemposGuardados(prev => ({ ...prev, [key]: tiempoTexto }))
+    setTiemposSegundos(prev => ({ ...prev, [key]: seg }))
     setEditandoTiempo(prev => { const n = {...prev}; delete n[key]; return n })
     setTiempos(prev => { const n = {...prev}; delete n[key]; return n })
     setSavingTiempo(prev => ({ ...prev, [key]: false }))
