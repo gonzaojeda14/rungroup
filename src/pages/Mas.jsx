@@ -12,6 +12,32 @@ const PLAZO_RECLAMO_DIAS = 7
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
+// Comprime/redimensiona la foto en el cliente antes de subirla. Las fotos de
+// cámara (sobre todo Android) suelen pesar varios MB y superan el límite del
+// upload preset sin firma de Cloudinary, lo que hace fallar el envío. Si algo
+// sale mal en la compresión (formato no soportado por el canvas, etc.), se
+// devuelve el archivo original tal cual para no bloquear la subida.
+async function comprimirImagen(archivo, maxDim = 1600, calidad = 0.82) {
+  try {
+    const bitmap = await createImageBitmap(archivo)
+    let { width, height } = bitmap
+    if (width > maxDim || height > maxDim) {
+      const escala = maxDim / Math.max(width, height)
+      width = Math.round(width * escala)
+      height = Math.round(height * escala)
+    }
+    const canvas = document.createElement('canvas')
+    canvas.width = width; canvas.height = height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(bitmap, 0, 0, width, height)
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', calidad))
+    if (!blob) return archivo
+    return new File([blob], (archivo.name || 'foto').replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' })
+  } catch {
+    return archivo
+  }
+}
+
 // Puntos otorgados según el tipo de participación al subir la foto
 const PUNTOS_INSCRIPTO = 2
 const PUNTOS_STAND_FLAMA = 1
@@ -800,13 +826,14 @@ function FlamaPoints() {
         fotoPublicId = null
       } else {
         const folder = `flamarun/puntos/${carrera?.nombre?.replace(/\s+/g, '_') || carreraId}`
+        const archivoComprimido = await comprimirImagen(archivo)
         const fd = new FormData()
-        fd.append('file', archivo)
+        fd.append('file', archivoComprimido)
         fd.append('upload_preset', PRESET)
         fd.append('folder', folder)
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
         const data = await res.json()
-        if (!data.secure_url) throw new Error('No se pudo subir la imagen')
+        if (!data.secure_url) throw new Error(data?.error?.message || 'No se pudo subir la imagen')
         fotoUrl = data.secure_url
         fotoPublicId = data.public_id
       }
